@@ -1,0 +1,68 @@
+C251 COMPILER V5.60.0,  servo                                                              13/06/26  12:52:10  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE servo
+OBJECT MODULE PLACED IN .\out_file\servo.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\code\servo.c LARGE ROM(HUGE) WARNINGLEVEL(3) OPTIMIZE(0,SIZE) BROWS
+                    -E INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\
+                    -user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekfree_assistant) DEBUG PRINT(
+                    -.\out_file\servo.lst) TABS(2) OBJECT(.\out_file\servo.obj) 
+
+stmt  level    source
+
+    1          #include "servo.h"
+    2          #include "pid.h"
+    3          #include "image.h"
+    4          
+    5          /* 初始化舵机 PWM，并打开 PWME 输出。 */
+    6          void servo_init(void)
+    7          {
+    8   1          pwm_init(STEER_PWM_PIN, SERVO_FREQ, SERVO_DUTY_MID);
+    9   1      
+   10   1          /* 打开 PWME 输出，否则舵机 PWM 不会真正输出到引脚。 */
+   11   1          PWME_BKR |= 0x80;
+   12   1      }
+   13          
+   14          /* 设置舵机占空比，写入 PWM 前先限制在安全范围内。 */
+   15          void Set_Servo_Duty(uint32 duty)
+   16          {
+   17   1          if (duty > SERVO_DUTY_MAX) {
+   18   2              duty = SERVO_DUTY_MAX;
+   19   2          } else if (duty < SERVO_DUTY_MIN) {
+   20   2              duty = SERVO_DUTY_MIN;
+   21   2          }
+   22   1      
+   23   1          pwm_set_duty(STEER_PWM_PIN, duty);
+   24   1      }
+   25          
+   26          /* 舵机控制循环：根据当前中线误差计算并输出新的舵机 PWM。 */
+   27          void Servo_Loop(void)
+   28          {
+   29   1          Error_sum();
+   30   1          PID_servof(&servo_pidf);
+   31   1          Set_Servo_Duty((uint32)Out_servo);
+   32   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =       165     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =         4     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =    ------     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

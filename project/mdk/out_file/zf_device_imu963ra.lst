@@ -1,0 +1,851 @@
+C251 COMPILER V5.60.0,  zf_device_imu963ra                                                 01/05/26  22:35:55  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_device_imu963ra
+OBJECT MODULE PLACED IN .\out_file\zf_device_imu963ra.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\..\libraries\zf_device\zf_device_imu963ra.c LARGE ROM(HUGE) WARNING
+                    -LEVEL(3) OPTIMIZE(0,SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_devic
+                    -e;..\..\libraries\zf_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\s
+                    -eekfree_assistant) DEBUG PRINT(.\out_file\zf_device_imu963ra.lst) TABS(2) OBJECT(.\out_file\zf_device_imu963ra.obj) 
+
+stmt  level    source
+
+    1          /********************************************************************************************************
+             -*************
+    2          * STC32G Opensourec Library ¼´£¨STC32G ¿ªÔ´¿â£©ÊÇÒ»¸ö»ùÓÚ¹Ù·½ SDK ½Ó¿ÚµÄµÚÈý·½¿ªÔ´¿â
+    3          * Copyright (c) 2025 SEEKFREE Öð·É¿Æ¼¼
+    4          *
+    5          * ±¾ÎÄ¼þÊÇSTC32G144K¿ªÔ´¿âµÄÒ»²¿·Ö
+    6          *
+    7          * STC32G ¿ªÔ´¿â ÊÇÃâ·ÑÈí¼þ
+    8          * Äú¿ÉÒÔ¸ù¾Ý×ÔÓÉÈí¼þ»ù½ð»á·¢²¼µÄ GPL£¨GNU General Public License£¬¼´ GNUÍ¨ÓÃ¹«¹²Ðí¿ÉÖ¤£©µÄÌõ¿î
+    9          * ¼´ GPL µÄµÚ3°æ£¨¼´ GPL3.0£©»ò£¨ÄúÑ¡ÔñµÄ£©ÈÎºÎºóÀ´µÄ°æ±¾£¬ÖØÐÂ·¢²¼ºÍ/»òÐÞ¸ÄËü
+   10          *
+   11          * ±¾¿ªÔ´¿âµÄ·¢²¼ÊÇÏ£ÍûËüÄÜ·¢»Ó×÷ÓÃ£¬µ«²¢Î´¶ÔÆä×÷ÈÎºÎµÄ±£Ö¤
+   12          * ÉõÖÁÃ»ÓÐÒþº¬µÄÊÊÏúÐÔ»òÊÊºÏÌØ¶¨ÓÃÍ¾µÄ±£Ö¤
+   13          * ¸ü¶àÏ¸½ÚÇë²Î¼û GPL
+   14          *
+   15          * ÄúÓ¦¸ÃÔÚÊÕµ½±¾¿ªÔ´¿âµÄÍ¬Ê±ÊÕµ½Ò»·Ý GPL µÄ¸±±¾
+   16          * Èç¹ûÃ»ÓÐ£¬Çë²ÎÔÄ<https://www.gnu.org/licenses/>
+   17          *
+   18          * ¶îÍâ×¢Ã÷£º
+   19          * ±¾¿ªÔ´¿âÊ¹ÓÃ GPL3.0 ¿ªÔ´Ðí¿ÉÖ¤Ð­Òé ÒÔÉÏÐí¿ÉÉêÃ÷ÎªÒëÎÄ°æ±¾
+   20          * Ðí¿ÉÉêÃ÷Ó¢ÎÄ°æÔÚ libraries/doc ÎÄ¼þ¼ÐÏÂµÄ GPL3_permission_statement.txt ÎÄ¼þÖÐ
+   21          * Ðí¿ÉÖ¤¸±±¾ÔÚ libraries ÎÄ¼þ¼ÐÏÂ ¼´¸ÃÎÄ¼þ¼ÐÏÂµÄ LICENSE ÎÄ¼þ
+   22          * »¶Ó­¸÷Î»Ê¹ÓÃ²¢´«²¥±¾³ÌÐò µ«ÐÞ¸ÄÄÚÈÝÊ±±ØÐë±£ÁôÖð·É¿Æ¼¼µÄ°æÈ¨ÉùÃ÷£¨¼´±¾ÉùÃ÷£©
+   23          *
+   24          * ÎÄ¼þÃû³Æ          
+   25          * ¹«Ë¾Ãû³Æ          ³É¶¼Öð·É¿Æ¼¼ÓÐÏÞ¹«Ë¾
+   26          * °æ±¾ÐÅÏ¢          ²é¿´ libraries/doc ÎÄ¼þ¼ÐÄÚ version ÎÄ¼þ °æ±¾ËµÃ÷
+   27          * ¿ª·¢»·¾³          MDK FOR C251
+   28          * ÊÊÓÃÆ½Ì¨          STC32G144K
+   29          * µêÆÌÁ´½Ó          https://seekfree.taobao.com/
+   30          *
+   31          * ÐÞ¸Ä¼ÇÂ¼
+   32          * ÈÕÆÚ              ×÷Õß           ±¸×¢
+   33          * 2024-08-01        ´óW            first version
+   34          *********************************************************************************************************
+             -***********/
+   35          /********************************************************************************************************
+             -*************
+   36          * ½ÓÏß¶¨Òå£º
+   37          *                   ------------------------------------
+   38          *                   Ä£¿é¹Ü½Å            µ¥Æ¬»ú¹Ü½Å
+   39          *                   // Ó²¼þ SPI Òý½Å
+   40          *                   SCL/SPC             ²é¿´ zf_device_imu963ra.h ÖÐ IMU963RA_SPC_PIN ºê¶¨Òå
+   41          *                   SDA/DSI             ²é¿´ zf_device_imu963ra.h ÖÐ IMU963RA_SDI_PIN ºê¶¨Òå
+   42          *                   SA0/SDO             ²é¿´ zf_device_imu963ra.h ÖÐ IMU963RA_SDO_PIN ºê¶¨Òå
+   43          *                   CS                  ²é¿´ zf_device_imu963ra.h ÖÐ IMU963RA_CS_PIN  ºê¶¨Òå
+   44          *                   VCC                 3.3VµçÔ´
+   45          *                   GND                 µçÔ´µØ
+   46          *                   ÆäÓàÒý½ÅÐü¿Õ
+   47          *
+   48          *                   // Èí¼þ IIC Òý½Å
+   49          *                   SCL/SPC             ²é¿´ zf_device_imu963ra.h ÖÐ IMU963RA_SCL_PIN ºê¶¨Òå
+   50          *                   SDA/DSI             ²é¿´ zf_device_imu963ra.h ÖÐ IMU963RA_SDA_PIN ºê¶¨Òå
+   51          *                   VCC                 3.3VµçÔ´
+   52          *                   GND                 µçÔ´µØ
+   53          *                   ÆäÓàÒý½ÅÐü¿Õ
+C251 COMPILER V5.60.0,  zf_device_imu963ra                                                 01/05/26  22:35:55  PAGE 2   
+
+   54          *                   ------------------------------------
+   55          *********************************************************************************************************
+             -***********/
+   56          
+   57          #include "zf_common_clock.h"
+   58          #include "zf_common_debug.h"
+   59          #include "zf_driver_delay.h"
+   60          #include "zf_driver_spi.h"
+   61          #include "zf_driver_soft_iic.h"
+   62          // #include "zf_driver_soft_spi.h"
+   63          
+   64          #include "zf_device_imu963ra.h"
+   65          
+   66          #pragma warning disable = 183
+   67          #pragma warning disable = 177
+   68          
+   69          int16 imu963ra_gyro_x = 0, imu963ra_gyro_y = 0, imu963ra_gyro_z = 0;
+   70          int16 imu963ra_acc_x = 0,  imu963ra_acc_y = 0,  imu963ra_acc_z = 0;
+   71          int16 imu963ra_mag_x = 0,  imu963ra_mag_y = 0,  imu963ra_mag_z = 0;
+   72          float imu963ra_transition_factor[3] = {4098, 14.3, 3000};
+   73          
+   74          
+   75          #if (IMU963RA_USE_INTERFACE==HARDWARE_SPI)
+   76            //------------------------------------------------------------------------------------------------------
+             --------------
+   77            // º¯Êý¼ò½é     IMU963RA Ð´¼Ä´æÆ÷
+   78            // ²ÎÊýËµÃ÷     reg             ¼Ä´æÆ÷µØÖ·
+   79            // ²ÎÊýËµÃ÷     dat            Êý¾Ý
+   80            // ·µ»Ø²ÎÊý     void
+   81            // Ê¹ÓÃÊ¾Àý     imu963ra_write_acc_gyro_register(IMU963RA_SLV0_CONFIG, 0x00);
+   82            // ±¸×¢ÐÅÏ¢     ÄÚ²¿µ÷ÓÃ
+   83            //------------------------------------------------------------------------------------------------------
+             --------------
+   84            static void imu963ra_write_acc_gyro_register(uint8 reg, uint8 dat)
+   85            {
+   86   1          IMU963RA_CS(0);
+   87   1          spi_write_8bit_register(IMU963RA_SPI, reg | IMU963RA_SPI_W, dat);
+   88   1          IMU963RA_CS(1);
+   89   1        }
+   90          
+   91            //------------------------------------------------------------------------------------------------------
+             --------------
+   92            // º¯Êý¼ò½é     IMU963RA ¶Á¼Ä´æÆ÷
+   93            // ²ÎÊýËµÃ÷     reg             ¼Ä´æÆ÷µØÖ·
+   94            // ·µ»Ø²ÎÊý     uint8           Êý¾Ý
+   95            // Ê¹ÓÃÊ¾Àý     imu963ra_read_acc_gyro_register(IMU963RA_STATUS_MASTER);
+   96            // ±¸×¢ÐÅÏ¢     ÄÚ²¿µ÷ÓÃ
+   97            //------------------------------------------------------------------------------------------------------
+             --------------
+   98            static uint8 imu963ra_read_acc_gyro_register(uint8 reg)
+   99            {
+  100   1          uint8 dat = 0;
+  101   1          IMU963RA_CS(0);
+  102   1          dat = spi_read_8bit_register(IMU963RA_SPI, reg | IMU963RA_SPI_R);
+  103   1          IMU963RA_CS(1);
+  104   1          return dat;
+  105   1        }
+  106          
+  107            //------------------------------------------------------------------------------------------------------
+             --------------
+  108            // º¯Êý¼ò½é     IMU963RA ¶ÁÊý¾Ý ÄÚ²¿µ÷ÓÃ
+  109            // ²ÎÊýËµÃ÷     reg             ¼Ä´æÆ÷µØÖ·
+  110            // ²ÎÊýËµÃ÷     dat            Êý¾Ý»º³åÇø
+  111            // ²ÎÊýËµÃ÷     len             Êý¾Ý³¤¶È
+  112            // ·µ»Ø²ÎÊý     void
+  113            // Ê¹ÓÃÊ¾Àý     imu963ra_read_acc_gyro_registers(IMU963RA_OUTX_L_A, dat, 6);
+C251 COMPILER V5.60.0,  zf_device_imu963ra                                                 01/05/26  22:35:55  PAGE 3   
+
+  114            // ±¸×¢ÐÅÏ¢     ÄÚ²¿µ÷ÓÃ
+  115            //------------------------------------------------------------------------------------------------------
+             --------------
+  116            static void imu963ra_read_acc_gyro_registers(uint8 reg, uint8 *dat, uint32 len)
+  117            {
+  118   1          IMU963RA_CS(0);
+  119   1          spi_read_8bit_registers(IMU963RA_SPI, reg | IMU963RA_SPI_R, dat, len);
+  120   1          IMU963RA_CS(1);
+  121   1        }
+  122            
+  123          #elif (IMU963RA_USE_INTERFACE==SOFT_SPI)
+                 
+                 #define IMU963RA_SCK(x)       IMU963RA_SPC_PIN  = x
+                 #define IMU963RA_MOSI(x)      IMU963RA_SDI_PIN = x
+                 #define IMU963RA_CS(x)        IMU963RA_CS_PIN  = x
+                 #define IMU963RA_MISO         IMU963RA_SDO_PIN
+               
+                 //------------------------------------------------------------------------------------------------------
+             --------------
+                 //  @brief      Í¨¹ýSPIÐ´Ò»¸öbyte,Í¬Ê±¶ÁÈ¡Ò»¸öbyte
+                 //  @param      byte        ·¢ËÍµÄÊý¾Ý
+                 //  @return     uint8 edata       return ·µ»Østatus×´Ì¬
+                 //  @since      v1.0
+                 //  Sample usage:
+                 //------------------------------------------------------------------------------------------------------
+             --------------
+                 static uint8 imu963ra_simspi_wr_byte(uint8 byte)
+                 {
+                   uint8 i;
+                   for(i=0; i<8; i++)
+                   {
+                     IMU963RA_SCK (0);
+                     IMU963RA_MOSI(byte&0x80);
+                     byte <<= 1;
+                     IMU963RA_SCK (1);
+                     byte |= IMU963RA_MISO;
+                   }
+                   IMU963RA_SCK (0);
+                   return(byte);
+                 }
+                 
+                 
+                 //------------------------------------------------------------------------------------------------------
+             --------------
+                 //  @brief      ½«valÐ´Èëcmd¶ÔÓ¦µÄ¼Ä´æÆ÷µØÖ·,Í¬Ê±·µ»Østatus×Ö½Ú
+                 //  @param      cmd         ÃüÁî×Ö
+                 //  @param      val         ´ýÐ´Èë¼Ä´æÆ÷µÄÊýÖµ
+                 //  @since      v1.0
+                 //  Sample usage:
+                 //------------------------------------------------------------------------------------------------------
+             --------------
+                 static void imu963ra_simspi_w_reg_byte(uint8 cmd, uint8 val)
+                 {
+                   IMU963RA_CS(0);
+                   cmd |= IMU963RA_SPI_W;
+                   imu963ra_simspi_wr_byte(cmd);
+                   imu963ra_simspi_wr_byte(val);
+                   IMU963RA_CS(1);
+                 }
+               
+                 //------------------------------------------------------------------------------------------------------
+             --------------
+                 //  @brief      ¶ÁÈ¡cmdËù¶ÔÓ¦µÄ¼Ä´æÆ÷µØÖ·
+                 //  @param      cmd         ÃüÁî×Ö
+                 //  @param      *val        ´æ´¢¶ÁÈ¡µÄÊý¾ÝµØÖ·
+                 //  @since      v1.0
+C251 COMPILER V5.60.0,  zf_device_imu963ra                                                 01/05/26  22:35:55  PAGE 4   
+
+                 //  Sample usage:
+                 //------------------------------------------------------------------------------------------------------
+             --------------
+                 static void imu963ra_simspi_r_reg_byte(uint8 cmd, uint8 *val)
+                 {
+                   IMU963RA_CS(0);
+                   cmd |= IMU963RA_SPI_R;
+                   imu963ra_simspi_wr_byte(cmd);
+                   *val = imu963ra_simspi_wr_byte(0);
+                   IMU963RA_CS(1);
+                 }
+               
+                 //------------------------------------------------------------------------------------------------------
+             --------------
+                 //  @brief      ¶ÁÈ¡cmdËù¶ÔÓ¦µÄ¼Ä´æÆ÷µØÖ·
+                 //  @param      cmd         ÃüÁî×Ö
+                 //  @param      *val        ´æ´¢¶ÁÈ¡µÄÊý¾ÝµØÖ·
+                 //  @param      num         ¶ÁÈ¡µÄÊýÁ¿
+                 //  @since      v1.0
+                 //  Sample usage:
+                 //------------------------------------------------------------------------------------------------------
+             --------------
+                 static void imu963ra_simspi_r_reg_bytes(uint8 cmd, uint8 *val, uint32 num)
+                 {
+                   cmd |= IMU963RA_SPI_R;
+                   imu963ra_simspi_wr_byte(cmd);
+                   while(num--)
+                   {
+                     *val++ = imu963ra_simspi_wr_byte(0);
+                   }
+                 }
+               
+                 //------------------------------------------------------------------------------------------------------
+             --------------
+                 // º¯Êý¼ò½é     IMU963RA Ð´¼Ä´æÆ÷
+                 // ²ÎÊýËµÃ÷     reg             ¼Ä´æÆ÷µØÖ·
+                 // ²ÎÊýËµÃ÷     dat            Êý¾Ý
+                 // ·µ»Ø²ÎÊý     void
+                 // Ê¹ÓÃÊ¾Àý     imu963ra_write_acc_gyro_register(IMU963RA_SLV0_CONFIG, 0x00);
+                 // ±¸×¢ÐÅÏ¢     ÄÚ²¿µ÷ÓÃ
+                 //------------------------------------------------------------------------------------------------------
+             --------------
+                 static void imu963ra_write_acc_gyro_register(uint8 reg, uint8 dat)
+                 {
+                   IMU963RA_CS(0);
+                   imu963ra_simspi_w_reg_byte(reg | IMU963RA_SPI_W, dat);
+                   IMU963RA_CS(1);
+                 }
+               
+                 //------------------------------------------------------------------------------------------------------
+             --------------
+                 // º¯Êý¼ò½é     IMU963RA ¶Á¼Ä´æÆ÷
+                 // ²ÎÊýËµÃ÷     reg             ¼Ä´æÆ÷µØÖ·
+                 // ·µ»Ø²ÎÊý     uint8 edata           Êý¾Ý
+                 // Ê¹ÓÃÊ¾Àý     imu963ra_read_acc_gyro_register(IMU963RA_STATUS_MASTER);
+                 // ±¸×¢ÐÅÏ¢     ÄÚ²¿µ÷ÓÃ
+                 //------------------------------------------------------------------------------------------------------
+             --------------
+                 static uint8 imu963ra_read_acc_gyro_register(uint8 reg)
+                 {
+                   uint8 dat = 0;
+                   IMU963RA_CS(0);
+                   imu963ra_simspi_r_reg_byte(reg | IMU963RA_SPI_R, &dat);
+                   IMU963RA_CS(1);
+                   return dat;
+                 }
+C251 COMPILER V5.60.0,  zf_device_imu963ra                                                 01/05/26  22:35:55  PAGE 5   
+
+               
+                 //------------------------------------------------------------------------------------------------------
+             --------------
+                 // º¯Êý¼ò½é     IMU963RA ¶ÁÊý¾Ý ÄÚ²¿µ÷ÓÃ
+                 // ²ÎÊýËµÃ÷     reg             ¼Ä´æÆ÷µØÖ·
+                 // ²ÎÊýËµÃ÷     dat            Êý¾Ý»º³åÇø
+                 // ²ÎÊýËµÃ÷     len             Êý¾Ý³¤¶È
+                 // ·µ»Ø²ÎÊý     void
+                 // Ê¹ÓÃÊ¾Àý     imu963ra_read_acc_gyro_registers(IMU963RA_OUTX_L_A, dat, 6);
+                 // ±¸×¢ÐÅÏ¢     ÄÚ²¿µ÷ÓÃ
+                 //------------------------------------------------------------------------------------------------------
+             --------------
+                 static void imu963ra_read_acc_gyro_registers(uint8 reg, uint8 *dat, uint32 len)
+                 {
+                   IMU963RA_CS(0);
+                   imu963ra_simspi_r_reg_bytes( reg | IMU963RA_SPI_R, dat, len);
+                   IMU963RA_CS(1);
+                 }
+                 
+               #elif (IMU963RA_USE_INTERFACE==SOFT_IIC)
+                 static soft_iic_info_struct imu963ra_iic_struct;
+               
+                 //------------------------------------------------------------------------------------------------------
+             --------------
+                 // º¯Êý¼ò½é     IMU963RA Ð´¼Ä´æÆ÷
+                 // ²ÎÊýËµÃ÷     reg             ¼Ä´æÆ÷µØÖ·
+                 // ²ÎÊýËµÃ÷     dat            Êý¾Ý
+                 // ·µ»Ø²ÎÊý     void
+                 // Ê¹ÓÃÊ¾Àý     imu963ra_write_acc_gyro_register(IMU963RA_SLV0_CONFIG, 0x00);
+                 // ±¸×¢ÐÅÏ¢     ÄÚ²¿µ÷ÓÃ
+                 //------------------------------------------------------------------------------------------------------
+             --------------
+                 #define imu963ra_write_acc_gyro_register(reg,dat)       (soft_iic_write_8bit_register(&imu963ra_iic_stru
+             -ct,reg,dat))
+               
+                 //------------------------------------------------------------------------------------------------------
+             --------------
+                 // º¯Êý¼ò½é     IMU963RA ¶Á¼Ä´æÆ÷
+                 // ²ÎÊýËµÃ÷     reg             ¼Ä´æÆ÷µØÖ·
+                 // ·µ»Ø²ÎÊý     uint8           Êý¾Ý
+                 // Ê¹ÓÃÊ¾Àý     imu963ra_read_acc_gyro_register(IMU963RA_STATUS_MASTER);
+                 // ±¸×¢ÐÅÏ¢     ÄÚ²¿µ÷ÓÃ
+                 //------------------------------------------------------------------------------------------------------
+             --------------
+                 #define imu963ra_read_acc_gyro_register(reg)             (soft_iic_sccb_read_register(&imu963ra_iic_stru
+             -ct,reg))
+               
+                 //------------------------------------------------------------------------------------------------------
+             --------------
+                 // º¯Êý¼ò½é     IMU963RA ¶ÁÊý¾Ý ÄÚ²¿µ÷ÓÃ
+                 // ²ÎÊýËµÃ÷     reg             ¼Ä´æÆ÷µØÖ·
+                 // ²ÎÊýËµÃ÷     dat            Êý¾Ý»º³åÇø
+                 // ²ÎÊýËµÃ÷     len             Êý¾Ý³¤¶È
+                 // ·µ»Ø²ÎÊý     void
+                 // Ê¹ÓÃÊ¾Àý     imu963ra_read_acc_gyro_registers(IMU963RA_OUTX_L_A, dat, 6);
+                 // ±¸×¢ÐÅÏ¢     ÄÚ²¿µ÷ÓÃ
+                 //------------------------------------------------------------------------------------------------------
+             --------------
+                 #define imu963ra_read_acc_gyro_registers(reg,dat,len)   (soft_iic_read_8bit_registers(&imu963ra_iic_stru
+             -ct,reg,dat,len))
+               #endif
+  283          
+  284          //-------------------------------------------------------------------------------------------------------
+             -------------
+  285          // º¯Êý¼ò½é     IMU963RA ×÷Îª IIC Ö÷»úÏò´ÅÁ¦¼ÆÐ´Êý¾Ý
+  286          // ²ÎÊýËµÃ÷     addr            Ä¿±êµØÖ·
+C251 COMPILER V5.60.0,  zf_device_imu963ra                                                 01/05/26  22:35:55  PAGE 6   
+
+  287          // ²ÎÊýËµÃ÷     reg             Ä¿±ê¼Ä´æÆ÷
+  288          // ²ÎÊýËµÃ÷     dat            Êý¾Ý
+  289          // ·µ»Ø²ÎÊý     uint8           1-Ê§°Ü 0-³É¹¦
+  290          // Ê¹ÓÃÊ¾Àý     imu963ra_write_mag_register(IMU963RA_MAG_ADDR, IMU963RA_MAG_CONTROL2, 0x80);
+  291          // ±¸×¢ÐÅÏ¢     ÄÚ²¿µ÷ÓÃ
+  292          //-------------------------------------------------------------------------------------------------------
+             -------------
+  293          static uint8 imu963ra_write_mag_register (uint8 addr, uint8 reg, uint8 dat)
+  294          {
+  295   1          uint8 return_state = 0;
+  296   1          uint16 timeout_count = 0;
+  297   1          
+  298   1          addr = addr << 1;
+  299   1          imu963ra_write_acc_gyro_register(IMU963RA_SLV0_CONFIG, 0x00);               // ´Ó»ú0ÅäÖÃÇå³ý
+  300   1          imu963ra_write_acc_gyro_register(IMU963RA_SLV0_ADD, addr | 0);              // ÉèÖÃµØ´Å¼ÆµØÖ·£¨×¢ÒâÕâ
+             -ÀïÐèÒªÉèÖÃ8Î»µÄI2CµØÖ·£© 0x2C
+  301   1          imu963ra_write_acc_gyro_register(IMU963RA_SLV0_SUBADD, reg);                // ÐèÒªÐ´ÈëµÄ¼Ä´æÆ÷µØÖ·
+  302   1          imu963ra_write_acc_gyro_register(IMU963RA_DATAWRITE_SLV0, dat);            // ÐèÒªÐ´ÈëµÄÊý¾Ý
+  303   1          imu963ra_write_acc_gyro_register(IMU963RA_MASTER_CONFIG, 0x4C);             // ½öÔÚµÚÒ»¸öÖÜÆÚÆôÓÃÍ¨Ñ¶
+             - ¿ªÆôÉÏÀ­ I2CÖ÷»úÊ¹ÄÜ
+  304   1          
+  305   1          // µÈ´ýÍ¨Ñ¶³É¹¦
+  306   1          while(0 == (0x80 & imu963ra_read_acc_gyro_register(IMU963RA_STATUS_MASTER)))
+  307   1          {
+  308   2              if(IMU963RA_TIMEOUT_COUNT < timeout_count ++)
+  309   2              {
+  310   3                  return_state = 1;
+  311   3                  break;
+  312   3              }
+  313   2              
+  314   2              system_delay_ms(2);
+  315   2          }
+  316   1          
+  317   1          return return_state;
+  318   1      }
+  319          
+  320          //-------------------------------------------------------------------------------------------------------
+             -------------
+  321          // º¯Êý¼ò½é     IMU963RA ×÷Îª IIC Ö÷»úÏò´ÅÁ¦¼Æ¶ÁÊý¾Ý
+  322          // ²ÎÊýËµÃ÷     addr            Ä¿±êµØÖ·
+  323          // ²ÎÊýËµÃ÷     reg             Ä¿±ê¼Ä´æÆ÷
+  324          // ·µ»Ø²ÎÊý     uint8           ¶ÁÈ¡µÄÊý¾Ý
+  325          // Ê¹ÓÃÊ¾Àý     imu963ra_read_mag_register(IMU963RA_MAG_ADDR, IMU963RA_MAG_CHIP_ID);
+  326          // ±¸×¢ÐÅÏ¢     ÄÚ²¿µ÷ÓÃ
+  327          //-------------------------------------------------------------------------------------------------------
+             -------------
+  328          static uint8 imu963ra_read_mag_register (uint8 addr, uint8 reg)
+  329          {
+  330   1          uint16 timeout_count = 0;
+  331   1          
+  332   1          addr = addr << 1;
+  333   1          imu963ra_write_acc_gyro_register(IMU963RA_SLV0_ADD, addr | 1);              // ÉèÖÃµØ´Å¼ÆµØÖ·£¨×¢ÒâÕâ
+             -ÀïÐèÒªÉèÖÃ8Î»µÄI2CµØÖ·£© 0x2C
+  334   1          imu963ra_write_acc_gyro_register(IMU963RA_SLV0_SUBADD, reg);                // ÐèÒª¶ÁÈ¡µÄ¼Ä´æÆ÷µØÖ·
+  335   1          imu963ra_write_acc_gyro_register(IMU963RA_SLV0_CONFIG, 0x01);
+  336   1          imu963ra_write_acc_gyro_register(IMU963RA_MASTER_CONFIG, 0x4C);             // ½öÔÚµÚÒ»¸öÖÜÆÚÆôÓÃÍ¨Ñ¶
+             - ¿ªÆôÉÏÀ­ I2CÖ÷»úÊ¹ÄÜ
+  337   1          
+  338   1          // µÈ´ýÍ¨Ñ¶³É¹¦
+  339   1          while(0 == (0x01 & imu963ra_read_acc_gyro_register(IMU963RA_STATUS_MASTER)))
+  340   1          {
+  341   2              if(IMU963RA_TIMEOUT_COUNT < timeout_count ++)
+  342   2              {
+  343   3                  break;
+  344   3              }
+  345   2              
+C251 COMPILER V5.60.0,  zf_device_imu963ra                                                 01/05/26  22:35:55  PAGE 7   
+
+  346   2              system_delay_ms(2);
+  347   2          }
+  348   1          
+  349   1          return (imu963ra_read_acc_gyro_register(IMU963RA_SENSOR_HUB_1));            // ·µ»Ø¶ÁÈ¡µ½µÄÊý¾Ý
+  350   1      }
+  351          
+  352          //-------------------------------------------------------------------------------------------------------
+             -------------
+  353          // º¯Êý¼ò½é     IMU963RA ×÷Îª IIC Ö÷»úÏò´ÅÁ¦¼Æ×Ô¶¯Ð´Êý¾Ý
+  354          // ²ÎÊýËµÃ÷     addr            Ä¿±êµØÖ·
+  355          // ²ÎÊýËµÃ÷     reg             Ä¿±ê¼Ä´æÆ÷
+  356          // ·µ»Ø²ÎÊý     void
+  357          // Ê¹ÓÃÊ¾Àý     imu963ra_connect_mag(IMU963RA_MAG_ADDR, IMU963RA_MAG_OUTX_L);
+  358          // ±¸×¢ÐÅÏ¢     ÄÚ²¿µ÷ÓÃ
+  359          //-------------------------------------------------------------------------------------------------------
+             -------------
+  360          static void imu963ra_connect_mag (uint8 addr, uint8 reg)
+  361          {
+  362   1          addr = addr << 1;
+  363   1          
+  364   1          imu963ra_write_acc_gyro_register(IMU963RA_SLV0_ADD, addr | 1);              // ÉèÖÃµØ´Å¼ÆµØÖ·£¨×¢ÒâÕâ
+             -ÀïÐèÒªÉèÖÃ8Î»µÄI2CµØÖ·£© 0x2C
+  365   1          imu963ra_write_acc_gyro_register(IMU963RA_SLV0_SUBADD, reg);                // ÐèÒª¶ÁÈ¡µÄ¼Ä´æÆ÷µØÖ·
+  366   1          imu963ra_write_acc_gyro_register(IMU963RA_SLV0_CONFIG, 0x06);
+  367   1          imu963ra_write_acc_gyro_register(IMU963RA_MASTER_CONFIG, 0x6C);             // ½öÔÚµÚÒ»¸öÖÜÆÚÆôÓÃÍ¨Ñ¶
+             - ¿ªÆôÉÏÀ­ I2CÖ÷»úÊ¹ÄÜ
+  368   1      }
+  369          
+  370          
+  371          //-------------------------------------------------------------------------------------------------------
+             -------------
+  372          // º¯Êý¼ò½é     IMU963RA ÁùÖá×Ô¼ì ÄÚ²¿µ÷ÓÃ
+  373          // ²ÎÊýËµÃ÷     void
+  374          // ·µ»Ø²ÎÊý     uint8           1-×Ô¼ìÊ§°Ü 0-×Ô¼ì³É¹¦
+  375          // Ê¹ÓÃÊ¾Àý     imu963ra_acc_gyro_self_check();
+  376          // ±¸×¢ÐÅÏ¢     ÄÚ²¿µ÷ÓÃ
+  377          //-------------------------------------------------------------------------------------------------------
+             -------------
+  378          static uint8 imu963ra_acc_gyro_self_check (void)
+  379          {
+  380   1          uint8 return_state = 0;
+  381   1          uint8 dat = 0;
+  382   1          uint16 timeout_count = 0;
+  383   1          
+  384   1          while(0x6B != dat)                                                          // ÅÐ¶Ï ID ÊÇ·ñÕýÈ·
+  385   1          {
+  386   2              if(IMU963RA_TIMEOUT_COUNT < timeout_count ++)
+  387   2              {
+  388   3                  return_state = 1;
+  389   3                  break;
+  390   3              }
+  391   2              
+  392   2              dat = imu963ra_read_acc_gyro_register(IMU963RA_WHO_AM_I);
+  393   2          printf("dat = %d\r\n", dat);
+  394   2              system_delay_ms(10);
+  395   2          }
+  396   1          
+  397   1          return return_state;
+  398   1      }
+  399          
+  400          //-------------------------------------------------------------------------------------------------------
+             -------------
+  401          // º¯Êý¼ò½é     IMU963RA ´ÅÁ¦¼Æ×Ô¼ì ÄÚ²¿µ÷ÓÃ
+  402          // ²ÎÊýËµÃ÷     void
+  403          // ·µ»Ø²ÎÊý     uint8           1-×Ô¼ìÊ§°Ü 0-×Ô¼ì³É¹¦
+  404          // Ê¹ÓÃÊ¾Àý     imu963ra_mag_self_check();
+C251 COMPILER V5.60.0,  zf_device_imu963ra                                                 01/05/26  22:35:55  PAGE 8   
+
+  405          // ±¸×¢ÐÅÏ¢     ÄÚ²¿µ÷ÓÃ
+  406          //-------------------------------------------------------------------------------------------------------
+             -------------
+  407          static uint8 imu963ra_mag_self_check (void)
+  408          {
+  409   1          uint8 return_state = 0;
+  410   1          uint8 dat = 0;
+  411   1          uint16 timeout_count = 0;
+  412   1          
+  413   1          while(0xff != dat)                                                          // ÅÐ¶Ï ID ÊÇ·ñÕýÈ·
+  414   1          {
+  415   2              if(IMU963RA_TIMEOUT_COUNT < timeout_count ++)
+  416   2              {
+  417   3                  return_state = 1;
+  418   3                  break;
+  419   3              }
+  420   2              
+  421   2              dat = imu963ra_read_mag_register(IMU963RA_MAG_ADDR, IMU963RA_MAG_CHIP_ID);
+  422   2              system_delay_ms(10);
+  423   2          }
+  424   1          
+  425   1          return return_state;
+  426   1      }
+  427          
+  428          //-------------------------------------------------------------------------------------------------------
+             -------------
+  429          // º¯Êý¼ò½é     »ñÈ¡ IMU963RA ¼ÓËÙ¶È¼ÆÊý¾Ý
+  430          // ²ÎÊýËµÃ÷     void
+  431          // ·µ»Ø²ÎÊý     void
+  432          // Ê¹ÓÃÊ¾Àý     imu963ra_get_acc();
+  433          // ±¸×¢ÐÅÏ¢     Ö´ÐÐ¸Ãº¯Êýºó£¬Ö±½Ó²é¿´¶ÔÓ¦µÄ±äÁ¿¼´¿É
+  434          //-------------------------------------------------------------------------------------------------------
+             -------------
+  435          void imu963ra_get_acc (void)
+  436          {
+  437   1          uint8 dat[6];
+  438   1          
+  439   1          imu963ra_read_acc_gyro_registers(IMU963RA_OUTX_L_A, dat, 6);
+  440   1          imu963ra_acc_x = (int16)(((uint16)dat[1] << 8 | dat[0]));
+  441   1          imu963ra_acc_y = (int16)(((uint16)dat[3] << 8 | dat[2]));
+  442   1          imu963ra_acc_z = (int16)(((uint16)dat[5] << 8 | dat[4]));
+  443   1      }
+  444          
+  445          
+  446          //-------------------------------------------------------------------------------------------------------
+             -------------
+  447          // º¯Êý¼ò½é     »ñÈ¡IMU963RAÍÓÂÝÒÇÊý¾Ý
+  448          // ²ÎÊýËµÃ÷     void
+  449          // ·µ»Ø²ÎÊý     void
+  450          // Ê¹ÓÃÊ¾Àý     imu963ra_get_gyro();
+  451          // ±¸×¢ÐÅÏ¢     Ö´ÐÐ¸Ãº¯Êýºó£¬Ö±½Ó²é¿´¶ÔÓ¦µÄ±äÁ¿¼´¿É
+  452          //-------------------------------------------------------------------------------------------------------
+             -------------
+  453          void imu963ra_get_gyro (void)
+  454          {
+  455   1          uint8 dat[6];
+  456   1          
+  457   1          imu963ra_read_acc_gyro_registers(IMU963RA_OUTX_L_G, dat, 6);
+  458   1          imu963ra_gyro_x = (int16)(((uint16)dat[1] << 8 | dat[0]));
+  459   1          imu963ra_gyro_y = (int16)(((uint16)dat[3] << 8 | dat[2]));
+  460   1          imu963ra_gyro_z = (int16)(((uint16)dat[5] << 8 | dat[4]));
+  461   1      }
+  462          
+  463          
+  464          //-------------------------------------------------------------------------------------------------------
+             -------------
+C251 COMPILER V5.60.0,  zf_device_imu963ra                                                 01/05/26  22:35:55  PAGE 9   
+
+  465          // º¯Êý¼ò½é     »ñÈ¡ IMU963RA ´ÅÁ¦¼ÆÊý¾Ý
+  466          // ²ÎÊýËµÃ÷     void
+  467          // ·µ»Ø²ÎÊý     void
+  468          // Ê¹ÓÃÊ¾Àý     imu963ra_get_mag();
+  469          // ±¸×¢ÐÅÏ¢     Ö´ÐÐ¸Ãº¯Êýºó£¬Ö±½Ó²é¿´¶ÔÓ¦µÄ±äÁ¿¼´¿É
+  470          //-------------------------------------------------------------------------------------------------------
+             -------------
+  471          void imu963ra_get_mag (void)
+  472          {
+  473   1          uint8 temp_status;
+  474   1          uint8 dat[6];
+  475   1          
+  476   1          imu963ra_write_acc_gyro_register(IMU963RA_FUNC_CFG_ACCESS, 0x40);
+  477   1          temp_status = imu963ra_read_acc_gyro_register(IMU963RA_STATUS_MASTER);
+  478   1          
+  479   1          if(0x01 & temp_status)
+  480   1          {
+  481   2              imu963ra_read_acc_gyro_registers(IMU963RA_SENSOR_HUB_1, dat, 6);
+  482   2              imu963ra_mag_x = (int16)(((uint16)dat[1] << 8 | dat[0]));
+  483   2              imu963ra_mag_y = (int16)(((uint16)dat[3] << 8 | dat[2]));
+  484   2              imu963ra_mag_z = (int16)(((uint16)dat[5] << 8 | dat[4]));
+  485   2          }
+  486   1          
+  487   1          imu963ra_write_acc_gyro_register(IMU963RA_FUNC_CFG_ACCESS, 0x00);
+  488   1      }
+  489          
+  490          //-------------------------------------------------------------------------------------------------------
+             -------------
+  491          // º¯Êý¼ò½é     ³õÊ¼»¯ IMU963RA
+  492          // ²ÎÊýËµÃ÷     void
+  493          // ·µ»Ø²ÎÊý     uint8           1-³õÊ¼»¯Ê§°Ü 0-³õÊ¼»¯³É¹¦
+  494          // Ê¹ÓÃÊ¾Àý     imu963ra_init();
+  495          // ±¸×¢ÐÅÏ¢
+  496          //-------------------------------------------------------------------------------------------------------
+             -------------
+  497          uint8 imu963ra_init (void)
+  498          {
+  499   1          uint8 return_state = 0;
+  500   1          system_delay_ms(10);                                                        // ÉÏµçÑÓÊ±
+  501   1          
+  502   1      #if (IMU963RA_USE_INTERFACE==HARDWARE_SPI)
+  503   1        
+  504   1        spi_init(IMU963RA_SPI, SPI_MODE0, IMU963RA_SPI_SPEED, IMU963RA_SPC_PIN, IMU963RA_SDI_PIN, IMU963RA_SDO_P
+             -IN, SPI_CS_NULL);
+  505   1          gpio_init(IMU963RA_CS_PIN, GPO, GPIO_HIGH, GPO_PUSH_PULL);
+  506   1        
+  507   1      #elif (IMU963RA_USE_INTERFACE==SOFT_SPI)
+                 
+               // Ä¬ÈÏÊ¹ÓÃË«ÏòIO£¬²»ÐèÒª³õÊ¼»¯¡£
+               //  soft_spi_init(IMU963RA_SPI, SPI_MODE0, 0, IMU963RA_SPC_PIN, IMU963RA_SDI_PIN, IMU963RA_SDO_PIN, IMU963
+             -RA_CS_PIN);
+                 
+               #elif (IMU963RA_USE_INTERFACE==SOFT_IIC)
+                 
+                 soft_iic_init(&imu963ra_iic_struct, IMU963RA_DEV_ADDR, IMU963RA_SOFT_IIC_DELAY, IMU963RA_SCL_PIN, IMU963
+             -RA_SDA_PIN);
+                 
+               #endif
+  517   1        
+  518   1          do
+  519   1          {
+  520   2              imu963ra_write_acc_gyro_register(IMU963RA_FUNC_CFG_ACCESS, 0x00);       // ¹Ø±ÕHUB¼Ä´æÆ÷·ÃÎÊ
+  521   2              imu963ra_write_acc_gyro_register(IMU963RA_CTRL3_C, 0x01);               // ¸´Î»Éè±¸
+  522   2              system_delay_ms(2);
+  523   2              imu963ra_write_acc_gyro_register(IMU963RA_FUNC_CFG_ACCESS, 0x00);       // ¹Ø±ÕHUB¼Ä´æÆ÷·ÃÎÊ
+  524   2              
+C251 COMPILER V5.60.0,  zf_device_imu963ra                                                 01/05/26  22:35:55  PAGE 10  
+
+  525   2              if(imu963ra_acc_gyro_self_check())
+  526   2              {
+  527   3                  printf( "IMU963RA acc and gyro self check error.");
+  528   3                  return_state = 1;
+  529   3                  break;
+  530   3              }
+  531   2              
+  532   2              imu963ra_write_acc_gyro_register(IMU963RA_INT1_CTRL, 0x03);             // ¿ªÆôÍÓÂÝÒÇ ¼ÓËÙ¶ÈÊý¾Ý¾
+             -ÍÐ÷ÖÐ¶Ï
+  533   2              
+  534   2              // IMU963RA_CTRL1_XL ¼Ä´æÆ÷
+  535   2              // ÉèÖÃÎª 0x30 ¼ÓËÙ¶ÈÁ¿³ÌÎª ¡À2  G    »ñÈ¡µ½µÄ¼ÓËÙ¶È¼ÆÊý¾Ý³ýÒÔ 16393  ¿ÉÒÔ×ª»¯Îª´øÎïÀíµ¥Î»µÄÊý¾Ý 
+             -µ¥Î» g(m/s^2)
+  536   2              // ÉèÖÃÎª 0x38 ¼ÓËÙ¶ÈÁ¿³ÌÎª ¡À4  G    »ñÈ¡µ½µÄ¼ÓËÙ¶È¼ÆÊý¾Ý³ýÒÔ 8197   ¿ÉÒÔ×ª»¯Îª´øÎïÀíµ¥Î»µÄÊý¾Ý 
+             -µ¥Î» g(m/s^2)
+  537   2              // ÉèÖÃÎª 0x3C ¼ÓËÙ¶ÈÁ¿³ÌÎª ¡À8  G    »ñÈ¡µ½µÄ¼ÓËÙ¶È¼ÆÊý¾Ý³ýÒÔ 4098   ¿ÉÒÔ×ª»¯Îª´øÎïÀíµ¥Î»µÄÊý¾Ý 
+             -µ¥Î» g(m/s^2)
+  538   2              // ÉèÖÃÎª 0x34 ¼ÓËÙ¶ÈÁ¿³ÌÎª ¡À16 G    »ñÈ¡µ½µÄ¼ÓËÙ¶È¼ÆÊý¾Ý³ýÒÔ 2049   ¿ÉÒÔ×ª»¯Îª´øÎïÀíµ¥Î»µÄÊý¾Ý 
+             -µ¥Î» g(m/s^2)
+  539   2              switch(IMU963RA_ACC_SAMPLE_DEFAULT)
+  540   2              {
+  541   3                  default:
+  542   3                  {
+  543   4                      printf( "IMU963RA_ACC_SAMPLE_DEFAULT set error.\r\n");
+  544   4                      return_state = 1;
+  545   4                  }
+  546   3                  break;
+  547   3                  
+  548   3                  case IMU963RA_ACC_SAMPLE_SGN_2G:
+  549   3                  {
+  550   4                      imu963ra_write_acc_gyro_register(IMU963RA_CTRL1_XL, 0x30);
+  551   4                      imu963ra_transition_factor[0] = 16393;
+  552   4                  }
+  553   3                  break;
+  554   3                  
+  555   3                  case IMU963RA_ACC_SAMPLE_SGN_4G:
+  556   3                  {
+  557   4                      imu963ra_write_acc_gyro_register(IMU963RA_CTRL1_XL, 0x38);
+  558   4                      imu963ra_transition_factor[0] = 8197;
+  559   4                  }
+  560   3                  break;
+  561   3                  
+  562   3                  case IMU963RA_ACC_SAMPLE_SGN_8G:
+  563   3                  {
+  564   4                      imu963ra_write_acc_gyro_register(IMU963RA_CTRL1_XL, 0x3C);
+  565   4                      imu963ra_transition_factor[0] = 4098;
+  566   4                  }
+  567   3                  break;
+  568   3                  
+  569   3                  case IMU963RA_ACC_SAMPLE_SGN_16G:
+  570   3                  {
+  571   4                      imu963ra_write_acc_gyro_register(IMU963RA_CTRL1_XL, 0x34);
+  572   4                      imu963ra_transition_factor[0] = 2049;
+  573   4                  }
+  574   3                  break;
+  575   3              }
+  576   2              
+  577   2              if(1 == return_state)
+  578   2              {
+  579   3                  break;
+  580   3              }
+  581   2              
+  582   2              // IMU963RA_CTRL2_G ¼Ä´æÆ÷
+  583   2              // ÉèÖÃÎª 0x52 ÍÓÂÝÒÇÁ¿³ÌÎª ¡À125  dps    »ñÈ¡µ½µÄÍÓÂÝÒÇÊý¾Ý³ýÒÔ 228.6   ¿ÉÒÔ×ª»¯Îª´øÎïÀíµ¥Î»µÄÊý
+             -¾Ý µ¥Î»Îª ¡ã/s
+  584   2              // ÉèÖÃÎª 0x50 ÍÓÂÝÒÇÁ¿³ÌÎª ¡À250  dps    »ñÈ¡µ½µÄÍÓÂÝÒÇÊý¾Ý³ýÒÔ 114.3   ¿ÉÒÔ×ª»¯Îª´øÎïÀíµ¥Î»µÄÊý
+C251 COMPILER V5.60.0,  zf_device_imu963ra                                                 01/05/26  22:35:55  PAGE 11  
+
+             -¾Ý µ¥Î»Îª ¡ã/s
+  585   2              // ÉèÖÃÎª 0x54 ÍÓÂÝÒÇÁ¿³ÌÎª ¡À500  dps    »ñÈ¡µ½µÄÍÓÂÝÒÇÊý¾Ý³ýÒÔ 57.1    ¿ÉÒÔ×ª»¯Îª´øÎïÀíµ¥Î»µÄÊý
+             -¾Ý µ¥Î»Îª ¡ã/s
+  586   2              // ÉèÖÃÎª 0x58 ÍÓÂÝÒÇÁ¿³ÌÎª ¡À1000 dps    »ñÈ¡µ½µÄÍÓÂÝÒÇÊý¾Ý³ýÒÔ 28.6    ¿ÉÒÔ×ª»¯Îª´øÎïÀíµ¥Î»µÄÊý
+             -¾Ý µ¥Î»Îª ¡ã/s
+  587   2              // ÉèÖÃÎª 0x5C ÍÓÂÝÒÇÁ¿³ÌÎª ¡À2000 dps    »ñÈ¡µ½µÄÍÓÂÝÒÇÊý¾Ý³ýÒÔ 14.3    ¿ÉÒÔ×ª»¯Îª´øÎïÀíµ¥Î»µÄÊý
+             -¾Ý µ¥Î»Îª ¡ã/s
+  588   2              // ÉèÖÃÎª 0x51 ÍÓÂÝÒÇÁ¿³ÌÎª ¡À4000 dps    »ñÈ¡µ½µÄÍÓÂÝÒÇÊý¾Ý³ýÒÔ 7.1     ¿ÉÒÔ×ª»¯Îª´øÎïÀíµ¥Î»µÄÊý
+             -¾Ý µ¥Î»Îª ¡ã/s
+  589   2              switch(IMU963RA_GYRO_SAMPLE_DEFAULT)
+  590   2              {
+  591   3                  default:
+  592   3                  {
+  593   4                      printf( "IMU963RA_GYRO_SAMPLE_DEFAULT set error.\r\n");
+  594   4                      return_state = 1;
+  595   4                  }
+  596   3                  break;
+  597   3                  
+  598   3                  case IMU963RA_GYRO_SAMPLE_SGN_125DPS:
+  599   3                  {
+  600   4                      imu963ra_write_acc_gyro_register(IMU963RA_CTRL2_G, 0x52);
+  601   4                      imu963ra_transition_factor[1] = 228.6;
+  602   4                  }
+  603   3                  break;
+  604   3                  
+  605   3                  case IMU963RA_GYRO_SAMPLE_SGN_250DPS:
+  606   3                  {
+  607   4                      imu963ra_write_acc_gyro_register(IMU963RA_CTRL2_G, 0x50);
+  608   4                      imu963ra_transition_factor[1] = 114.3;
+  609   4                  }
+  610   3                  break;
+  611   3                  
+  612   3                  case IMU963RA_GYRO_SAMPLE_SGN_500DPS:
+  613   3                  {
+  614   4                      imu963ra_write_acc_gyro_register(IMU963RA_CTRL2_G, 0x54);
+  615   4                      imu963ra_transition_factor[1] = 57.1;
+  616   4                  }
+  617   3                  break;
+  618   3                  
+  619   3                  case IMU963RA_GYRO_SAMPLE_SGN_1000DPS:
+  620   3                  {
+  621   4                      imu963ra_write_acc_gyro_register(IMU963RA_CTRL2_G, 0x58);
+  622   4                      imu963ra_transition_factor[1] = 28.6;
+  623   4                  }
+  624   3                  break;
+  625   3                  
+  626   3                  case IMU963RA_GYRO_SAMPLE_SGN_2000DPS:
+  627   3                  {
+  628   4                      imu963ra_write_acc_gyro_register(IMU963RA_CTRL2_G, 0x5C);
+  629   4                      imu963ra_transition_factor[1] = 14.3;
+  630   4                  }
+  631   3                  break;
+  632   3                  
+  633   3                  case IMU963RA_GYRO_SAMPLE_SGN_4000DPS:
+  634   3                  {
+  635   4                      imu963ra_write_acc_gyro_register(IMU963RA_CTRL2_G, 0x51);
+  636   4                      imu963ra_transition_factor[1] = 7.1;
+  637   4                  }
+  638   3                  break;
+  639   3              }
+  640   2              
+  641   2              if(1 == return_state)
+  642   2              {
+  643   3                  break;
+  644   3              }
+  645   2              
+C251 COMPILER V5.60.0,  zf_device_imu963ra                                                 01/05/26  22:35:55  PAGE 12  
+
+  646   2              imu963ra_write_acc_gyro_register(IMU963RA_CTRL3_C, 0x44);               // Ê¹ÄÜÍÓÂÝÒÇÊý×ÖµÍÍ¨ÂË²¨
+             -Æ÷
+  647   2              imu963ra_write_acc_gyro_register(IMU963RA_CTRL4_C, 0x02);               // Ê¹ÄÜÊý×ÖµÍÍ¨ÂË²¨Æ÷
+  648   2              imu963ra_write_acc_gyro_register(IMU963RA_CTRL5_C, 0x00);               // ¼ÓËÙ¶È¼ÆÓëÍÓÂÝÒÇËÄÉáÎå
+             -Èë
+  649   2              imu963ra_write_acc_gyro_register(IMU963RA_CTRL6_C, 0x00);               // ¿ªÆô¼ÓËÙ¶È¼Æ¸ßÐÔÄÜÄ£Ê½
+             - ÍÓÂÝÒÇµÍÍ¨ÂË²¨ 133hz
+  650   2              imu963ra_write_acc_gyro_register(IMU963RA_CTRL7_G, 0x00);               // ¿ªÆôÍÓÂÝÒÇ¸ßÐÔÄÜÄ£Ê½ ¹
+             -Ø±Õ¸ßÍ¨ÂË²¨
+  651   2              imu963ra_write_acc_gyro_register(IMU963RA_CTRL9_XL, 0x01);              // ¹Ø±ÕI3C½Ó¿Ú
+  652   2              
+  653   2              imu963ra_write_acc_gyro_register(IMU963RA_FUNC_CFG_ACCESS, 0x40);       // ¿ªÆôHUB¼Ä´æÆ÷·ÃÎÊ ÓÃÓÚ
+             -ÅäÖÃµØ´Å¼Æ
+  654   2              imu963ra_write_acc_gyro_register(IMU963RA_MASTER_CONFIG, 0x80);         // ¸´Î»I2CÖ÷»ú
+  655   2              system_delay_ms(2);
+  656   2              imu963ra_write_acc_gyro_register(IMU963RA_MASTER_CONFIG, 0x00);         // Çå³ý¸´Î»±êÖ¾
+  657   2              system_delay_ms(2);
+  658   2              
+  659   2              imu963ra_write_mag_register(IMU963RA_MAG_ADDR, IMU963RA_MAG_CONTROL2, 0x80);// ¸´Î»Á¬½ÓµÄÍâÉè
+  660   2              system_delay_ms(2);
+  661   2              imu963ra_write_mag_register(IMU963RA_MAG_ADDR, IMU963RA_MAG_CONTROL2, 0x00);
+  662   2              system_delay_ms(2);
+  663   2              
+  664   2              if(imu963ra_mag_self_check())
+  665   2              {
+  666   3                  printf( "IMU963RA mag self check error.\r\n");
+  667   3                  return_state = 1;
+  668   3                  break;
+  669   3              }
+  670   2              
+  671   2              // IMU963RA_MAG_ADDR ¼Ä´æÆ÷
+  672   2              // ÉèÖÃÎª 0x09 ´ÅÁ¦¼ÆÁ¿³ÌÎª 2G   »ñÈ¡µ½µÄ´ÅÁ¦¼ÆÊý¾Ý³ýÒÔ 12000   ¿ÉÒÔ×ª»¯Îª´øÎïÀíµ¥Î»µÄÊý¾Ý µ¥Î» G
+             -(¸ßË¹)
+  673   2              // ÉèÖÃÎª 0x19 ´ÅÁ¦¼ÆÁ¿³ÌÎª 8G   »ñÈ¡µ½µÄ´ÅÁ¦¼ÆÊý¾Ý³ýÒÔ 3000    ¿ÉÒÔ×ª»¯Îª´øÎïÀíµ¥Î»µÄÊý¾Ý µ¥Î» G
+             -(¸ßË¹)
+  674   2              switch(IMU963RA_MAG_SAMPLE_DEFAULT)
+  675   2              {
+  676   3                  default:
+  677   3                  {
+  678   4                      printf( "IMU963RA_MAG_SAMPLE_DEFAULT set error.\r\n");
+  679   4                      return_state = 1;
+  680   4                  }
+  681   3                  break;
+  682   3                  
+  683   3                  case IMU963RA_MAG_SAMPLE_2G:
+  684   3                  {
+  685   4                      imu963ra_write_mag_register(IMU963RA_MAG_ADDR, IMU963RA_MAG_CONTROL1, 0x09);
+  686   4                      imu963ra_transition_factor[2] = 12000;
+  687   4                  }
+  688   3                  break;
+  689   3                  
+  690   3                  case IMU963RA_MAG_SAMPLE_8G:
+  691   3                  {
+  692   4                      imu963ra_write_mag_register(IMU963RA_MAG_ADDR, IMU963RA_MAG_CONTROL1, 0x19);
+  693   4                      imu963ra_transition_factor[2] = 3000;
+  694   4                  }
+  695   3                  break;
+  696   3              }
+  697   2              
+  698   2              if(1 == return_state)
+  699   2              {
+  700   3                  break;
+  701   3              }
+  702   2              
+  703   2              imu963ra_write_mag_register(IMU963RA_MAG_ADDR, IMU963RA_MAG_FBR, 0x01);
+  704   2              imu963ra_connect_mag(IMU963RA_MAG_ADDR, IMU963RA_MAG_OUTX_L);
+C251 COMPILER V5.60.0,  zf_device_imu963ra                                                 01/05/26  22:35:55  PAGE 13  
+
+  705   2              
+  706   2              imu963ra_write_acc_gyro_register(IMU963RA_FUNC_CFG_ACCESS, 0x00);       // ¹Ø±ÕHUB¼Ä´æÆ÷·ÃÎÊ
+  707   2              
+  708   2              system_delay_ms(20);                                                    // µÈ´ý´ÅÁ¦¼Æ»ñÈ¡Êý¾Ý
+  709   2          }
+  710   1          while(0);
+  711   1          
+  712   1          return return_state;
+  713   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =      2015     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =        83     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =       288     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,196 @@
+C251 COMPILER V5.60.0,  zf_driver_exti                                                     13/06/26  12:52:06  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_driver_exti
+OBJECT MODULE PLACED IN .\out_file\zf_driver_exti.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\..\libraries\zf_driver\zf_driver_exti.c LARGE ROM(HUGE) WARNINGLEVE
+                    -L(3) OPTIMIZE(0,SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..
+                    -\..\libraries\zf_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekf
+                    -ree_assistant) DEBUG PRINT(.\out_file\zf_driver_exti.lst) TABS(2) OBJECT(.\out_file\zf_driver_exti.obj) 
+
+stmt  level    source
+
+    1          /********************************************************************************************************
+             -*************
+    2          * STC32G144K Opensourec Library ¼´£¨STC32G144K ¿ªÔ´¿â£©ÊÇÒ»¸ö»ùÓÚ¹Ù·½ SDK ½Ó¿ÚµÄµÚÈý·½¿ªÔ´¿â
+    3          * Copyright (c) 2025 SEEKFREE Öð·É¿Æ¼¼
+    4          *
+    5          * ±¾ÎÄ¼þÊÇSTC32G144K¿ªÔ´¿âµÄÒ»²¿·Ö
+    6          *
+    7          * STC32G144K ¿ªÔ´¿â ÊÇÃâ·ÑÈí¼þ
+    8          * Äú¿ÉÒÔ¸ù¾Ý×ÔÓÉÈí¼þ»ù½ð»á·¢²¼µÄ GPL£¨GNU General Public License£¬¼´ GNUÍ¨ÓÃ¹«¹²Ðí¿ÉÖ¤£©µÄÌõ¿î
+    9          * ¼´ GPL µÄµÚ3°æ£¨¼´ GPL3.0£©»ò£¨ÄúÑ¡ÔñµÄ£©ÈÎºÎºóÀ´µÄ°æ±¾£¬ÖØÐÂ·¢²¼ºÍ/»òÐÞ¸ÄËü
+   10          *
+   11          * ±¾¿ªÔ´¿âµÄ·¢²¼ÊÇÏ£ÍûËüÄÜ·¢»Ó×÷ÓÃ£¬µ«²¢Î´¶ÔÆä×÷ÈÎºÎµÄ±£Ö¤
+   12          * ÉõÖÁÃ»ÓÐÒþº¬µÄÊÊÏúÐÔ»òÊÊºÏÌØ¶¨ÓÃÍ¾µÄ±£Ö¤
+   13          * ¸ü¶àÏ¸½ÚÇë²Î¼û GPL
+   14          *
+   15          * ÄúÓ¦¸ÃÔÚÊÕµ½±¾¿ªÔ´¿âµÄÍ¬Ê±ÊÕµ½Ò»·Ý GPL µÄ¸±±¾
+   16          * Èç¹ûÃ»ÓÐ£¬Çë²ÎÔÄ<https://www.gnu.org/licenses/>
+   17          *
+   18          * ¶îÍâ×¢Ã÷£º
+   19          * ±¾¿ªÔ´¿âÊ¹ÓÃ GPL3.0 ¿ªÔ´Ðí¿ÉÖ¤Ð­Òé ÒÔÉÏÐí¿ÉÉêÃ÷ÎªÒëÎÄ°æ±¾
+   20          * Ðí¿ÉÉêÃ÷Ó¢ÎÄ°æÔÚ libraries/doc ÎÄ¼þ¼ÐÏÂµÄ GPL3_permission_statement.txt ÎÄ¼þÖÐ
+   21          * Ðí¿ÉÖ¤¸±±¾ÔÚ libraries ÎÄ¼þ¼ÐÏÂ ¼´¸ÃÎÄ¼þ¼ÐÏÂµÄ LICENSE ÎÄ¼þ
+   22          * »¶Ó­¸÷Î»Ê¹ÓÃ²¢´«²¥±¾³ÌÐò µ«ÐÞ¸ÄÄÚÈÝÊ±±ØÐë±£ÁôÖð·É¿Æ¼¼µÄ°æÈ¨ÉùÃ÷£¨¼´±¾ÉùÃ÷£©
+   23          *
+   24          * ÎÄ¼þÃû³Æ          
+   25          * ¹«Ë¾Ãû³Æ          ³É¶¼Öð·É¿Æ¼¼ÓÐÏÞ¹«Ë¾
+   26          * °æ±¾ÐÅÏ¢          ²é¿´ libraries/doc ÎÄ¼þ¼ÐÄÚ version ÎÄ¼þ °æ±¾ËµÃ÷
+   27          * ¿ª·¢»·¾³          MDK FOR C251
+   28          * ÊÊÓÃÆ½Ì¨          STC32G144K
+   29          * µêÆÌÁ´½Ó          https://seekfree.taobao.com/
+   30          *
+   31          * ÐÞ¸Ä¼ÇÂ¼
+   32          * ÈÕÆÚ              ×÷Õß           ±¸×¢
+   33          * 2025-11-20        ´óW            first version
+   34          *********************************************************************************************************
+             -***********/
+   35          
+   36          #include "zf_driver_exti.h"
+   37          #include "zf_common_debug.h"
+   38          
+   39          callback_function int_irq_handlers[5] = {0};
+   40          
+   41          callback_function gpio_int_irq_handlers[12][8] = {0};
+   42          
+   43          //-------------------------------------------------------------------------------------------------------
+             -------------
+   44          //  @brief      Íâ²¿ÖÐ¶Ï³õÊ¼»¯
+   45          //  @param      NULL              
+   46          //  @return     void
+   47          //  Sample usage:               exit_init(INT0_P32,BOTH) //³õÊ¼»¯P32 ×÷ÎªÍâ²¿ÖÐ¶ÏÒý½Å£¬Ë«±ßÑØ´¥·¢¡£
+   48          //-------------------------------------------------------------------------------------------------------
+             -------------
+   49          void exit_init(INTN_enum int_n,INT_MODE_enum mode)
+   50          {
+   51   1        if(INT0_P32 == int_n)
+   52   1        {
+C251 COMPILER V5.60.0,  zf_driver_exti                                                     13/06/26  12:52:06  PAGE 2   
+
+   53   2              switch(mode)
+   54   2          {
+   55   3                  case BOTH: 
+   56   3                      IT0 = 0;
+   57   3                      break;
+   58   3                  
+   59   3            case FALLING_EDGE: 
+   60   3                      IT0 = 1;
+   61   3              break;
+   62   3                  
+   63   3            default:
+   64   3                      zf_assert(0);
+   65   3              break;
+   66   3          }
+   67   2          EX0 = 1;        //Ê¹ÄÜINT0ÖÐ¶Ï
+   68   2        }
+   69   1        else if(INT1_P33 == int_n)
+   70   1        {
+   71   2              switch(mode)
+   72   2          {
+   73   3                  case BOTH: 
+   74   3                      IT1 = 0;
+   75   3                      break;
+   76   3            case FALLING_EDGE: 
+   77   3                      IT1 = 1;
+   78   3              break;
+   79   3            default:
+   80   3                      zf_assert(0);
+   81   3              break;
+   82   3          }
+   83   2          EX1 = 1;        //Ê¹ÄÜINT1ÖÐ¶Ï
+   84   2        }
+   85   1        else if(INT2_P36 == int_n)
+   86   1        {
+   87   2              switch(mode)
+   88   2          {
+   89   3                  case BOTH: 
+   90   3                      IT1 = 0;
+   91   3                      break;
+   92   3            case FALLING_EDGE: 
+   93   3                      IT1 = 1;
+   94   3              break;
+   95   3            default:
+   96   3                      zf_assert(0);
+   97   3              break;
+   98   3          }
+   99   2          INTCLKO |= 1<<4;  //Ê¹ÄÜINT2ÖÐ¶Ï
+  100   2        }
+  101   1        else if(INT3_P37 == int_n)
+  102   1        {
+  103   2              zf_assert(mode == FALLING_EDGE);
+  104   2          INTCLKO |= 1<<5;  //Ê¹ÄÜINT3ÖÐ¶Ï
+  105   2        }
+  106   1        else if(INT4_P30 == int_n)
+  107   1        {
+  108   2              zf_assert(mode == FALLING_EDGE);
+  109   2          INTCLKO |= 1<<6;  //Ê¹ÄÜINT4ÖÐ¶Ï
+  110   2        }
+  111   1        else
+  112   1        {
+  113   2          (*(unsigned char volatile far *)(0X7EFD00 + ((int_n >> 8) & 0X0F) )) |= (1 << (int_n & 0x000F));//¿ªÆôÖ
+             -Ð¶Ï¹¦ÄÜ
+  114   2          
+  115   2          switch(mode)//³õÊ¼»¯ÖÐ¶ÏÄ£Ê½
+  116   2          {
+  117   3            case FALLING_EDGE: 
+C251 COMPILER V5.60.0,  zf_driver_exti                                                     13/06/26  12:52:06  PAGE 3   
+
+  118   3                (*(unsigned char volatile far *)(0X7EF4E0 + ((int_n >> 8) & 0X0F) )) &= ~(1 << (int_n & 0x000F));
+  119   3                (*(unsigned char volatile far *)(0X7EFD30 + ((int_n >> 8) & 0X0F) )) &= ~(1 << (int_n & 0x000F));
+  120   3                (*(unsigned char volatile far *)(0X7EFD20 + ((int_n >> 8) & 0X0F) )) &= ~(1 << (int_n & 0x000F));
+  121   3              break;
+  122   3            case RISING_EDGE: 
+  123   3                (*(unsigned char volatile far *)(0X7EF4E0 + ((int_n >> 8) & 0X0F) )) &= ~(1 << (int_n & 0x000F));
+  124   3                (*(unsigned char volatile far *)(0X7EFD30 + ((int_n >> 8) & 0X0F) )) &= ~(1 << (int_n & 0x000F));
+  125   3                (*(unsigned char volatile far *)(0X7EFD20 + ((int_n >> 8) & 0X0F) )) |= (1 << (int_n & 0x000F));
+  126   3              break;
+  127   3            case LOW_LEVEL: 
+  128   3                (*(unsigned char volatile far *)(0X7EF4E0 + ((int_n >> 8) & 0X0F) )) &= ~(1 << (int_n & 0x000F));
+  129   3                (*(unsigned char volatile far *)(0X7EFD30 + ((int_n >> 8) & 0X0F) )) |= (1 << (int_n & 0x000F));
+  130   3                (*(unsigned char volatile far *)(0X7EFD20 + ((int_n >> 8) & 0X0F) )) &= ~(1 << (int_n & 0x000F));
+  131   3              break;
+  132   3            case HIGH_LEVEL: 
+  133   3                (*(unsigned char volatile far *)(0X7EF4E0 + ((int_n >> 8) & 0X0F) )) &= ~(1 << (int_n & 0x000F));
+  134   3                (*(unsigned char volatile far *)(0X7EFD30 + ((int_n >> 8) & 0X0F) )) |= (1 << (int_n & 0x000F));
+  135   3                (*(unsigned char volatile far *)(0X7EFD20 + ((int_n >> 8) & 0X0F) )) |= (1 << (int_n & 0x000F));
+  136   3              break;
+  137   3            case BOTH: 
+  138   3                (*(unsigned char volatile far *)(0X7EF4E0 + ((int_n >> 8) & 0X0F) )) |= (1 << (int_n & 0x000F));
+  139   3                (*(unsigned char volatile far *)(0X7EFD30 + ((int_n >> 8) & 0X0F) )) &= ~(1 << (int_n & 0x000F));
+  140   3                (*(unsigned char volatile far *)(0X7EFD20 + ((int_n >> 8) & 0X0F) )) &= ~(1 << (int_n & 0x000F));
+  141   3              break;
+  142   3          }
+  143   2        }
+  144   1      }
+  145          
+  146          
+  147          
+  148          
+  149          
+  150          
+  151          
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =      1391     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =       408     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =       457     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

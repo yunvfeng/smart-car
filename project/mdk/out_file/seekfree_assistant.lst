@@ -1,0 +1,542 @@
+C251 COMPILER V5.60.0,  seekfree_assistant                                                 13/06/26  12:52:09  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE seekfree_assistant
+OBJECT MODULE PLACED IN .\out_file\seekfree_assistant.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\..\libraries\zf_components\seekfree_assistant\seekfree_assistant.c 
+                    -LARGE ROM(HUGE) WARNINGLEVEL(3) OPTIMIZE(0,SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;.
+                    -.\..\libraries\zf_device;..\..\libraries\zf_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\li
+                    -braries\zf_components\seekfree_assistant) DEBUG PRINT(.\out_file\seekfree_assistant.lst) TABS(2) OBJECT(.\out_file\seekf
+                    -ree_assistant.obj) 
+
+stmt  level    source
+
+    1          /********************************************************************************************************
+             -*************
+    2          * STC32G144K Opensourec Library ¼´£¨STC32G144K ¿ªÔ´¿â£©ÊÇÒ»¸ö»ùÓÚ¹Ù·½ SDK ½Ó¿ÚµÄµÚÈı·½¿ªÔ´¿â
+    3          * Copyright (c) 2025 SEEKFREE Öğ·É¿Æ¼¼
+    4          *
+    5          * ±¾ÎÄ¼şÊÇSTC32G144K¿ªÔ´¿âµÄÒ»²¿·Ö
+    6          *
+    7          * STC32G144K ¿ªÔ´¿â ÊÇÃâ·ÑÈí¼ş
+    8          * Äú¿ÉÒÔ¸ù¾İ×ÔÓÉÈí¼ş»ù½ğ»á·¢²¼µÄ GPL£¨GNU General Public License£¬¼´ GNUÍ¨ÓÃ¹«¹²Ğí¿ÉÖ¤£©µÄÌõ¿î
+    9          * ¼´ GPL µÄµÚ3°æ£¨¼´ GPL3.0£©»ò£¨ÄúÑ¡ÔñµÄ£©ÈÎºÎºóÀ´µÄ°æ±¾£¬ÖØĞÂ·¢²¼ºÍ/»òĞŞ¸ÄËü
+   10          *
+   11          * ±¾¿ªÔ´¿âµÄ·¢²¼ÊÇÏ£ÍûËüÄÜ·¢»Ó×÷ÓÃ£¬µ«²¢Î´¶ÔÆä×÷ÈÎºÎµÄ±£Ö¤
+   12          * ÉõÖÁÃ»ÓĞÒşº¬µÄÊÊÏúĞÔ»òÊÊºÏÌØ¶¨ÓÃÍ¾µÄ±£Ö¤
+   13          * ¸ü¶àÏ¸½ÚÇë²Î¼û GPL
+   14          *
+   15          * ÄúÓ¦¸ÃÔÚÊÕµ½±¾¿ªÔ´¿âµÄÍ¬Ê±ÊÕµ½Ò»·İ GPL µÄ¸±±¾
+   16          * Èç¹ûÃ»ÓĞ£¬Çë²ÎÔÄ<https://www.gnu.org/licenses/>
+   17          *
+   18          * ¶îÍâ×¢Ã÷£º
+   19          * ±¾¿ªÔ´¿âÊ¹ÓÃ GPL3.0 ¿ªÔ´Ğí¿ÉÖ¤Ğ­Òé ÒÔÉÏĞí¿ÉÉêÃ÷ÎªÒëÎÄ°æ±¾
+   20          * Ğí¿ÉÉêÃ÷Ó¢ÎÄ°æÔÚ libraries/doc ÎÄ¼ş¼ĞÏÂµÄ GPL3_permission_statement.txt ÎÄ¼şÖĞ
+   21          * Ğí¿ÉÖ¤¸±±¾ÔÚ libraries ÎÄ¼ş¼ĞÏÂ ¼´¸ÃÎÄ¼ş¼ĞÏÂµÄ LICENSE ÎÄ¼ş
+   22          * »¶Ó­¸÷Î»Ê¹ÓÃ²¢´«²¥±¾³ÌĞò µ«ĞŞ¸ÄÄÚÈİÊ±±ØĞë±£ÁôÖğ·É¿Æ¼¼µÄ°æÈ¨ÉùÃ÷£¨¼´±¾ÉùÃ÷£©
+   23          *
+   24          * ÎÄ¼şÃû³Æ          
+   25          * ¹«Ë¾Ãû³Æ          ³É¶¼Öğ·É¿Æ¼¼ÓĞÏŞ¹«Ë¾
+   26          * °æ±¾ĞÅÏ¢          ²é¿´ libraries/doc ÎÄ¼ş¼ĞÄÚ version ÎÄ¼ş °æ±¾ËµÃ÷
+   27          * ¿ª·¢»·¾³          MDK FOR C251
+   28          * ÊÊÓÃÆ½Ì¨          STC32G144K
+   29          * µêÆÌÁ´½Ó          https://seekfree.taobao.com/
+   30          *
+   31          * ĞŞ¸Ä¼ÇÂ¼
+   32          * ÈÕÆÚ              ×÷Õß           ±¸×¢
+   33          * 2025-11-20        ´óW            first version
+   34          *********************************************************************************************************
+             -***********/
+   35          
+   36          #include "seekfree_assistant.h"
+   37          
+   38          #pragma warning disable = 183
+   39          
+   40          static seekfree_assistant_camera_struct         seekfree_assistant_camera_data = {0};   
+   41          seekfree_assistant_oscilloscope_struct          seekfree_assistant_oscilloscope_data = {0};              
+             -          // ĞéÄâÊ¾²¨Æ÷Êı¾İ
+   42          static seekfree_assistant_camera_dot_struct      seekfree_assistant_camera_dot_data = {0};               
+             -           // Í¼ÏñÉÏÎ»»ú´òµãĞ­ÒéÊı¾İ
+   43          static seekfree_assistant_camera_buffer_struct   seekfree_assistant_camera_buffer = {0};                 
+             -           // Í¼ÏñÒÔ¼°±ß½ç»º³åÇøĞÅÏ¢
+   44          
+   45          static fifo_struct      seekfree_assistant_fifo = {0};
+   46          static uint8            seekfree_assistant_buffer[SEEKFREE_ASSISTANT_BUFFER_SIZE] = {0};                  /
+             -/ Êı¾İ´æ·ÅÊı×é
+   47          float                   seekfree_assistant_parameter[SEEKFREE_ASSISTANT_SET_PARAMETR_COUNT] = {0};      //
+             - ±£´æ½ÓÊÕµ½µÄ²ÎÊı
+   48          vuint8          seekfree_assistant_parameter_update_flag[SEEKFREE_ASSISTANT_SET_PARAMETR_COUNT] = {0};
+C251 COMPILER V5.60.0,  seekfree_assistant                                                 13/06/26  12:52:09  PAGE 2   
+
+   49          //-------------------------------------------------------------------------------------------------------
+             -------------
+   50          // º¯Êı¼ò½é     Öğ·ÉÖúÊÖÇóºÍº¯Êı
+   51          // ²ÎÊıËµÃ÷     *buffer         ĞèÒªĞ£ÑéµÄÊı¾İµØÖ·
+   52          // ²ÎÊıËµÃ÷     length          Ğ£Ñé³¤¶È
+   53          // ·µ»Ø²ÎÊı     uint8           ºÍÖµ
+   54          // Ê¹ÓÃÊ¾Àı
+   55          //-------------------------------------------------------------------------------------------------------
+             -------------
+   56          static uint8 seekfree_assistant_sum (uint8 *buffer, uint32 length)
+   57          {
+   58   1          uint8 temp_sum = 0;
+   59   1      
+   60   1          while(length--)
+   61   1          {
+   62   2              temp_sum += *buffer++;
+   63   2          }
+   64   1      
+   65   1          return temp_sum;
+   66   1      }
+   67          
+   68          //-------------------------------------------------------------------------------------------------------
+             -------------
+   69          // º¯Êı¼ò½é     Öğ·ÉÖúÊÖ Í¼Ïñ·¢ËÍº¯Êı
+   70          // ²ÎÊıËµÃ÷     camera_type     ÉãÏñÍ·ÀàĞÍ
+   71          // ²ÎÊıËµÃ÷     *image_addr     Í¼ÏñÊ×µØÖ·
+   72          // ²ÎÊıËµÃ÷     boundary_num    Í¼ÏñÖĞ°üº¬±ß½çÊıÁ¿
+   73          // ²ÎÊıËµÃ÷     width           Í¼Ïñ¿í¶È
+   74          // ²ÎÊıËµÃ÷     height          Í¼Ïñ¸ß¶È
+   75          // ·µ»Ø²ÎÊı     void
+   76          // Ê¹ÓÃÊ¾Àı
+   77          //-------------------------------------------------------------------------------------------------------
+             -------------
+   78          void seekfree_assistant_camera_data_send (seekfree_assistant_image_type_enum camera_type, void *image_add
+             -r, uint8 boundary_num, uint16 width, uint16 height)
+   79          {
+   80   1          uint32 image_size = 0;
+   81   1      
+   82   1          seekfree_assistant_camera_data.head           = SEEKFREE_ASSISTANT_SEND_HEAD;
+   83   1          seekfree_assistant_camera_data.function       = SEEKFREE_ASSISTANT_CAMERA_FUNCTION;
+   84   1          seekfree_assistant_camera_data.camera_type    = (camera_type << 5) | ((image_addr != NULL ? 0 : 1) <<
+             - 4) | boundary_num;
+   85   1          // Ğ´Èë°ü³¤¶ÈĞÅÏ¢£¬½ö°üº¬Ğ­Òé²¿·Ö
+   86   1          seekfree_assistant_camera_data.length         = sizeof(seekfree_assistant_camera_struct);
+   87   1          seekfree_assistant_camera_data.image_width    = ((((uint16)width << 8)&0xFF00) | ((uint16)width >> 8)
+             -);
+   88   1          seekfree_assistant_camera_data.image_height   = ((((uint16)height << 8)&0xFF00) | ((uint16)height >> 
+             -8));
+   89   1      
+   90   1          // Ê×ÏÈ·¢ËÍÖ¡Í·¡¢¹¦ÄÜ¡¢ÉãÏñÍ·ÀàĞÍ¡¢ÒÔ¼°¿í¶È¸ß¶ÈµÈĞÅÏ¢
+   91   1          seekfree_assistant_transfer_callback((const uint8 *)&seekfree_assistant_camera_data, sizeof(seekfree_
+             -assistant_camera_struct));
+   92   1      
+   93   1          // ¸ù¾İÉãÏñÍ·ÀàĞÍ¼ÆËãÍ¼Ïñ´óĞ¡
+   94   1          switch(camera_type)
+   95   1          {
+   96   2              case SEEKFREE_ASSISTANT_OV7725_BIN:
+   97   2              {
+   98   3                  image_size = width * height / 8;
+   99   3              }break;
+  100   2      
+  101   2              case SEEKFREE_ASSISTANT_MT9V03X:
+  102   2              {
+  103   3                  image_size = width * height;
+  104   3              }break;
+  105   2      
+C251 COMPILER V5.60.0,  seekfree_assistant                                                 13/06/26  12:52:09  PAGE 3   
+
+  106   2              case SEEKFREE_ASSISTANT_SCC8660:
+  107   2              {
+  108   3                  image_size = width * height * 2;
+  109   3              }break;
+  110   2          }
+  111   1      
+  112   1          // ·¢ËÍÍ¼ÏñÊı¾İ
+  113   1          if(NULL != image_addr)
+  114   1          {
+  115   2              seekfree_assistant_transfer_callback(image_addr, image_size);
+  116   2          }
+  117   1      }
+  118          
+  119          //-------------------------------------------------------------------------------------------------------
+             -------------
+  120          // º¯Êı¼ò½é     Öğ·ÉÖúÊÖÍ¼ÏñĞÅÏ¢ÅäÖÃº¯Êı
+  121          // ²ÎÊıËµÃ÷     camera_type     Í¼ÏñÀàĞÍ
+  122          // ²ÎÊıËµÃ÷     image_addr      Í¼ÏñµØÖ·    Èç¹û´«µİNULL²ÎÊıÔò±íÊ¾Ö»·¢ËÍ±ßÏßĞÅÏ¢µ½ÉÏÎ»»ú
+  123          // ²ÎÊıËµÃ÷     width           Í¼Ïñ¿í¶È
+  124          // ²ÎÊıËµÃ÷     height          Í¼Ïñ¸ß¶È
+  125          // ·µ»Ø²ÎÊı     void
+  126          // Ê¹ÓÃÊ¾Àı                     seekfree_assistant_camera_information_config(SEEKFREE_ASSISTANT_MT9V03X, 
+             -mt9v03x_image[0], MT9V03X_W, MT9V03X_H);
+  127          // ±¸×¢ĞÅÏ¢
+  128          //-------------------------------------------------------------------------------------------------------
+             -------------
+  129          void seekfree_assistant_camera_information_config (seekfree_assistant_image_type_enum camera_type, void *
+             -image_addr, uint16 width, uint16 height)
+  130          {
+  131   1          seekfree_assistant_camera_dot_data.head       = SEEKFREE_ASSISTANT_SEND_HEAD;
+  132   1          seekfree_assistant_camera_dot_data.function   = SEEKFREE_ASSISTANT_CAMERA_DOT_FUNCTION;
+  133   1          // Ğ´Èë°ü³¤¶ÈĞÅÏ¢
+  134   1          seekfree_assistant_camera_dot_data.length     = sizeof(seekfree_assistant_camera_dot_struct);
+  135   1      
+  136   1          seekfree_assistant_camera_buffer.camera_type  = camera_type;
+  137   1          seekfree_assistant_camera_buffer.image_addr   = image_addr;
+  138   1          seekfree_assistant_camera_buffer.width        = width;
+  139   1          seekfree_assistant_camera_buffer.height       = height;
+  140   1      }
+  141          
+  142          //-------------------------------------------------------------------------------------------------------
+             -------------
+  143          // º¯Êı¼ò½é     Öğ·ÉÖúÊÖ ĞéÄâÊ¾²¨Æ÷·¢ËÍº¯Êı
+  144          // ²ÎÊıËµÃ÷     *seekfree_assistant_oscilloscope  Ê¾²¨Æ÷Êı¾İ½á¹¹Ìå
+  145          // ·µ»Ø²ÎÊı     void
+  146          // Ê¹ÓÃÊ¾Àı     seekfree_assistant_oscilloscope_send(&seekfree_assistant_oscilloscope_data);
+  147          //-------------------------------------------------------------------------------------------------------
+             -------------
+  148          void seekfree_assistant_oscilloscope_send (seekfree_assistant_oscilloscope_struct *seekfree_assistant_osc
+             -illoscope)
+  149          {
+  150   1          uint8 packet_size = 0;
+  151   1        uint8 i = 0;
+  152   1        seekfree_assistant_oscilloscope_struct temp_oscilloscope = {0};
+  153   1        
+  154   1        temp_oscilloscope.channel_num = seekfree_assistant_oscilloscope->channel_num & 0x0f;
+  155   1        
+  156   1        // ÓÉÓÚ´óĞ¡¶Ë²»Æ¥Åä£¬ËùÒÔĞèÒª½»»»¡£
+  157   1        for(i = 0; i < temp_oscilloscope.channel_num; i++)
+  158   1        {
+  159   2          ((uint8 *)&temp_oscilloscope.dat[i])[0] = ((uint8 *)&seekfree_assistant_oscilloscope->dat[i])[3];
+  160   2          ((uint8 *)&temp_oscilloscope.dat[i])[1] = ((uint8 *)&seekfree_assistant_oscilloscope->dat[i])[2];
+  161   2          ((uint8 *)&temp_oscilloscope.dat[i])[2] = ((uint8 *)&seekfree_assistant_oscilloscope->dat[i])[1];
+  162   2          ((uint8 *)&temp_oscilloscope.dat[i])[3] = ((uint8 *)&seekfree_assistant_oscilloscope->dat[i])[0];
+  163   2        }
+  164   1      
+C251 COMPILER V5.60.0,  seekfree_assistant                                                 13/06/26  12:52:09  PAGE 4   
+
+  165   1          // Ö¡Í·
+  166   1          temp_oscilloscope.head         = SEEKFREE_ASSISTANT_SEND_HEAD;
+  167   1      
+  168   1          // Ğ´Èë°ü³¤¶ÈĞÅÏ¢
+  169   1          packet_size                     = sizeof(temp_oscilloscope) - (SEEKFREE_ASSISTANT_SET_OSCILLOSCOPE_CO
+             -UNT - temp_oscilloscope.channel_num) * 4;
+  170   1          temp_oscilloscope.length       = packet_size;
+  171   1      
+  172   1          // Ğ´Èë¹¦ÄÜ×ÖÓëÍ¨µÀÊıÁ¿
+  173   1          temp_oscilloscope.channel_num |= SEEKFREE_ASSISTANT_CAMERA_OSCILLOSCOPE;
+  174   1      
+  175   1          // ºÍĞ£Ñé¼ÆËã
+  176   1          temp_oscilloscope.check_sum    = 0;
+  177   1          temp_oscilloscope.check_sum    = seekfree_assistant_sum((uint8 *)&temp_oscilloscope, packet_size);
+  178   1      
+  179   1          // Êı¾İÔÚµ÷ÓÃ±¾º¯ÊıÖ®Ç°£¬ÓÉÓÃ»§½«ĞèÒª·¢ËÍµÄÊı¾İĞ´Èëtemp_oscilloscope.data[]
+  180   1      
+  181   1          seekfree_assistant_transfer_callback((const uint8 *)&temp_oscilloscope, packet_size);
+  182   1      }
+  183          
+  184          void seekfree_assistant_camera_dot_send (seekfree_assistant_camera_buffer_struct *buffer)
+  185          {
+  186   1          uint8  i;
+  187   1          uint16 dot_bytes = 0;   // µã×Ö½ÚÊıÁ¿
+  188   1      
+  189   1          dot_bytes = seekfree_assistant_camera_dot_data.dot_num;
+  190   1        dot_bytes = ((((uint16)dot_bytes << 8)&0xFF00) | ((uint16)dot_bytes >> 8));
+  191   1          if(seekfree_assistant_camera_dot_data.dot_type & (1 << 5))
+  192   1          {
+  193   2              dot_bytes *= 2;
+  194   2          }
+  195   1      
+  196   1          // Ê×ÏÈ·¢ËÍÖ¡Í·¡¢¹¦ÄÜ¡¢±ß½ç±àºÅ¡¢×ø±ê³¤¶È¡¢µã¸öÊı
+  197   1          seekfree_assistant_transfer_callback((const uint8 *)&seekfree_assistant_camera_dot_data, sizeof(seekf
+             -ree_assistant_camera_dot_struct));
+  198   1      
+  199   1          for(i=0; i < SEEKFREE_ASSISTANT_CAMERA_MAX_BOUNDARY; i++)
+  200   1          {
+  201   2              // ÅĞ¶ÏÊÇ·ñ·¢ËÍºá×ø±êÊı¾İ
+  202   2              if(NULL != buffer->boundary_x[i])
+  203   2              {
+  204   3                  seekfree_assistant_transfer_callback((const uint8 *)buffer->boundary_x[i], dot_bytes);
+  205   3              }
+  206   2      
+  207   2              // ÅĞ¶ÏÊÇ·ñ·¢ËÍ×İ×ø±êÊı¾İ
+  208   2              if(NULL != buffer->boundary_y[i])
+  209   2              {
+  210   3                  // Èç¹ûÃ»ÓĞ×İ×ø±êÊı¾İ£¬Ôò±íÊ¾Ã¿Ò»ĞĞÖ»ÓĞÒ»¸ö±ß½ç
+  211   3                  // Ö¸¶¨ÁËºá×İ×ø±êÊı¾İ£¬ÕâÖÖ·½Ê½¿ÉÒÔÊµÏÖÍ¬Ò»ĞĞ¶à¸ö±ß½çµÄÇé¿ö£¬ÀıÈçËÑÏßËã·¨ÄÜ¹»ËÑË÷³ö»ØÍä¡£
+  212   3                  seekfree_assistant_transfer_callback((const uint8 *)buffer->boundary_y[i], dot_bytes);
+  213   3              }
+  214   2          }
+  215   1      }
+  216          
+  217          //-------------------------------------------------------------------------------------------------------
+             -------------
+  218          // º¯Êı¼ò½é     Öğ·ÉÖúÊÖÍ¼Ïñ±ßÏß·¢ËÍÅäÖÃº¯Êı
+  219          // ²ÎÊıËµÃ÷     boundary_type   ±ß½çÀàĞÍ
+  220          // ²ÎÊıËµÃ÷     dot_num         Ò»Ìõ±ß½çÓĞ¶àÉÙ¸öµã
+  221          // ²ÎÊıËµÃ÷     dot_x1          ´æ·Å±ßÏß1ºá×ø±êµÄµØÖ·  Èç¹û´«µİNULL²ÎÊıÔò±íÊ¾²»·¢ËÍ±ßÏß1
+  222          // ²ÎÊıËµÃ÷     dot_x2          ´æ·Å±ßÏß2ºá×ø±êµÄµØÖ·  Èç¹û´«µİNULL²ÎÊıÔò±íÊ¾²»·¢ËÍ±ßÏß2
+  223          // ²ÎÊıËµÃ÷     dot_x3          ´æ·Å±ßÏß3ºá×ø±êµÄµØÖ·  Èç¹û´«µİNULL²ÎÊıÔò±íÊ¾²»·¢ËÍ±ßÏß3
+  224          // ²ÎÊıËµÃ÷     dot_y1          ´æ·Å±ßÏß1×İ×ø±êµÄµØÖ·  Èç¹û´«µİNULL²ÎÊıÔò±íÊ¾²»·¢ËÍ±ßÏß1
+  225          // ²ÎÊıËµÃ÷     dot_y2          ´æ·Å±ßÏß2×İ×ø±êµÄµØÖ·  Èç¹û´«µİNULL²ÎÊıÔò±íÊ¾²»·¢ËÍ±ßÏß2
+  226          // ²ÎÊıËµÃ÷     dot_y3          ´æ·Å±ßÏß3×İ×ø±êµÄµØÖ·  Èç¹û´«µİNULL²ÎÊıÔò±íÊ¾²»·¢ËÍ±ßÏß3
+  227          // ·µ»Ø²ÎÊı     void
+C251 COMPILER V5.60.0,  seekfree_assistant                                                 13/06/26  12:52:09  PAGE 5   
+
+  228          // Ê¹ÓÃÊ¾Àı                     seekfree_assistant_camera_config(X_BOUNDARY, MT9V03X_H, x1_boundary, x2_b
+             -oundary, x3_boundary, NULL, NULL, NULL);     // Í¼Ïñ·¢ËÍÊ±°üº¬ÈıÌõ±ßÏß£¬±ßÏßÖ»ÓĞºá×ø±ê
+  229          // Ê¹ÓÃÊ¾Àı                     seekfree_assistant_camera_config(Y_BOUNDARY, MT9V03X_W, NULL, NULL, NULL,
+             - y1_boundary, y2_boundary, y3_boundary);     // Í¼Ïñ·¢ËÍÊ±°üº¬ÈıÌõ±ßÏß£¬±ßÏßÖ»ÓĞ×İ×ø±ê
+  230          // Ê¹ÓÃÊ¾Àı                     seekfree_assistant_camera_config(XY_BOUNDARY, 160, xy_x1_boundary, xy_x2_
+             -boundary, xy_x3_boundary, xy_y1_boundary, xy_y2_boundary, xy_y3_boundary);   // Í¼Ïñ·¢ËÍÊ±°üº¬ÈıÌõ±ßÏß£¬±ßÏß°üº¬ºá×İ×ø±ê
+  231          // ±¸×¢ĞÅÏ¢
+  232          //-------------------------------------------------------------------------------------------------------
+             -------------
+  233          void seekfree_assistant_camera_boundary_config (seekfree_assistant_boundary_type_enum boundary_type, uint
+             -16 dot_num, void *dot_x1, void *dot_x2, void *dot_x3, void *dot_y1, void *dot_y2, void *dot_y3)
+  234          {
+  235   1          uint8 i = 0;
+  236   1          uint8 boundary_num = 0;
+  237   1          uint8 boundary_data_type = 0;
+  238   1      
+  239   1          seekfree_assistant_camera_dot_data.dot_num    = ((((uint16)dot_num << 8)&0xFF00) | ((uint16)dot_num >
+             -> 8));;
+  240   1          seekfree_assistant_camera_dot_data.valid_flag = 0;
+  241   1          for(i = 0; i < 3; i++)
+  242   1          {
+  243   2              seekfree_assistant_camera_buffer.boundary_x[i] = NULL;
+  244   2              seekfree_assistant_camera_buffer.boundary_y[i] = NULL;
+  245   2          }
+  246   1      
+  247   1          switch(boundary_type)
+  248   1          {
+  249   2              case X_BOUNDARY:
+  250   2              {
+  251   3                  if(NULL != dot_x1)
+  252   3                  {
+  253   4                      boundary_num++;
+  254   4                      seekfree_assistant_camera_dot_data.valid_flag |= 1 << 0;
+  255   4                      seekfree_assistant_camera_buffer.boundary_x[i++] = dot_x1;
+  256   4                  }
+  257   3                  if(NULL != dot_x2)
+  258   3                  {
+  259   4                      boundary_num++;
+  260   4                      seekfree_assistant_camera_dot_data.valid_flag |= 1 << 1;
+  261   4                      seekfree_assistant_camera_buffer.boundary_x[i++] = dot_x2;
+  262   4                  }
+  263   3                  if(NULL != dot_x3)
+  264   3                  {
+  265   4                      boundary_num++;
+  266   4                      seekfree_assistant_camera_dot_data.valid_flag |= 1 << 2;
+  267   4                      seekfree_assistant_camera_buffer.boundary_x[i++] = dot_x3;
+  268   4                  }
+  269   3      
+  270   3                  if(255 < seekfree_assistant_camera_buffer.height)
+  271   3                  {
+  272   4                      boundary_data_type = 1;
+  273   4                  }
+  274   3              }break;
+  275   2      
+  276   2              case Y_BOUNDARY:
+  277   2              {
+  278   3                  if(NULL != dot_y1)
+  279   3                  {
+  280   4                      boundary_num++;
+  281   4                      seekfree_assistant_camera_dot_data.valid_flag |= 1 << 0;
+  282   4                      seekfree_assistant_camera_buffer.boundary_y[i++] = dot_y1;
+  283   4                  }
+  284   3                  if(NULL != dot_y2)
+  285   3                  {
+  286   4                      boundary_num++;
+  287   4                      seekfree_assistant_camera_dot_data.valid_flag |= 1 << 1;
+C251 COMPILER V5.60.0,  seekfree_assistant                                                 13/06/26  12:52:09  PAGE 6   
+
+  288   4                      seekfree_assistant_camera_buffer.boundary_y[i++] = dot_y2;
+  289   4                  }
+  290   3                  if(NULL != dot_y3)
+  291   3                  {
+  292   4                      boundary_num++;
+  293   4                      seekfree_assistant_camera_dot_data.valid_flag |= 1 << 2;
+  294   4                      seekfree_assistant_camera_buffer.boundary_y[i++] = dot_y3;
+  295   4                  }
+  296   3      
+  297   3                  if(255 < seekfree_assistant_camera_buffer.width)
+  298   3                  {
+  299   4                      boundary_data_type = 1;
+  300   4                  }
+  301   3              }break;
+  302   2      
+  303   2              case XY_BOUNDARY:
+  304   2              {
+  305   3                  if((NULL != dot_x1) && (NULL != dot_y1))
+  306   3                  {
+  307   4                      boundary_num++;
+  308   4                      seekfree_assistant_camera_dot_data.valid_flag |= 1 << 0;
+  309   4                      seekfree_assistant_camera_buffer.boundary_x[i]   = dot_x1;
+  310   4                      seekfree_assistant_camera_buffer.boundary_y[i++] = dot_y1;
+  311   4                  }
+  312   3                  if((NULL != dot_x2) && (NULL != dot_y2))
+  313   3                  {
+  314   4                      boundary_num++;
+  315   4                      seekfree_assistant_camera_dot_data.valid_flag |= 1 << 1;
+  316   4                      seekfree_assistant_camera_buffer.boundary_x[i]   = dot_x2;
+  317   4                      seekfree_assistant_camera_buffer.boundary_y[i++] = dot_y2;
+  318   4                  }
+  319   3                  if((NULL != dot_x3) && (NULL != dot_y3))
+  320   3                  {
+  321   4                      boundary_num++;
+  322   4                      seekfree_assistant_camera_dot_data.valid_flag |= 1 << 2;
+  323   4                      seekfree_assistant_camera_buffer.boundary_x[i]   = dot_x3;
+  324   4                      seekfree_assistant_camera_buffer.boundary_y[i++] = dot_y3;
+  325   4                  }
+  326   3      
+  327   3                  if((255 < seekfree_assistant_camera_buffer.width) || (255 < seekfree_assistant_camera_buffer.
+             -height))
+  328   3                  {
+  329   4                      boundary_data_type = 1;
+  330   4                  }
+  331   3              }break;
+  332   2      
+  333   2              case NO_BOUNDARY:break;
+  334   2          }
+  335   1      
+  336   1          seekfree_assistant_camera_dot_data.dot_type   = (boundary_type << 6) | (boundary_data_type << 5) | bo
+             -undary_num;
+  337   1      }
+  338          //-------------------------------------------------------------------------------------------------------
+             -------------
+  339          // º¯Êı¼ò½é     Öğ·ÉÖúÊÖ½âÎö½ÓÊÕµ½µÄÊı¾İ
+  340          // ²ÎÊıËµÃ÷     void
+  341          // ·µ»Ø²ÎÊı     void
+  342          // Ê¹ÓÃÊ¾Àı     º¯ÊıÖ»ĞèÒª·Åµ½ÖÜÆÚÔËĞĞµÄPITÖĞ¶Ï»òÕßÖ÷Ñ­»·¼´¿É
+  343          //-------------------------------------------------------------------------------------------------------
+             -------------
+  344          void seekfree_assistant_data_analysis (void)
+  345          {
+  346   1      
+  347   1          uint8  temp_sum = 0;
+  348   1          uint32 read_length = 0;
+  349   1        uint16 struct_len = sizeof(seekfree_assistant_parameter_struct);
+C251 COMPILER V5.60.0,  seekfree_assistant                                                 13/06/26  12:52:09  PAGE 7   
+
+  350   1          seekfree_assistant_parameter_struct *receive_packet;
+  351   1        
+  352   1          // ÕâÀïÊ¹ÓÃuint32½øĞĞ¶¨Òå£¬Ä¿µÄÊÇÎªÁË±£Ö¤Êı×éËÄ×Ö½Ú¶ÔÆë
+  353   1          uint32  temp_buffer[SEEKFREE_ASSISTANT_BUFFER_SIZE / 4] = {0};
+  354   1      
+  355   1        uint32 i = 0;
+  356   1        
+  357   1        bit flag = 0;
+  358   1        flag = EA;
+  359   1        // ·ÀÖ¹fifoÔÚ¶ÁÈ¡µÄÍ¬Ê±£¬ÓÖÍ¨¹ıÖĞ¶ÏĞ´Èë¶øÊı¾İ´íÂÒ¡£
+  360   1        EA = 0;
+  361   1        
+  362   1          // ³¢ÊÔ¶ÁÈ¡Êı¾İ, Èç¹û²»ÊÇ×Ô¶¨ÒåµÄ´«Êä·½Ê½Ôò´Ó½ÓÊÕ»Øµ÷ÖĞ¶ÁÈ¡Êı¾İ
+  363   1          read_length = seekfree_assistant_receive_callback((uint8 *)temp_buffer, SEEKFREE_ASSISTANT_BUFFER_SIZ
+             -E);
+  364   1        
+  365   1          if(read_length)
+  366   1          {
+  367   2              // ½«¶ÁÈ¡µ½µÄÊı¾İĞ´ÈëFIFO
+  368   2              fifo_write_buffer(&seekfree_assistant_fifo, (uint8 *)temp_buffer, read_length);
+  369   2          }
+  370   1        
+  371   1          while(struct_len <= fifo_used(&seekfree_assistant_fifo))
+  372   1          {
+  373   2      
+  374   2              read_length = sizeof(seekfree_assistant_parameter_struct);
+  375   2              fifo_read_buffer(&seekfree_assistant_fifo, (uint8 *)temp_buffer, &read_length, FIFO_READ_ONLY);
+  376   2              if(SEEKFREE_ASSISTANT_RECEIVE_HEAD != ((uint8 *)temp_buffer)[0])
+  377   2              {
+  378   3                  // Ã»ÓĞÖ¡Í·Ôò´ÓFIFOÖĞÈ¥µôµÚÒ»¸öÊı¾İ
+  379   3                  read_length = 1;
+  380   3              }
+  381   2              else
+  382   2              {
+  383   3      
+  384   3                  // ÕÒµ½Ö¡Í·
+  385   3                  receive_packet = (seekfree_assistant_parameter_struct *)temp_buffer;
+  386   3                  temp_sum = receive_packet->check_sum;
+  387   3                  receive_packet->check_sum = 0;
+  388   3      
+  389   3                  if(temp_sum == seekfree_assistant_sum((uint8 *)temp_buffer, sizeof(seekfree_assistant_paramet
+             -er_struct)))
+  390   3                  {
+  391   4                      // ºÍĞ£Ñé³É¹¦±£´æÊı¾İ
+  392   4            
+  393   4              // ÓÉÓÚ´óĞ¡¶Ë²»Æ¥Åä£¬ËùÒÔĞèÒª½»»»¡£
+  394   4              ((uint8 *)&seekfree_assistant_parameter[receive_packet->channel - 1])[3] = ((uint8 *)&receive_packet-
+             ->dat)[0];
+  395   4              ((uint8 *)&seekfree_assistant_parameter[receive_packet->channel - 1])[2] = ((uint8 *)&receive_packet-
+             ->dat)[1];
+  396   4              ((uint8 *)&seekfree_assistant_parameter[receive_packet->channel - 1])[1] = ((uint8 *)&receive_packet-
+             ->dat)[2];
+  397   4              ((uint8 *)&seekfree_assistant_parameter[receive_packet->channel - 1])[0] = ((uint8 *)&receive_packet-
+             ->dat)[3];
+  398   4              seekfree_assistant_parameter_update_flag[receive_packet->channel - 1] = 1;
+  399   4                  }
+  400   3                  else
+  401   3                  {
+  402   4                      read_length = 1;
+  403   4                  }
+  404   3              }
+  405   2        
+  406   2              // ¶ªÆúÎŞĞèÊ¹ÓÃµÄÊı¾İ
+  407   2              fifo_read_buffer(&seekfree_assistant_fifo, (uint8 *)temp_buffer, &read_length, FIFO_READ_AND_CLEA
+             -N);
+  408   2          }
+C251 COMPILER V5.60.0,  seekfree_assistant                                                 13/06/26  12:52:09  PAGE 8   
+
+  409   1        EA = flag;
+  410   1      }
+  411          //-------------------------------------------------------------------------------------------------------
+             -------------
+  412          // º¯Êı¼ò½é     Öğ·ÉÖúÊÖ·¢ËÍÉãÏñÍ·Í¼Ïñ
+  413          // ²ÎÊıËµÃ÷     void
+  414          // ·µ»Ø²ÎÊı     void
+  415          // Ê¹ÓÃÊ¾Àı
+  416          // ±¸×¢ĞÅÏ¢     ÔÚµ÷ÓÃÍ¼Ïñ·¢ËÍº¯ÊıÖ®Ç°£¬ÇëÎñ±Øµ÷ÓÃÒ»´Îseekfree_assistant_camera_configº¯Êı£¬½«¶ÔÓ¦µÄ²ÎÊıÉ
+             -èÖÃºÃ
+  417          //-------------------------------------------------------------------------------------------------------
+             -------------
+  418          void seekfree_assistant_camera_send (void)
+  419          {
+  420   1      
+  421   1          seekfree_assistant_camera_data_send(seekfree_assistant_camera_buffer.camera_type, seekfree_assistant_
+             -camera_buffer.image_addr, seekfree_assistant_camera_dot_data.dot_type & 0x0f, seekfree_assistant_camera_buffer.width, se
+             -ekfree_assistant_camera_buffer.height);
+  422   1      
+  423   1          if(seekfree_assistant_camera_dot_data.dot_type & 0x0f)
+  424   1          {
+  425   2              seekfree_assistant_camera_dot_send(&seekfree_assistant_camera_buffer);
+  426   2          }
+  427   1      }
+  428          
+  429          //-------------------------------------------------------------------------------------------------------
+             -------------
+  430          // º¯Êı¼ò½é     Öğ·ÉÖúÊÖ ³õÊ¼»¯
+  431          // ²ÎÊıËµÃ÷
+  432          // ·µ»Ø²ÎÊı     void
+  433          // Ê¹ÓÃÊ¾Àı
+  434          //-------------------------------------------------------------------------------------------------------
+             -------------
+  435          void seekfree_assistant_init ()
+  436          {
+  437   1          fifo_init(&seekfree_assistant_fifo,  FIFO_DATA_8BIT, seekfree_assistant_buffer, SEEKFREE_ASSISTANT_BU
+             -FFER_SIZE);
+  438   1      }
+  439          
+  440          
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =      3308     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =       574     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =         1     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =       521     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

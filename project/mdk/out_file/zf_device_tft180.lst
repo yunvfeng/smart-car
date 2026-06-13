@@ -1,0 +1,830 @@
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   13/06/26  12:52:07  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_device_tft180
+OBJECT MODULE PLACED IN .\out_file\zf_device_tft180.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\..\libraries\zf_device\zf_device_tft180.c LARGE ROM(HUGE) WARNINGLE
+                    -VEL(3) OPTIMIZE(0,SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;
+                    -..\..\libraries\zf_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\see
+                    -kfree_assistant) DEBUG PRINT(.\out_file\zf_device_tft180.lst) TABS(2) OBJECT(.\out_file\zf_device_tft180.obj) 
+
+stmt  level    source
+
+    1          /********************************************************************************************************
+             -*************
+    2          * STC32G Opensourec Library ¼´£¨STC32G ¿ªÔ´¿â£©ÊÇÒ»¸ö»ùÓÚ¹Ù·½ SDK ½Ó¿ÚµÄµÚÈý·½¿ªÔ´¿â
+    3          * Copyright (c) 2025 SEEKFREE Öð·É¿Æ¼¼
+    4          *
+    5          * ±¾ÎÄ¼þÊÇSTC32G144K¿ªÔ´¿âµÄÒ»²¿·Ö
+    6          *
+    7          * STC32G ¿ªÔ´¿â ÊÇÃâ·ÑÈí¼þ
+    8          * Äú¿ÉÒÔ¸ù¾Ý×ÔÓÉÈí¼þ»ù½ð»á·¢²¼µÄ GPL£¨GNU General Public License£¬¼´ GNUÍ¨ÓÃ¹«¹²Ðí¿ÉÖ¤£©µÄÌõ¿î
+    9          * ¼´ GPL µÄµÚ3°æ£¨¼´ GPL3.0£©»ò£¨ÄúÑ¡ÔñµÄ£©ÈÎºÎºóÀ´µÄ°æ±¾£¬ÖØÐÂ·¢²¼ºÍ/»òÐÞ¸ÄËü
+   10          *
+   11          * ±¾¿ªÔ´¿âµÄ·¢²¼ÊÇÏ£ÍûËüÄÜ·¢»Ó×÷ÓÃ£¬µ«²¢Î´¶ÔÆä×÷ÈÎºÎµÄ±£Ö¤
+   12          * ÉõÖÁÃ»ÓÐÒþº¬µÄÊÊÏúÐÔ»òÊÊºÏÌØ¶¨ÓÃÍ¾µÄ±£Ö¤
+   13          * ¸ü¶àÏ¸½ÚÇë²Î¼û GPL
+   14          *
+   15          * ÄúÓ¦¸ÃÔÚÊÕµ½±¾¿ªÔ´¿âµÄÍ¬Ê±ÊÕµ½Ò»·Ý GPL µÄ¸±±¾
+   16          * Èç¹ûÃ»ÓÐ£¬Çë²ÎÔÄ<https://www.gnu.org/licenses/>
+   17          *
+   18          * ¶îÍâ×¢Ã÷£º
+   19          * ±¾¿ªÔ´¿âÊ¹ÓÃ GPL3.0 ¿ªÔ´Ðí¿ÉÖ¤Ð­Òé ÒÔÉÏÐí¿ÉÉêÃ÷ÎªÒëÎÄ°æ±¾
+   20          * Ðí¿ÉÉêÃ÷Ó¢ÎÄ°æÔÚ libraries/doc ÎÄ¼þ¼ÐÏÂµÄ GPL3_permission_statement.txt ÎÄ¼þÖÐ
+   21          * Ðí¿ÉÖ¤¸±±¾ÔÚ libraries ÎÄ¼þ¼ÐÏÂ ¼´¸ÃÎÄ¼þ¼ÐÏÂµÄ LICENSE ÎÄ¼þ
+   22          * »¶Ó­¸÷Î»Ê¹ÓÃ²¢´«²¥±¾³ÌÐò µ«ÐÞ¸ÄÄÚÈÝÊ±±ØÐë±£ÁôÖð·É¿Æ¼¼µÄ°æÈ¨ÉùÃ÷£¨¼´±¾ÉùÃ÷£©
+   23          *
+   24          * ÎÄ¼þÃû³Æ          
+   25          * ¹«Ë¾Ãû³Æ          ³É¶¼Öð·É¿Æ¼¼ÓÐÏÞ¹«Ë¾
+   26          * °æ±¾ÐÅÏ¢          ²é¿´ libraries/doc ÎÄ¼þ¼ÐÄÚ version ÎÄ¼þ °æ±¾ËµÃ÷
+   27          * ¿ª·¢»·¾³          MDK FOR C251
+   28          * ÊÊÓÃÆ½Ì¨          STC32G144K
+   29          * µêÆÌÁ´½Ó          https://seekfree.taobao.com/
+   30          *
+   31          * ÐÞ¸Ä¼ÇÂ¼
+   32          * ÈÕÆÚ              ×÷Õß           ±¸×¢
+   33          * 2024-08-01        ´óW            first version
+   34          *********************************************************************************************************
+             -***********/
+   35          /********************************************************************************************************
+             -*************
+   36          * ½ÓÏß¶¨Òå£º
+   37          *                   ------------------------------------
+   38          *                   Ä£¿é¹Ü½Å             µ¥Æ¬»ú¹Ü½Å
+   39          *                   SCL                  ²é¿´ zf_device_tft180.h ÖÐ TFT180_SCL_PIN ºê¶¨Òå
+   40          *                   SDA                  ²é¿´ zf_device_tft180.h ÖÐ TFT180_SDA_PIN ºê¶¨Òå
+   41          *                   RES                  ²é¿´ zf_device_tft180.h ÖÐ TFT180_RES_PIN ºê¶¨Òå
+   42          *                   DC                   ²é¿´ zf_device_tft180.h ÖÐ TFT180_DC_PIN ºê¶¨Òå
+   43          *                   CS                   ²é¿´ zf_device_tft180.h ÖÐ TFT180_CS_PIN ºê¶¨Òå
+   44          *                   BL                   ²é¿´ zf_device_tft180.h ÖÐ TFT180_BL_PIN ºê¶¨Òå
+   45          *                   VCC                 3.3VµçÔ´
+   46          *                   GND                 µçÔ´µØ
+   47          *                   ×î´ó·Ö±æÂÊ160*128
+   48          *                   ------------------------------------
+   49          *********************************************************************************************************
+             -***********/
+   50          
+   51          #include "zf_common_clock.h"
+   52          #include "zf_common_debug.h"
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   13/06/26  12:52:07  PAGE 2   
+
+   53          #include "zf_common_font.h"
+   54          #include "zf_common_function.h"
+   55          #include "zf_driver_delay.h"
+   56          #include "zf_driver_spi.h"
+   57          
+   58          #include "zf_device_tft180.h"
+   59          
+   60          #define TFT180_LEN   160
+   61          #define TFT180_WIGHT 128
+   62          
+   63          uint16 tft180_pencolor = TFT180_DEFAULT_PENCOLOR;
+   64          uint16 tft180_bgcolor = TFT180_DEFAULT_BGCOLOR;
+   65          
+   66          tft180_dir_enum tft180_display_dir = TFT180_DEFAULT_DISPLAY_DIR;
+   67          uint8 tft180_x_max = TFT180_LEN;
+   68          uint8 tft180_y_max = TFT180_WIGHT;
+   69          
+   70          #if (TFT180_USE_INTERFACE==SOFT_SPI)  
+                 static soft_spi_info_struct             tft180_spi;
+                 #define tft180_write_8bit_data(dat)    soft_spi_write_8bit(&TFT180_spi, dat)
+                 #define tft180_write_16bit_data(dat)   soft_spi_write_16bit(&TFT180_spi, dat)
+               #elif (TFT180_USE_INTERFACE==HARDWARE_SPI)
+   75            #define tft180_write_8bit_data(dat)             spi_dma_write_8bit(TFT180_SPI, dat)
+   76            #define tft180_write_16bit_data(dat)            spi_dma_write_16bit(TFT180_SPI, dat)
+   77              #define tft180_write_16bit_data_arry(dat, len)  spi_dma_write_16bit_array(TFT180_SPI, dat, len)
+   78          #endif
+   79          
+   80          //-------------------------------------------------------------------------------------------------------
+             -------------
+   81          // º¯Êý¼ò½é       Ð´ÃüÁî ÄÚ²¿µ÷ÓÃ
+   82          // @note        ÄÚ²¿µ÷ÓÃ ÓÃ»§ÎÞÐè¹ØÐÄ
+   83          //-------------------------------------------------------------------------------------------------------
+             -------------
+   84          static void tft180_write_index (uint8 dat)
+   85          {
+   86   1          TFT180_CS(1);
+   87   1          TFT180_CS(0);
+   88   1          TFT180_DC(0);
+   89   1          tft180_write_8bit_data(dat);
+   90   1          TFT180_CS(1);
+   91   1          TFT180_DC(1);
+   92   1          TFT180_CS(0);
+   93   1      }
+   94          
+   95          //-------------------------------------------------------------------------------------------------------
+             -------------
+   96          // º¯Êý¼ò½é       ÉèÖÃÏÔÊ¾ÇøÓò ÄÚ²¿µ÷ÓÃ
+   97          // ²ÎÊýËµÃ÷       x1              ÆðÊ¼xÖá×ø±ê
+   98          // ²ÎÊýËµÃ÷       y1              ÆðÊ¼yÖá×ø±ê
+   99          // ²ÎÊýËµÃ÷       x2              ½áÊøxÖá×ø±ê
+  100          // ²ÎÊýËµÃ÷       y2              ½áÊøyÖá×ø±ê
+  101          // ·µ»Ø²ÎÊý      void
+  102          // @note        ÄÚ²¿µ÷ÓÃ ÓÃ»§ÎÞÐè¹ØÐÄ
+  103          //-------------------------------------------------------------------------------------------------------
+             -------------
+  104          static void tft180_set_region (uint16 x1, uint16 y1, uint16 x2, uint16 y2)
+  105          {
+  106   1          zf_assert(x1 < tft180_x_max);
+  107   1          zf_assert(y1 < tft180_y_max);
+  108   1          zf_assert(x2 < tft180_x_max);
+  109   1          zf_assert(y2 < tft180_y_max);
+  110   1      
+  111   1          if(tft180_display_dir==TFT180_PORTAIT || tft180_display_dir==TFT180_PORTAIT_180)
+  112   1          {
+  113   2              tft180_write_index(0x2a);
+  114   2              tft180_write_16bit_data(x1+2);
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   13/06/26  12:52:07  PAGE 3   
+
+  115   2              tft180_write_16bit_data(x2+2);
+  116   2      
+  117   2              tft180_write_index(0x2b);
+  118   2              tft180_write_16bit_data(y1+1);
+  119   2              tft180_write_16bit_data(y2+1);
+  120   2          }
+  121   1          else
+  122   1          {
+  123   2              tft180_write_index(0x2a);
+  124   2              tft180_write_16bit_data(x1+1);
+  125   2              tft180_write_16bit_data(x2+1);
+  126   2      
+  127   2              tft180_write_index(0x2b);
+  128   2              tft180_write_16bit_data(y1+2);
+  129   2              tft180_write_16bit_data(y2+2);
+  130   2          }
+  131   1          tft180_write_index(0x2c);
+  132   1      }
+  133          
+  134          
+  135          
+  136          //-------------------------------------------------------------------------------------------------------
+             -------------
+  137          // º¯Êý¼ò½é       Òº¾§ÇåÆÁº¯Êý
+  138          // ²ÎÊýËµÃ÷       color           ÑÕÉ«¸ñÊ½ RGB565 »òÕß¿ÉÒÔÊ¹ÓÃ zf_common_font.h ÄÚ³£ÓÃÑÕÉ«ºê¶¨Òå
+  139          // ·µ»Ø²ÎÊý      void
+  140          // Ê¹ÓÃÊ¾Àý                tft180_clear(YELLOW);
+  141          //-------------------------------------------------------------------------------------------------------
+             -------------
+  142          void tft180_clear (uint16 color)
+  143          {
+  144   1          uint16 i;
+  145   1          uint16 tmp[TFT180_LEN];
+  146   1          tft180_set_region(0,0,tft180_x_max-1,tft180_y_max-1);
+  147   1        
+  148   1          for(i = 0; i < TFT180_LEN; i ++)
+  149   1          {
+  150   2              tmp[i] = color;
+  151   2          }
+  152   1        for(i = 0; i < TFT180_WIGHT; i ++)
+  153   1          {
+  154   2              tft180_write_16bit_data_arry(tmp, TFT180_LEN);
+  155   2          }
+  156   1      }
+  157          
+  158          //-------------------------------------------------------------------------------------------------------
+             -------------
+  159          // º¯Êý¼ò½é       ÉèÖÃÏÔÊ¾·½Ïò Õâ¸öº¯ÊýÖ»ÓÐÔÚ³õÊ¼»¯ÆÁÄ»Ö®Ç°µ÷ÓÃ²ÅÉúÐ§
+  160          // ²ÎÊýËµÃ÷       dir             ÏÔÊ¾·½Ïò  ²ÎÕÕ zf_device_ips114.h ÄÚ tft180_dir_enum Ã¶¾ÙÌå¶¨Òå
+  161          // ·µ»Ø²ÎÊý      void
+  162          // Ê¹ÓÃÊ¾Àý                tft180_set_dir(TFT180_CROSSWISE);
+  163          //-------------------------------------------------------------------------------------------------------
+             -------------
+  164          void tft180_set_dir (tft180_dir_enum dir)
+  165          {
+  166   1          tft180_display_dir = dir;
+  167   1          if(dir < 2)
+  168   1          {
+  169   2              tft180_x_max = 128;
+  170   2              tft180_y_max = 160;
+  171   2          }
+  172   1          else
+  173   1          {
+  174   2              tft180_x_max = 160;
+  175   2              tft180_y_max = 128;
+  176   2          }
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   13/06/26  12:52:07  PAGE 4   
+
+  177   1      }
+  178          
+  179          //-------------------------------------------------------------------------------------------------------
+             -------------
+  180          // º¯Êý¼ò½é       ÉèÖÃÏÔÊ¾ÑÕÉ«
+  181          // ²ÎÊýËµÃ÷       pen             ÑÕÉ«¸ñÊ½ RGB565 »òÕß¿ÉÒÔÊ¹ÓÃ zf_common_font.h ÄÚ³£ÓÃÑÕÉ«ºê¶¨Òå
+  182          // ²ÎÊýËµÃ÷       bgcolor         ÑÕÉ«¸ñÊ½ RGB565 »òÕß¿ÉÒÔÊ¹ÓÃ zf_common_font.h ÄÚ³£ÓÃÑÕÉ«ºê¶¨Òå
+  183          // ·µ»Ø²ÎÊý      void
+  184          // Ê¹ÓÃÊ¾Àý                tft180_set_color(WHITE,BLACK);
+  185          //-------------------------------------------------------------------------------------------------------
+             -------------
+  186          void tft180_set_color (uint16 pen, uint16 bgcolor)
+  187          {
+  188   1          tft180_pencolor = pen;
+  189   1          tft180_bgcolor = bgcolor;
+  190   1      }
+  191          
+  192          //-------------------------------------------------------------------------------------------------------
+             -------------
+  193          // º¯Êý¼ò½é       Òº¾§»­µã
+  194          // ²ÎÊýËµÃ÷       x               ×ø±êx·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_x_max-1]
+  195          // ²ÎÊýËµÃ÷       y               ×ø±êy·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_y_max-1]
+  196          // ²ÎÊýËµÃ÷       dat             ÐèÒªÏÔÊ¾µÄÑÕÉ«
+  197          // ·µ»Ø²ÎÊý      void
+  198          // Ê¹ÓÃÊ¾Àý                tft180_draw_point(0,0,RED);                     // ×ø±ê 0,0 »­Ò»¸öºìÉ«µÄµã
+  199          //-------------------------------------------------------------------------------------------------------
+             -------------
+  200          void tft180_draw_point (uint16 x,uint16 y,uint16 color)
+  201          {
+  202   1          zf_assert(x < tft180_x_max);
+  203   1          zf_assert(y < tft180_y_max);
+  204   1      
+  205   1          tft180_set_region(x,y,x,y);
+  206   1          tft180_write_16bit_data(color);
+  207   1      }
+  208          
+  209          //-------------------------------------------------------------------------------------------------------
+             -------------
+  210          // º¯Êý¼ò½é       Òº¾§ÏÔÊ¾×Ö·û
+  211          // ²ÎÊýËµÃ÷       x               ×ø±êx·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_x_max-1]
+  212          // ²ÎÊýËµÃ÷       y               ×ø±êy·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_y_max-1]
+  213          // ²ÎÊýËµÃ÷       dat             ÐèÒªÏÔÊ¾µÄ×Ö·û
+  214          // ·µ»Ø²ÎÊý      void
+  215          // Ê¹ÓÃÊ¾Àý                tft180_show_char(0,0,'x');                      // ×ø±ê 0,0 Ð´Ò»¸ö×Ö·û x
+  216          //-------------------------------------------------------------------------------------------------------
+             -------------
+  217          void tft180_show_char (uint16 x,uint16 y,const char dat)
+  218          {
+  219   1          uint8 i,j;
+  220   1          uint8 temp;
+  221   1        
+  222   1          zf_assert(x < tft180_x_max);
+  223   1          zf_assert(y < tft180_y_max);
+  224   1        
+  225   1          for(i=0; i<16; i++)
+  226   1          {
+  227   2              tft180_set_region(x,y+i,x+7,y+i);
+  228   2              temp = ascii_font_8x16[dat-32][i];                                            //¼õ 32 ÒòÎªÊÇÈ¡Ä£Ê
+             -Ç´Ó¿Õ¸ñ¿ªÊ¼È¡µÃ ¿Õ¸ñÔÚ ascii ÖÐÐòºÅÊÇ 32
+  229   2              for(j=0; j<8; j++)
+  230   2              {
+  231   3                  if(temp&0x01)   
+  232   3                      tft180_write_16bit_data(tft180_pencolor);
+  233   3                  else
+  234   3                      tft180_write_16bit_data(tft180_bgcolor);
+  235   3                  temp>>=1;
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   13/06/26  12:52:07  PAGE 5   
+
+  236   3              }
+  237   2          }
+  238   1      }
+  239          
+  240          //-------------------------------------------------------------------------------------------------------
+             -------------
+  241          // º¯Êý¼ò½é       Òº¾§ÏÔÊ¾×Ö·û´®
+  242          // ²ÎÊýËµÃ÷       x               ×ø±êx·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_x_max-1]
+  243          // ²ÎÊýËµÃ÷       y               ×ø±êy·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_y_max-1]
+  244          // ²ÎÊýËµÃ÷       dat             ÐèÒªÏÔÊ¾µÄ×Ö·û´®
+  245          // ·µ»Ø²ÎÊý      void
+  246          // Ê¹ÓÃÊ¾Àý                tft180_show_string(0,0,"seekfree");
+  247          //-------------------------------------------------------------------------------------------------------
+             -------------
+  248          void tft180_show_string (uint16 x,uint16 y,const char dat[])
+  249          {
+  250   1          uint16 j = 0;
+  251   1        
+  252   1          zf_assert(x < tft180_x_max);
+  253   1          zf_assert(y < tft180_y_max);
+  254   1          
+  255   1      
+  256   1          while(dat[j] != '\0')
+  257   1          {
+  258   2              tft180_show_char(x+8*j,y,dat[j]);
+  259   2              j++;
+  260   2          }
+  261   1      }
+  262          
+  263          //-------------------------------------------------------------------------------------------------------
+             -------------
+  264          //  @brief      Òº¾§ÏÔÊ¾8Î»ÓÐ·ûºÅ
+  265          // ²ÎÊýËµÃ÷       x               ×ø±êx·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_x_max-1]
+  266          // ²ÎÊýËµÃ÷       y               ×ø±êy·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_y_max-1]
+  267          //  @param      dat             ÐèÒªÏÔÊ¾µÄ±äÁ¿£¬Êý¾ÝÀàÐÍint8
+  268          //  @return     void
+  269          //  Sample usage:               tft180_show_int8(0,0,x);                        // xÎª int8 ÀàÐÍ
+  270          //-------------------------------------------------------------------------------------------------------
+             -------------
+  271          void tft180_show_int8(uint16 x,uint16 y,int8 dat)
+  272          {
+  273   1          uint8 a[3];
+  274   1          uint8 i;
+  275   1        
+  276   1          zf_assert(x < tft180_x_max);
+  277   1          zf_assert(y < tft180_y_max);
+  278   1      
+  279   1      
+  280   1          if(dat<0)
+  281   1          {
+  282   2              tft180_show_char(x,y,'-');
+  283   2              dat = -dat;
+  284   2          }
+  285   1          else
+  286   1              tft180_show_char(x,y,' ');
+  287   1          
+  288   1          a[0] = dat/100;
+  289   1          a[1] = dat/10%10;
+  290   1          a[2] = dat%10;
+  291   1          i = 0;
+  292   1          while(i<3)
+  293   1          {
+  294   2              tft180_show_char(x+(8*(i+1)),y,(uint8)('0' + a[i]));
+  295   2              i++;
+  296   2          }
+  297   1      }
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   13/06/26  12:52:07  PAGE 6   
+
+  298          
+  299          //-------------------------------------------------------------------------------------------------------
+             -------------
+  300          // º¯Êý¼ò½é       Òº¾§ÏÔÊ¾8Î»ÎÞ·ûºÅ
+  301          // ²ÎÊýËµÃ÷       x               ×ø±êx·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_x_max-1]
+  302          // ²ÎÊýËµÃ÷       y               ×ø±êy·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_y_max-1]
+  303          // ²ÎÊýËµÃ÷       dat             ÐèÒªÏÔÊ¾µÄ±äÁ¿ Êý¾ÝÀàÐÍuint8
+  304          // ·µ»Ø²ÎÊý      void
+  305          // Ê¹ÓÃÊ¾Àý                tft180_show_uint8(0,0,x);                       // x Îª uint8 ÀàÐÍ
+  306          //-------------------------------------------------------------------------------------------------------
+             -------------
+  307          void tft180_show_uint8(uint16 x,uint16 y,uint8 dat)
+  308          {
+  309   1          uint8 a[3];
+  310   1          uint8 i;
+  311   1        
+  312   1          zf_assert(x < tft180_x_max);
+  313   1          zf_assert(y < tft180_y_max);
+  314   1      
+  315   1          a[0] = dat/100;
+  316   1          a[1] = dat/10%10;
+  317   1          a[2] = dat%10;
+  318   1          i = 0;
+  319   1          while(i<3)
+  320   1          {
+  321   2              tft180_show_char(x+(8*i),y,(uint8)('0' + a[i]));
+  322   2              i++;
+  323   2          }
+  324   1          
+  325   1      }
+  326          
+  327          //-------------------------------------------------------------------------------------------------------
+             -------------
+  328          // º¯Êý¼ò½é       Òº¾§ÏÔÊ¾16Î»ÓÐ·ûºÅ
+  329          // ²ÎÊýËµÃ÷       x               ×ø±êx·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_x_max-1]
+  330          // ²ÎÊýËµÃ÷       y               ×ø±êy·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_y_max-1]
+  331          // ²ÎÊýËµÃ÷       dat             ÐèÒªÏÔÊ¾µÄ±äÁ¿ Êý¾ÝÀàÐÍint16
+  332          // ·µ»Ø²ÎÊý      void
+  333          // Ê¹ÓÃÊ¾Àý                tft180_show_int16(0,0,x);                       // x Îª int16 ÀàÐÍ
+  334          //-------------------------------------------------------------------------------------------------------
+             -------------
+  335          void tft180_show_int16(uint16 x,uint16 y,int16 dat)
+  336          {
+  337   1          uint8 a[5];
+  338   1          uint8 i;
+  339   1      
+  340   1          zf_assert(x < tft180_x_max);
+  341   1          zf_assert(y < tft180_y_max);
+  342   1      
+  343   1          if(dat<0)
+  344   1          {
+  345   2              tft180_show_char(x,y,'-');
+  346   2              dat = -dat;
+  347   2          }
+  348   1          else    tft180_show_char(x,y,' ');
+  349   1      
+  350   1          a[0] = dat/10000;
+  351   1          a[1] = dat/1000%10;
+  352   1          a[2] = dat/100%10;
+  353   1          a[3] = dat/10%10;
+  354   1          a[4] = dat%10;
+  355   1          
+  356   1          i = 0;
+  357   1          while(i<5)
+  358   1          {
+  359   2              tft180_show_char(x+(8*(i+1)),y,(uint8)('0' + a[i]));
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   13/06/26  12:52:07  PAGE 7   
+
+  360   2              i++;
+  361   2          }
+  362   1      }
+  363          
+  364          //-------------------------------------------------------------------------------------------------------
+             -------------
+  365          // º¯Êý¼ò½é       Òº¾§ÏÔÊ¾16Î»ÎÞ·ûºÅ
+  366          // ²ÎÊýËµÃ÷       x               ×ø±êx·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_x_max-1]
+  367          // ²ÎÊýËµÃ÷       y               ×ø±êy·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_y_max-1]
+  368          // ²ÎÊýËµÃ÷       dat             ÐèÒªÏÔÊ¾µÄ±äÁ¿£¬Êý¾ÝÀàÐÍuint16
+  369          // ·µ»Ø²ÎÊý      void
+  370          // Ê¹ÓÃÊ¾Àý                tft180_show_uint16(0,0,x);                      // x Îª uint16 ÀàÐÍ
+  371          //-------------------------------------------------------------------------------------------------------
+             -------------
+  372          void tft180_show_uint16(uint16 x,uint16 y,uint16 dat)
+  373          {
+  374   1          uint8 a[5];
+  375   1          uint8 i;
+  376   1        
+  377   1          zf_assert(x < tft180_x_max);
+  378   1          zf_assert(y < tft180_y_max);
+  379   1      
+  380   1          a[0] = dat/10000;
+  381   1          a[1] = dat/1000%10;
+  382   1          a[2] = dat/100%10;
+  383   1          a[3] = dat/10%10;
+  384   1          a[4] = dat%10;
+  385   1          
+  386   1          i = 0;
+  387   1          while(i<5)
+  388   1          {
+  389   2              tft180_show_char(x+(8*i),y,(uint8)('0' + a[i]));
+  390   2              i++;
+  391   2          }
+  392   1      }
+  393          
+  394          //-------------------------------------------------------------------------------------------------------
+             -------------
+  395          // º¯Êý¼ò½é       Òº¾§ÏÔÊ¾32Î»ÓÐ·ûºÅ(È¥³ýÕûÊý²¿·ÖÎÞÐ§µÄ0)
+  396          // ²ÎÊýËµÃ÷       x               ×ø±êx·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_x_max-1]
+  397          // ²ÎÊýËµÃ÷       y               ×ø±êy·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_y_max-1]
+  398          // ²ÎÊýËµÃ÷       dat             ÐèÒªÏÔÊ¾µÄ±äÁ¿£¬Êý¾ÝÀàÐÍuint32
+  399          // ²ÎÊýËµÃ÷       num             ÐèÒªÏÔÊ¾µÄÎ»Êý ×î¸ß10Î»  ²»°üº¬Õý¸ººÅ
+  400          // ·µ»Ø²ÎÊý      void
+  401          // Ê¹ÓÃÊ¾Àý                tft180_showuint32(0,0,x,3);                     // x ¿ÉÒÔÎª int32 uint16 int16
+             - uint8 int8 ÀàÐÍ
+  402          // note:                        ¸ºÊý»áÏÔÊ¾Ò»¸ö ¡®-¡¯ºÅ   ÕýÊýÏÔÊ¾Ò»¸ö¿Õ¸ñ
+  403          //-------------------------------------------------------------------------------------------------------
+             -------------
+  404          void tft180_show_int32(uint16 x,uint16 y,int32 dat,uint8 num)
+  405          {
+  406   1          int8    buff[34];
+  407   1          uint8   length;
+  408   1        
+  409   1          zf_assert(x < tft180_x_max);
+  410   1          zf_assert(y < tft180_y_max);
+  411   1      
+  412   1          if(10<num)      num = 10;
+  413   1          
+  414   1          num++;
+  415   1          if(0>dat)   length = zf_sprintf( &buff[0],(const int8 *)"%d",dat);        // ¸ºÊý
+  416   1          else
+  417   1          {
+  418   2              buff[0] = ' ';
+  419   2              length = zf_sprintf( &buff[1],(const int8 *)"%d",dat);
+  420   2              length++;
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   13/06/26  12:52:07  PAGE 8   
+
+  421   2          }
+  422   1          while(length < num)
+  423   1          {
+  424   2              buff[length] = ' ';
+  425   2              length++;
+  426   2          }
+  427   1          buff[num] = '\0';
+  428   1      
+  429   1          tft180_show_string(x, y, (const char *)buff);                               // ÏÔÊ¾Êý×Ö
+  430   1      }
+  431          
+  432          //-------------------------------------------------------------------------------------------------------
+             -------------
+  433          // º¯Êý¼ò½é       Òº¾§ÏÔÊ¾¸¡µãÊý(È¥³ýÕûÊý²¿·ÖÎÞÐ§µÄ0)
+  434          // ²ÎÊýËµÃ÷       x               ×ø±êx·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_x_max-1]
+  435          // ²ÎÊýËµÃ÷       y               ×ø±êy·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_y_max-1]
+  436          // ²ÎÊýËµÃ÷       dat             ÐèÒªÏÔÊ¾µÄ±äÁ¿£¬Êý¾ÝÀàÐÍfloat»òdouble
+  437          // ²ÎÊýËµÃ÷       num             ÕûÊýÎ»ÏÔÊ¾³¤¶È   ×î¸ß10Î»
+  438          // ²ÎÊýËµÃ÷       pointnum        Ð¡ÊýÎ»ÏÔÊ¾³¤¶È   ×î¸ß6Î»
+  439          // ·µ»Ø²ÎÊý      void
+  440          // Ê¹ÓÃÊ¾Àý                tft180_showfloat(0,0,x,2,3);                    // ÏÔÊ¾¸¡µãÊý   ÕûÊýÏÔÊ¾2Î»   
+             -Ð¡ÊýÏÔÊ¾ÈýÎ»
+  441          // @note                        ÌØ±ð×¢Òâµ±·¢ÏÖÐ¡Êý²¿·ÖÏÔÊ¾µÄÖµÓëÄãÐ´ÈëµÄÖµ²»Ò»ÑùµÄÊ±ºò£¬
+  442          //                              ¿ÉÄÜÊÇÓÉÓÚ¸¡µãÊý¾«¶È¶ªÊ§ÎÊÌâµ¼ÖÂµÄ£¬Õâ²¢²»ÊÇÏÔÊ¾º¯ÊýµÄÎÊÌâ£¬
+  443          //                              ÓÐ¹ØÎÊÌâµÄÏêÇé£¬Çë×ÔÐÐ°Ù¶ÈÑ§Ï°   ¸¡µãÊý¾«¶È¶ªÊ§ÎÊÌâ¡£
+  444          //                              ¸ºÊý»áÏÔÊ¾Ò»¸ö ¡®-¡¯ºÅ   ÕýÊýÏÔÊ¾Ò»¸ö¿Õ¸ñ
+  445          //-------------------------------------------------------------------------------------------------------
+             -------------
+  446          void tft180_show_float(uint16 x,uint16 y,double dat,uint8 num,uint8 pointnum)
+  447          {
+  448   1          uint8   length;
+  449   1          int8    buff[34];
+  450   1          int8    start,end,point;
+  451   1        
+  452   1          zf_assert(x < tft180_x_max);
+  453   1          zf_assert(y < tft180_y_max);
+  454   1        
+  455   1          if(6<pointnum)  pointnum = 6;
+  456   1          if(10<num)      num = 10;
+  457   1              
+  458   1          if(0>dat)   length = zf_sprintf( &buff[0],(const int8 *)"%f",dat);        // ¸ºÊý
+  459   1          else
+  460   1          {
+  461   2              length = zf_sprintf( &buff[1],(const int8 *)"%f",dat);
+  462   2              length++;
+  463   2          }
+  464   1          point = length - 7;                                                         // ¼ÆËãÐ¡ÊýµãÎ»ÖÃ
+  465   1          start = point - num - 1;                                                    // ¼ÆËãÆðÊ¼Î»
+  466   1          end = point + pointnum + 1;                                                 // ¼ÆËã½áÊøÎ»
+  467   1          while(0>start)                                                              // ÕûÊýÎ»²»¹»  Ä©Î²Ó¦¸ÃÌî
+             -³ä¿Õ¸ñ
+  468   1          {
+  469   2              buff[end] = ' ';
+  470   2              end++;
+  471   2              start++;
+  472   2          }
+  473   1          
+  474   1          if(0>dat)   buff[start] = '-';
+  475   1          else        buff[start] = ' ';
+  476   1          
+  477   1          buff[end] = '\0';
+  478   1      
+  479   1          tft180_show_string(x, y, (const char *)buff);                               // ÏÔÊ¾Êý×Ö
+  480   1      }
+  481          
+  482          //-------------------------------------------------------------------------------------------------------
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   13/06/26  12:52:07  PAGE 9   
+
+             -------------
+  483          // º¯Êý¼ò½é     TFT180 ÏÔÊ¾ 8bit »Ò¶ÈÍ¼Ïñ ´ø¶þÖµ»¯ãÐÖµ
+  484          // ²ÎÊýËµÃ÷     x               ×ø±êx·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_x_max-1]
+  485          // ²ÎÊýËµÃ÷     y               ×ø±êy·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_y_max-1]
+  486          // ²ÎÊýËµÃ÷     *image          Í¼ÏñÊý×éÖ¸Õë
+  487          // ²ÎÊýËµÃ÷     width           Í¼ÏñÊµ¼Ê¿í¶È
+  488          // ²ÎÊýËµÃ÷     height          Í¼ÏñÊµ¼Ê¸ß¶È
+  489          // ²ÎÊýËµÃ÷     dis_width       Í¼ÏñÏÔÊ¾¿í¶È ²ÎÊý·¶Î§ [0, tft180_x_max]
+  490          // ²ÎÊýËµÃ÷     dis_height      Í¼ÏñÏÔÊ¾¸ß¶È ²ÎÊý·¶Î§ [0, tft180_y_max]
+  491          // ²ÎÊýËµÃ÷     threshold       ¶þÖµ»¯ÏÔÊ¾ãÐÖµ 0-²»¿ªÆô¶þÖµ»¯
+  492          // ·µ»Ø²ÎÊý     void
+  493          // Ê¹ÓÃÊ¾Àý     tft180_show_gray_image(0, 0, mt9v03x_image[0], MT9V03X_W, MT9V03X_H, MT9V03X_W / 2, MT9V0
+             -3X_H / 2, 0);
+  494          // ±¸×¢ÐÅÏ¢     ÓÃÓÚÏÔÊ¾×Ü×ê·çµÄÍ¼Ïñ
+  495          //              Èç¹ûÒªÏÔÊ¾¶þÖµ»¯Í¼Ïñ Ö±½ÓÐÞ¸Ä×îºóÒ»¸ö²ÎÊýÎªÐèÒªµÄ¶þÖµ»¯ãÐÖµ¼´¿É
+  496          //              Èç¹ûÒªÏÔÊ¾¶þÖµ»¯Í¼Ïñ Ö±½ÓÐÞ¸Ä×îºóÒ»¸ö²ÎÊýÎªÐèÒªµÄ¶þÖµ»¯ãÐÖµ¼´¿É
+  497          //              Èç¹ûÒªÏÔÊ¾¶þÖµ»¯Í¼Ïñ Ö±½ÓÐÞ¸Ä×îºóÒ»¸ö²ÎÊýÎªÐèÒªµÄ¶þÖµ»¯ãÐÖµ¼´¿É
+  498          //-------------------------------------------------------------------------------------------------------
+             -------------
+  499          void tft180_show_gray_image (uint16 x, uint16 y, const uint8 *image, uint16 width, uint16 height, uint16 
+             -dis_width, uint16 dis_height, uint8 threshold)
+  500          {
+  501   1          uint32 i = 0, j = 0;
+  502   1          uint16 color ,temp ;
+  503   1          uint16 data_buffer[TFT180_LEN];
+  504   1          const uint8 *image_temp;
+  505   1      
+  506   1          // Èç¹û³ÌÐòÔÚÊä³öÁË¶ÏÑÔÐÅÏ¢ ²¢ÇÒÌáÊ¾³ö´íÎ»ÖÃÔÚÕâÀï
+  507   1          // ÄÇÃ´Ò»°ãÊÇÆÁÄ»ÏÔÊ¾µÄÊ±ºò³¬¹ýÆÁÄ»·Ö±æÂÊ·¶Î§ÁË
+  508   1          zf_assert(x < tft180_x_max);
+  509   1          zf_assert(y < tft180_y_max);
+  510   1          zf_assert(NULL != image);
+  511   1      
+  512   1          TFT180_CS(0);
+  513   1          tft180_set_region(x, y, x + dis_width - 1, y + dis_height - 1);             // ÉèÖÃÏÔÊ¾ÇøÓò
+  514   1      
+  515   1          for(j = 0; j < dis_height; j ++)
+  516   1          {
+  517   2              image_temp = image + j * height / dis_height * width;                   // Ö±½Ó¶Ô image ²Ù×÷»á Ha
+             -rdfault ÔÝÊ±²»ÖªµÀÎªÊ²Ã´
+  518   2              for(i = 0; i < dis_width; i ++)
+  519   2              {
+  520   3                  temp = *(image_temp + i * width / dis_width);                       // ¶ÁÈ¡ÏñËØµã
+  521   3                  if(threshold == 0)
+  522   3                  {
+  523   4                      color = (0x001f & ((temp) >> 3)) << 11;
+  524   4                      color = color | (((0x003f) & ((temp) >> 2)) << 5);
+  525   4                      color = color | (0x001f & ((temp) >> 3));
+  526   4                      data_buffer[i] = (color);
+  527   4                  }
+  528   3                  else if(temp < threshold)
+  529   3                  {
+  530   4                      data_buffer[i] = (RGB565_BLACK);
+  531   4                  }
+  532   3                  else
+  533   3                  {
+  534   4                      data_buffer[i] = (RGB565_WHITE);
+  535   4                  }
+  536   3              }
+  537   2              tft180_write_16bit_data_arry(data_buffer, dis_width);
+  538   2          }
+  539   1          
+  540   1          TFT180_CS(1);
+  541   1      }
+  542          
+  543          //-------------------------------------------------------------------------------------------------------
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   13/06/26  12:52:07  PAGE 10  
+
+             -------------
+  544          // º¯Êý¼ò½é       TFT180 ÏÔÊ¾²¨ÐÎ2
+  545          // ²ÎÊýËµÃ÷       x               ×ø±êx·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_x_max-1]
+  546          // ²ÎÊýËµÃ÷       y               ×ø±êy·½ÏòµÄÆðµã ²ÎÊý·¶Î§ [0, tft180_y_max-1]
+  547          // ²ÎÊýËµÃ÷       *p              ²¨ÐÎÊý×éÖ¸Õë
+  548          // ²ÎÊýËµÃ÷       width           ²¨ÐÎÊµ¼Ê¿í¶È
+  549          // ²ÎÊýËµÃ÷       value_max       ²¨ÐÎÊµ¼Ê×î´óÖµ
+  550          // ²ÎÊýËµÃ÷       dis_width       ²¨ÐÎÏÔÊ¾¿í¶È ²ÎÊý·¶Î§ [0, tft180_x_max]
+  551          // ²ÎÊýËµÃ÷       dis_value_max   ²¨ÐÎÏÔÊ¾×î´óÖµ ²ÎÊý·¶Î§ [0, tft180_y_max]
+  552          // ·µ»Ø²ÎÊý      void
+  553          // Ê¹ÓÃÊ¾Àý                tft180_show_gray_image(0,0,camera_buffer_addr,MT9V03X_W,MT9V03X_H,240,135,128)
+             -;
+  554          //-------------------------------------------------------------------------------------------------------
+             -------------
+  555          void tft180_show_wave(uint16 x, uint16 y, uint8 *p, uint16 width, uint16 value_max, uint16 dis_width, uin
+             -t16 dis_value_max)
+  556          {
+  557   1          uint32 i = 0, j = 0;
+  558   1          uint32 width_index, value_max_index;
+  559   1        
+  560   1          zf_assert(x < tft180_x_max);
+  561   1          zf_assert(y < tft180_y_max);
+  562   1        
+  563   1          tft180_set_region(x, y, x+dis_width-1, y+dis_value_max-1);                  // ÉèÖÃÏÔÊ¾ÇøÓò
+  564   1          for(i=0;i<dis_value_max;i++)
+  565   1          {
+  566   2              for(j=0;j<dis_width;j++)
+  567   2              {
+  568   3                  tft180_write_16bit_data(tft180_bgcolor); 
+  569   3              }
+  570   2          }
+  571   1      
+  572   1          for(i=0;i<dis_width;i++)
+  573   1          {
+  574   2              width_index = i*width/dis_width;
+  575   2              value_max_index = *(p+width_index)*(dis_value_max-1)/value_max;
+  576   2              tft180_draw_point(i+x, (dis_value_max-1)-value_max_index+y, tft180_pencolor);
+  577   2          }
+  578   1      }
+  579          
+  580          //-------------------------------------------------------------------------------------------------------
+             -------------
+  581          // º¯Êý¼ò½é       1.8´ç TFTÒº¾§³õÊ¼»¯
+  582          // ·µ»Ø²ÎÊý      void
+  583          // Ê¹ÓÃÊ¾Àý                tft180_init();
+  584          //-------------------------------------------------------------------------------------------------------
+             -------------
+  585          void tft180_init (void)
+  586          {
+  587   1      #if (TFT180_USE_INTERFACE==SOFT_SPI)  
+                   soft_spi_init(&tft180_spi, SPI_MODE0, TFT180_SOFT_SPI_DELAY, TFT180_SCL_PIN, TFT180_SDA_PIN, SOFT_SPI
+             -_PIN_NULL, SOFT_SPI_PIN_NULL);
+               #elif (TFT180_USE_INTERFACE==HARDWARE_SPI)
+  590   1          spi_dma_init(TFT180_SPI, SPI_MODE0, TFT180_SPI_SPEED, TFT180_SCL_PIN, TFT180_SDA_PIN, SPI_MISO_NULL, 
+             -SPI_CS_NULL);
+  591   1      #endif
+  592   1      
+  593   1          gpio_init(TFT180_DC_PIN, GPO, GPIO_LOW, GPO_PUSH_PULL);
+  594   1          gpio_init(TFT180_RES_PIN, GPO, GPIO_LOW, GPO_PUSH_PULL);
+  595   1          gpio_init(TFT180_CS_PIN, GPO, GPIO_LOW, GPO_PUSH_PULL);
+  596   1          gpio_init(TFT180_BL_PIN, GPO, GPIO_HIGH, GPO_PUSH_PULL);
+  597   1      
+  598   1          tft180_set_dir(tft180_display_dir);
+  599   1          tft180_set_color(tft180_pencolor, tft180_bgcolor);
+  600   1      
+  601   1          TFT180_RES(0);
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   13/06/26  12:52:07  PAGE 11  
+
+  602   1          system_delay_ms(10);
+  603   1      
+  604   1          TFT180_RES(1);
+  605   1          system_delay_ms(120);
+  606   1      
+  607   1          tft180_write_index(0x11);
+  608   1          system_delay_ms(120);
+  609   1      
+  610   1          tft180_write_index(0xB1);
+  611   1          tft180_write_8bit_data(0x01);
+  612   1          tft180_write_8bit_data(0x2C);
+  613   1          tft180_write_8bit_data(0x2D);
+  614   1      
+  615   1          tft180_write_index(0xB2);
+  616   1          tft180_write_8bit_data(0x01);
+  617   1          tft180_write_8bit_data(0x2C);
+  618   1          tft180_write_8bit_data(0x2D);
+  619   1      
+  620   1          tft180_write_index(0xB3);
+  621   1          tft180_write_8bit_data(0x01);
+  622   1          tft180_write_8bit_data(0x2C);
+  623   1          tft180_write_8bit_data(0x2D);
+  624   1          tft180_write_8bit_data(0x01);
+  625   1          tft180_write_8bit_data(0x2C);
+  626   1          tft180_write_8bit_data(0x2D);
+  627   1      
+  628   1          tft180_write_index(0xB4);
+  629   1          tft180_write_8bit_data(0x07);
+  630   1      
+  631   1          tft180_write_index(0xC0);
+  632   1          tft180_write_8bit_data(0xA2);
+  633   1          tft180_write_8bit_data(0x02);
+  634   1          tft180_write_8bit_data(0x84);
+  635   1          tft180_write_index(0xC1);
+  636   1          tft180_write_8bit_data(0xC5);
+  637   1      
+  638   1          tft180_write_index(0xC2);
+  639   1          tft180_write_8bit_data(0x0A);
+  640   1          tft180_write_8bit_data(0x00);
+  641   1      
+  642   1          tft180_write_index(0xC3);
+  643   1          tft180_write_8bit_data(0x8A);
+  644   1          tft180_write_8bit_data(0x2A);
+  645   1          tft180_write_index(0xC4);
+  646   1          tft180_write_8bit_data(0x8A);
+  647   1          tft180_write_8bit_data(0xEE);
+  648   1      
+  649   1          tft180_write_index(0xC5);
+  650   1          tft180_write_8bit_data(0x0E);
+  651   1      
+  652   1          tft180_write_index(0x36);
+  653   1          switch(tft180_display_dir)                                                         // y x v
+  654   1          {
+  655   2              case 0: tft180_write_8bit_data(1<<7 | 1<<6 | 0<<5);  break;                          // ÊúÆÁÄ£Ê½
+  656   2              case 1: tft180_write_8bit_data(0<<7 | 0<<6 | 0<<5);  break;                          // ÊúÆÁÄ£Ê½ 
+             - Ðý×ª180
+  657   2              case 2: tft180_write_8bit_data(1<<7 | 0<<6 | 1<<5);  break;                          // ºáÆÁÄ£Ê½
+  658   2              case 3: tft180_write_8bit_data(0<<7 | 1<<6 | 1<<5);  break;                          // ºáÆÁÄ£Ê½ 
+             - Ðý×ª180
+  659   2          }
+  660   1      
+  661   1          tft180_write_index(0xe0);
+  662   1          tft180_write_8bit_data(0x0f);
+  663   1          tft180_write_8bit_data(0x1a);
+  664   1          tft180_write_8bit_data(0x0f);
+  665   1          tft180_write_8bit_data(0x18);
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   13/06/26  12:52:07  PAGE 12  
+
+  666   1          tft180_write_8bit_data(0x2f);
+  667   1          tft180_write_8bit_data(0x28);
+  668   1          tft180_write_8bit_data(0x20);
+  669   1          tft180_write_8bit_data(0x22);
+  670   1          tft180_write_8bit_data(0x1f);
+  671   1          tft180_write_8bit_data(0x1b);
+  672   1          tft180_write_8bit_data(0x23);
+  673   1          tft180_write_8bit_data(0x37);
+  674   1          tft180_write_8bit_data(0x00);
+  675   1          tft180_write_8bit_data(0x07);
+  676   1          tft180_write_8bit_data(0x02);
+  677   1          tft180_write_8bit_data(0x10);
+  678   1      
+  679   1          tft180_write_index(0xe1);
+  680   1          tft180_write_8bit_data(0x0f);
+  681   1          tft180_write_8bit_data(0x1b);
+  682   1          tft180_write_8bit_data(0x0f);
+  683   1          tft180_write_8bit_data(0x17);
+  684   1          tft180_write_8bit_data(0x33);
+  685   1          tft180_write_8bit_data(0x2c);
+  686   1          tft180_write_8bit_data(0x29);
+  687   1          tft180_write_8bit_data(0x2e);
+  688   1          tft180_write_8bit_data(0x30);
+  689   1          tft180_write_8bit_data(0x30);
+  690   1          tft180_write_8bit_data(0x39);
+  691   1          tft180_write_8bit_data(0x3f);
+  692   1          tft180_write_8bit_data(0x00);
+  693   1          tft180_write_8bit_data(0x07);
+  694   1          tft180_write_8bit_data(0x03);
+  695   1          tft180_write_8bit_data(0x10);
+  696   1      
+  697   1          tft180_write_index(0x2a);
+  698   1          tft180_write_8bit_data(0x00);
+  699   1          tft180_write_8bit_data(0x00+2);
+  700   1          tft180_write_8bit_data(0x00);
+  701   1          tft180_write_8bit_data(0x80+2);
+  702   1      
+  703   1          tft180_write_index(0x2b);
+  704   1          tft180_write_8bit_data(0x00);
+  705   1          tft180_write_8bit_data(0x00+3);
+  706   1          tft180_write_8bit_data(0x00);
+  707   1          tft180_write_8bit_data(0x80+3);
+  708   1      
+  709   1          tft180_write_index(0xF0);
+  710   1          tft180_write_8bit_data(0x01);
+  711   1          tft180_write_index(0xF6);
+  712   1          tft180_write_8bit_data(0x00);
+  713   1      
+  714   1          tft180_write_index(0x3A);
+  715   1          tft180_write_8bit_data(0x05);
+  716   1          tft180_write_index(0x29);
+  717   1      
+  718   1          tft180_clear(tft180_bgcolor);
+  719   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =      5727     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =       890     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   13/06/26  12:52:07  PAGE 13  
+
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =        84     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

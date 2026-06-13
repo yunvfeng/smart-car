@@ -1,0 +1,172 @@
+C251 COMPILER V5.60.0,  control                                                            09/05/26  22:49:17  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE control
+OBJECT MODULE PLACED IN .\out_file\control.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE control.c LARGE ROM(HUGE) WARNINGLEVEL(3) OPTIMIZE(0,SIZE) BROWSE INCD
+                    -IR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\user;.
+                    -.\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekfree_assistant) DEBUG PRINT(.\out_
+                    -file\control.lst) TABS(2) OBJECT(.\out_file\control.obj) 
+
+stmt  level    source
+
+    1          #include "control.h"
+    2          #include "param.h"
+    3          #include "servo.h"
+    4          #include "encoder.h"
+    5          #include "motor.h"
+    6          // ---------------------------------------------------------
+    7          // 静态私有变量 (隔离于 RAM 低端)
+    8          // ---------------------------------------------------------
+    9          static int16 steer_last_error = 0;  // 记录上次误差，用于微分 D 项
+   10          static int16 last_output_duty = 0;  // 记录上次输出，用于一阶低通滤波
+   11          
+   12          static int16 err_L_last = 0; // 上次左轮误差
+   13          static int16 err_R_last = 0; // 上次右轮误差
+   14          static int32 duty_L_accum = 0; // 左轮累计占空比 (Q0)
+   15          static int32 duty_R_accum = 0; // 右轮累计占空比 (Q0)
+   16          // ---------------------------------------------------------
+   17          // 函数功能：核心解算 - 速度自适应变结构 PD
+   18          // 算法逻辑：
+   19          // 1. 速度补偿：速度越高，增益越低，防止高速画龙。
+   20          // 2. 动态 Kp：偏差越大，增益越高，保证弯道力度。
+   21          // ---------------------------------------------------------
+   22          static int16 Pure_Math_Steer_Calc(int16 error, int16 curvature) {
+   23   1          int32 p_term, d_term, f_term;
+   24   1          int32 dynamic_kp, speed_scaler;
+   25   1          int32 total_out;
+   26   1          int16 abs_err;
+   27   1          int16 v_ref;
+   28   1      
+   29   1          // [1] 速度自适应因子计算
+   30   1          v_ref = g_State.current_speed; 
+   31   1          if (v_ref < 100) v_ref = 100; // 保护：最低按 100 脉冲算，防止除零
+   32   1      
+   33   1          // 缩放系数 = (基准速度 / 当前速度) * 1024
+   34   1          // 当 v_ref = base_speed 时，scaler = 1024 (即 1.0 倍)
+   35   1          speed_scaler = ((int32)g_Params.target_speed << 10) / v_ref;
+   36   1          if (speed_scaler > 2048) speed_scaler = 2048; // 最大增强 2 倍
+   37   1          if (speed_scaler < 100)  speed_scaler = 100;  // 最大衰减 0.5 倍
+   38   1      
+   39   1          // [2] 动态 Kp 生成 (抛物线模型：Kp = Kp_base * (1 + err^2 / 2048))
+   40   1          abs_err = (error > 0) ? error : -error;
+   41   1          if (abs_err > 47) abs_err = 47; 
+   42   1          dynamic_kp = (int32)g_Params.Kp_Steer + (((int32)g_Params.Kp_Steer * (int32)abs_err * (int32)abs_err)
+             - >> 11);
+   43   1      
+   44   1          // [3] 速度因子注入：同步调整 Kp 和 Kd
+   45   1          dynamic_kp = (dynamic_kp * speed_scaler) >> 10;
+   46   1          
+   47   1          // [4] PD + 前馈解算 (全 32 位运算)
+   48   1          p_term = dynamic_kp * (int32)error;
+   49   1          d_term = (((int32)g_Params.Kd_Steer * speed_scaler) >> 10) * (int32)(error - steer_last_error);
+   50   1          f_term = (int32)g_Params.Kf_Curve * (int32)curvature;
+   51   1      
+   52   1          // 更新历史误差
+   53   1          steer_last_error = error;
+   54   1      
+   55   1          // [5] 合成并降维
+C251 COMPILER V5.60.0,  control                                                            09/05/26  22:49:17  PAGE 2   
+
+   56   1          total_out = (p_term + d_term + f_term) >> 10;
+   57   1          return (int16)(g_Params.servo_center-total_out);
+   58   1      }
+   59          // ---------------------------------------------------------
+   60          // 函数功能：增量式 PI 计算核心 (定点化优化)
+   61          // 算法公式：ΔDuty = Kp * (e[k] - e[k-1]) + Ki * e[k]
+   62          // ---------------------------------------------------------
+   63          static int16 Incremental_PI_Calc(int16 target, int16 current, int16 *last_err, int32 *accum) {
+   64   1          int16 err;
+   65   1          int32 delta_duty;
+   66   1      
+   67   1          // 1. 计算当前偏差
+   68   1          err = target - current;
+   69   1      
+   70   1          // 2. 计算增量 (Kp 和 Ki 在 param.c 中已放大 1024 倍)
+   71   1          // 增量 = [Kp * (当前误差 - 上次误差) + Ki * 当前误差] / 1024
+   72   1          delta_duty = (g_Params.Kp_Motor * (int32)(err - *last_err) + g_Params.Ki_Motor * (int32)err) >> 10;
+   73   1      
+   74   1          // 3. 累加到输出总量
+   75   1          *accum += delta_duty;
+   76   1      
+   77   1          // 4. 更新历史误差
+   78   1          *last_err = err;
+   79   1      
+   80   1          // 5. 输出限幅保护 (防止超过底层 Set_Motor_PWM 的最大输入)
+   81   1          if (*accum > MOTOR_MAX_LIMIT)  *accum = MOTOR_MAX_LIMIT;
+   82   1          if (*accum < -MOTOR_MAX_LIMIT) *accum = -MOTOR_MAX_LIMIT;
+   83   1      
+   84   1          return (int16)(*accum);
+   85   1      }
+   86          // ---------------------------------------------------------
+   87          // 函数功能：舵机执行管线 (含平滑滤波与物理限幅)
+   88          // ---------------------------------------------------------
+   89          void Steer_Control_Task(void) {
+   90   1          int16 raw_target;
+   91   1          int16 filtered_out;
+   92   1      
+   93   1          // 初始化判定：防止首次运行从 0 突变
+   94   1          if (last_output_duty == 0) last_output_duty = g_Params.servo_center;
+   95   1      
+   96   1          // 1. 获取解算目标
+   97   1          raw_target = Pure_Math_Steer_Calc(g_State.center_offset, g_State.curvature);
+   98   1      
+   99   1          // 2. 【核心优化】一阶低通滤波 (代替步长限幅，动作更丝滑)
+  100   1          // 公式：Output = New * 0.4 + Old * 0.6
+  101   1          // 这种比例既能滤除图像抖动，又不会产生明显的控制滞后
+  102   1          filtered_out = (int16)(((int32)raw_target * 3 + (int32)last_output_duty) >> 2);
+  103   1          last_output_duty = filtered_out;
+  104   1      
+  105   1          // 3. 物理层最后一道防线：硬件限幅
+  106   1          if (filtered_out > STEER_MAX_LIMIT)      filtered_out = STEER_MAX_LIMIT;
+  107   1          else if (filtered_out < STEER_MIN_LIMIT) filtered_out = STEER_MIN_LIMIT;
+  108   1      
+  109   1          // 4. 真正赋能底层驱动
+  110   1          Set_Servo_Duty((uint32)filtered_out);
+  111   1      }
+  112          void Motor_Control_Task(void) {
+  113   1          int16 target_L, target_R;
+  114   1      
+  115   1          // 1. 目标速度：直接取你在 main 设定的 base_speed
+  116   1          // 假设现在先不搞差速，让 diff = 0
+  117   1          target_L = g_Params.target_speed; 
+  118   1          target_R = g_Params.target_speed;
+  119   1      
+  120   1          // 2. 记录偏差：存入状态机方便观察
+  121   1          g_State.speed_error_L = target_L - g_State.speed_L;
+C251 COMPILER V5.60.0,  control                                                            09/05/26  22:49:17  PAGE 3   
+
+  122   1          g_State.speed_error_R = target_R - g_State.speed_R;
+  123   1      
+  124   1          // 3. 执行 PI 计算
+  125   1          g_State.duty_L = Incremental_PI_Calc(target_L, g_State.speed_L, &err_L_last, &duty_L_accum);
+  126   1          g_State.duty_R = Incremental_PI_Calc(target_R, g_State.speed_R, &err_R_last, &duty_R_accum);
+  127   1        
+  128   1      
+  129   1          // 4. 驱动硬件
+  130   1          Set_Motor_PWM(g_State.duty_L, g_State.duty_R);
+  131   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =      1205     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =        74     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =        46     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

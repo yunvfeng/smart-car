@@ -1,0 +1,1454 @@
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_driver_spi
+OBJECT MODULE PLACED IN .\out_file\zf_driver_spi.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\..\libraries\zf_driver\zf_driver_spi.c LARGE ROM(HUGE) WARNINGLEVEL
+                    -(3) OPTIMIZE(0,SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\
+                    -..\libraries\zf_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekfr
+                    -ee_assistant) DEBUG PRINT(.\out_file\zf_driver_spi.lst) TABS(2) OBJECT(.\out_file\zf_driver_spi.obj) 
+
+stmt  level    source
+
+    1          /********************************************************************************************************
+             -*************
+    2          * STC32G144K Opensourec Library ¼´£¨STC32G144K ¿ªÔ´¿â£©ÊÇÒ»¸ö»ùÓÚ¹Ù·½ SDK ½Ó¿ÚµÄµÚÈý·½¿ªÔ´¿â
+    3          * Copyright (c) 2022 SEEKFREE Öð·É¿Æ¼¼
+    4          *
+    5          * ±¾ÎÄ¼þÊÇSTC ¿ªÔ´¿âµÄÒ»²¿·Ö
+    6          *
+    7          * STC32G144K ¿ªÔ´¿â ÊÇÃâ·ÑÈí¼þ
+    8          * Äú¿ÉÒÔ¸ù¾Ý×ÔÓÉÈí¼þ»ù½ð»á·¢²¼µÄ GPL£¨GNU General Public License£¬¼´ GNUÍ¨ÓÃ¹«¹²Ðí¿ÉÖ¤£©µÄÌõ¿î
+    9          * ¼´ GPL µÄµÚ3°æ£¨¼´ GPL3.0£©»ò£¨ÄúÑ¡ÔñµÄ£©ÈÎºÎºóÀ´µÄ°æ±¾£¬ÖØÐÂ·¢²¼ºÍ/»òÐÞ¸ÄËü
+   10          *
+   11          * ±¾¿ªÔ´¿âµÄ·¢²¼ÊÇÏ£ÍûËüÄÜ·¢»Ó×÷ÓÃ£¬µ«²¢Î´¶ÔÆä×÷ÈÎºÎµÄ±£Ö¤
+   12          * ÉõÖÁÃ»ÓÐÒþº¬µÄÊÊÏúÐÔ»òÊÊºÏÌØ¶¨ÓÃÍ¾µÄ±£Ö¤
+   13          * ¸ü¶àÏ¸½ÚÇë²Î¼û GPL
+   14          *
+   15          * ÄúÓ¦¸ÃÔÚÊÕµ½±¾¿ªÔ´¿âµÄÍ¬Ê±ÊÕµ½Ò»·Ý GPL µÄ¸±±¾
+   16          * Èç¹ûÃ»ÓÐ£¬Çë²ÎÔÄ<https://www.gnu.org/licenses/>
+   17          *
+   18          * ¶îÍâ×¢Ã÷£º
+   19          * ±¾¿ªÔ´¿âÊ¹ÓÃ GPL3.0 ¿ªÔ´Ðí¿ÉÖ¤Ð­Òé ÒÔÉÏÐí¿ÉÉêÃ÷ÎªÒëÎÄ°æ±¾
+   20          * Ðí¿ÉÉêÃ÷Ó¢ÎÄ°æÔÚ libraries/doc ÎÄ¼þ¼ÐÏÂµÄ GPL3_permission_statement.txt ÎÄ¼þÖÐ
+   21          * Ðí¿ÉÖ¤¸±±¾ÔÚ libraries ÎÄ¼þ¼ÐÏÂ ¼´¸ÃÎÄ¼þ¼ÐÏÂµÄ LICENSE ÎÄ¼þ
+   22          * »¶Ó­¸÷Î»Ê¹ÓÃ²¢´«²¥±¾³ÌÐò µ«ÐÞ¸ÄÄÚÈÝÊ±±ØÐë±£ÁôÖð·É¿Æ¼¼µÄ°æÈ¨ÉùÃ÷£¨¼´±¾ÉùÃ÷£©
+   23          *
+   24          * ÎÄ¼þÃû³Æ          
+   25          * ¹«Ë¾Ãû³Æ          ³É¶¼Öð·É¿Æ¼¼ÓÐÏÞ¹«Ë¾
+   26          * °æ±¾ÐÅÏ¢          ²é¿´ libraries/doc ÎÄ¼þ¼ÐÄÚ version ÎÄ¼þ °æ±¾ËµÃ÷
+   27          * ¿ª·¢»·¾³          MDK FOR C251
+   28          * ÊÊÓÃÆ½Ì¨          STC32G144K
+   29          * µêÆÌÁ´½Ó          https://seekfree.taobao.com/
+   30          *
+   31          * ÐÞ¸Ä¼ÇÂ¼
+   32          * ÈÕÆÚ              ×÷Õß           ±¸×¢
+   33          * 2025-11-20        ´óW            first version
+   34          *********************************************************************************************************
+             -***********/
+   35          #pragma warning disable = 47
+   36          
+   37          #include "zf_common_debug.h"
+   38          #include "zf_common_clock.h"
+   39          #include "zf_driver_gpio.h"
+   40          #include "zf_driver_spi.h"
+   41          
+   42          #pragma warning disable = 183
+   43          #pragma warning disable = 177
+   44          
+   45          /*
+   46          #define SPI0_WRITE_DAT(dat)     \
+   47              SPSTAT = 0xc0;              \
+   48              SPDAT = dat;        \
+   49              while (!(SPSTAT & 0x80));
+   50          
+   51          #define SPI1_WRITE_DAT(dat)     \
+   52              TI = 0x0;                 \
+   53              SBUF = dat;         \
+   54              while (!TI)
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 2   
+
+   55          
+   56          #define SPI2_WRITE_DAT(dat)     \
+   57              S2TI = 0x0;               \
+   58              S2BUF = dat;        \
+   59              while (!S2TI)
+   60              
+   61          #define SPI_WRITE_DAT(spi_n, dat) \
+   62            switch (spi_n)          \
+   63            {                               \
+   64              case SPI_0:                 \
+   65                SPI0_WRITE_DAT(dat);    \
+   66                break;                  \
+   67              case SPI_1:                 \
+   68                SPI1_WRITE_DAT(dat);    \
+   69                break;                  \
+   70              case SPI_2:                 \
+   71                SPI2_WRITE_DAT(dat);    \
+   72                break;                  \
+   73              default:                    \
+   74                zf_assert(0);           \
+   75                break;                  \
+   76            }
+   77          
+   78          */
+   79          
+   80          
+   81          
+   82          const vuint32 DMA_SPIx_STA_ADDR[] = 
+   83          {
+   84              0x7efa22,
+   85              0x7ef812,
+   86              0x7ef832,
+   87          };
+   88          
+   89          
+   90          const vuint32 DMA_SPIx_CFG_ADDR[] = 
+   91          {
+   92              0x7efa20,
+   93              0x7ef810,
+   94              0x7ef830,
+   95          };
+   96          
+   97          const vuint32 DMA_SPIx_AMT_ADDR[] = 
+   98          {
+   99              0x7efa23,
+  100              0x7ef815,
+  101              0x7ef835,
+  102          };
+  103          
+  104          const vuint32 DMA_SPIx_AMTH_ADDR[] = 
+  105          {
+  106              0x7efa84,
+  107              0x7ef814,
+  108              0x7ef834,
+  109          };
+  110          
+  111          const vuint32 DMA_SPIx_TXAH_ADDR[] = 
+  112          {
+  113              0x7efa25,
+  114              0x7ef818,
+  115              0x7ef838,
+  116          };
+  117          
+  118          const vuint32 DMA_SPIx_TXAL_ADDR[] = 
+  119          {
+  120              0x7efa26,
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 3   
+
+  121              0x7ef819,
+  122              0x7ef839,
+  123          };
+  124          
+  125          const vuint32 DMA_SPIx_RXAH_ADDR[] = 
+  126          {
+  127              0x7efa27,
+  128              0x7ef81a,
+  129              0x7ef83a,
+  130          };
+  131          
+  132          const vuint32 DMA_SPIx_RXAL_ADDR[] = 
+  133          {
+  134              0x7efa28,
+  135              0x7ef81b,
+  136              0x7ef83b,
+  137          };
+  138          
+  139          const vuint32 DMA_SPIx_ITVH_ADDR[] = 
+  140          {
+  141              0x7efa2e,
+  142              0x7ef81e,
+  143              0x7ef83e,
+  144          };
+  145          
+  146          const vuint32 DMA_SPIx_ITVL_ADDR[] = 
+  147          {
+  148              0x7efa2f,
+  149              0x7ef81f,
+  150              0x7ef83f,
+  151          };
+  152          
+  153          const vuint32 DMA_SPIx_CR_ADDR[] = 
+  154          {
+  155              0x7efa21,
+  156              0x7ef811,
+  157              0x7ef831,
+  158          };
+  159          
+  160          const vuint32 HSSPIX_CFG_ADDR[] = 
+  161          {
+  162              0x7efbf8,
+  163              0x7ef809,
+  164              0x7ef829,
+  165          };
+  166          
+  167          const vuint32 HSSPIX_CFG2_ADDR[] = 
+  168          {
+  169              0x7efbf9,
+  170              0x7ef80a,
+  171              0x7ef82a,
+  172          };
+  173          
+  174          
+  175          const vuint32 SPIX_CLKDIV_ADDR[] = 
+  176          {
+  177              0x7efe90,
+  178              0x7ef808,
+  179              0x7ef828,
+  180          };
+  181          
+  182          #define DMA_SPIX_STA(pin)       (*(vuint8 far *)(DMA_SPIx_STA_ADDR[pin]))
+  183          #define DMA_SPIX_CFG(pin)       (*(vuint8 far *)(DMA_SPIx_CFG_ADDR[pin]))
+  184          #define DMA_SPIX_AMT(pin)       (*(vuint8 far *)(DMA_SPIx_AMT_ADDR[pin]))
+  185          #define DMA_SPIX_AMTH(pin)      (*(vuint8 far *)(DMA_SPIx_AMTH_ADDR[pin]))    
+  186          #define DMA_SPIX_TXAH(pin)      (*(vuint8 far *)(DMA_SPIx_TXAH_ADDR[pin]))
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 4   
+
+  187          #define DMA_SPIX_TXAL(pin)      (*(vuint8 far *)(DMA_SPIx_TXAL_ADDR[pin]))
+  188          #define DMA_SPIX_RXAH(pin)      (*(vuint8 far *)(DMA_SPIx_RXAH_ADDR[pin]))
+  189          #define DMA_SPIX_RXAL(pin)      (*(vuint8 far *)(DMA_SPIx_RXAL_ADDR[pin]))
+  190          #define DMA_SPIX_ITVH(pin)      (*(vuint8 far *)(DMA_SPIx_ITVH_ADDR[pin]))
+  191          #define DMA_SPIX_ITVL(pin)      (*(vuint8 far *)(DMA_SPIx_ITVL_ADDR[pin]))
+  192          #define DMA_SPIX_CR(pin)        (*(vuint8 far *)(DMA_SPIx_CR_ADDR[pin]))
+  193          
+  194          #define HSSPIX_CFG(pin)         (*(vuint8 far *)(HSSPIX_CFG_ADDR[pin]))
+  195          #define HSSPIX_CFG2(pin)        (*(vuint8 far *)(HSSPIX_CFG2_ADDR[pin]))
+  196          #define SPIX_CLKDIV(pin)        (*(vuint8 far *)(SPIX_CLKDIV_ADDR[pin]))
+  197          
+  198          //-------------------------------------------------------------------------------------------------------
+             -------------
+  199          // º¯Êý¼ò½é     SPI´«Êä½Ó¿Ú
+  200          // ·µ»Ø²ÎÊý     void
+  201          // Ê¹ÓÃÊ¾Àý     ÄÚ²¿Ê¹ÓÃ£¬ÓÃ»§ÎÞÐè¹ØÐÄ
+  202          //-------------------------------------------------------------------------------------------------------
+             -------------
+  203          void spi_dma_transfer(spi_index_enum spi_n, uint8 *write_buffer, uint8 *read_buffer, uint32 len)
+  204          {
+  205   1        #define BUFF_LEN 64
+  206   1        
+  207   1        // ÒòDMAÖ»ÄÜ²Ù×÷xdataÇøÓòµÄÊý¾Ý£¬ËùÒÔ£¬ÕâÀïÐÂ½¨Ò»¸öÊý×é£¬°áÒÆ¡£
+  208   1        uint8 xdata tmp_buff[BUFF_LEN] = {0};
+  209   1          uint16 tmp_len = 0;
+  210   1          uint16 read_idx = 0;
+  211   1          // Ö¸ÕëµØÖ·´óÓÚ0x800000µÄÊ±ºò£¬ÎªFLASHµØÖ·
+  212   1          // FLASHµØÖ·£¬²»Ö§³ÖDMA°áÒÆ¡£
+  213   1        if((uint32)write_buffer >= 0x800000)
+  214   1          {
+  215   2              while(len)
+  216   2              {
+  217   3                  tmp_len = (len > BUFF_LEN) ? BUFF_LEN : len;                        // ¼ÆËã³¤¶È
+  218   3                  memcpy(tmp_buff, write_buffer, tmp_len);                            // ¿½±´
+  219   3                  len -= tmp_len;                                                     // È¥µôÒÑ¾­·¢ËÍµÄ³¤¶È
+  220   3                  write_buffer += tmp_len;                                            // Ö¸ÕëÖ¸ÏòºóÃæ
+  221   3                
+  222   3                  DMA_SPIX_AMT(spi_n)  = (uint8)((tmp_len - 1) & 0xFF);             // ÉèÖÃ´«Êä×Ü×Ö½ÚÊý(µÍ8Î»)£ºn
+             -+1
+  223   3                  DMA_SPIX_AMTH(spi_n) = (uint8)(((tmp_len - 1) & 0xFF00) >> 8);      // ÉèÖÃ´«Êä×Ü×Ö½ÚÊý(¸ß8Î»)£º
+             -n+1
+  224   3          
+  225   3                  DMA_SPIX_TXAH(spi_n) = (uint8)((uint16)&tmp_buff[0] >> 8);          // SPI·¢ËÍÊý¾Ý´æ´¢µØÖ·
+  226   3                  DMA_SPIX_TXAL(spi_n) = (uint8)((uint16)&tmp_buff[0]);
+  227   3            
+  228   3            DMA_SPIX_TXAH(spi_n) = (uint8)((uint16)&read_buffer[read_idx] >> 8);  // SPI½ÓÊÕÊý¾Ý´æ´¢µØÖ·
+  229   3                  DMA_SPIX_TXAL(spi_n) = (uint8)((uint16)&read_buffer[read_idx]);
+  230   3            
+  231   3                  DMA_SPIX_CFG(spi_n)  = 1 << 6;                                      // ·¢ËÍÊý¾Ý
+  232   3                  DMA_SPIX_CR(spi_n)   = 0xC1;                                        // Ê¹ÄÜSPI_DMA ÉèÖÃÎªÖ÷»úÄ£
+             -Ê½ Çå¿ÕFIFO
+  233   3                  while(!(DMA_SPIX_STA(spi_n) & 0x01));   
+  234   3                  DMA_SPIX_STA(spi_n)  = 0;                                           // Çå¿Õ±êÖ¾Î»
+  235   3                
+  236   3            read_idx += tmp_len;
+  237   3              }
+  238   2          }
+  239   1        else
+  240   1        {
+  241   2          DMA_SPIX_AMT(spi_n)  = (uint8)((len - 1) & 0xFF);             // ÉèÖÃ´«Êä×Ü×Ö½ÚÊý(µÍ8Î»)£ºn+1
+  242   2          DMA_SPIX_AMTH(spi_n) = (uint8)(((len - 1) & 0xFF00) >> 8);    // ÉèÖÃ´«Êä×Ü×Ö½ÚÊý(¸ß8Î»)£ºn+1
+  243   2          DMA_SPIX_TXAH(spi_n) = (uint8)((uint16)&write_buffer[0] >> 8);  // SPI·¢ËÍÊý¾Ý´æ´¢µØÖ·
+  244   2          DMA_SPIX_TXAL(spi_n) = (uint8)((uint16)&write_buffer[0]);
+  245   2          DMA_SPIX_RXAH(spi_n) = (uint8)((uint16)&read_buffer[0] >> 8); // SPI½ÓÊÕÊý¾Ý´æ´¢µØÖ·
+  246   2          DMA_SPIX_RXAL(spi_n) = (uint8)((uint16)&read_buffer[0]);
+  247   2          
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 5   
+
+  248   2          DMA_SPIX_CFG(spi_n)  = 1 << 6 | 1 <<5;                          // ·¢ËÍÊý¾Ý£¬¶ÁÈ¡Êý¾Ý
+  249   2          DMA_SPIX_CR(spi_n)   = 0xC1;                                    // Ê¹ÄÜSPI_DMA ÉèÖÃÎªÖ÷»úÄ£Ê½ Çå¿ÕFIFO
+  250   2          while(!(DMA_SPIX_STA(spi_n) & 0x01));
+  251   2          DMA_SPIX_STA(spi_n)  = 0;                                       // Çå¿Õ±êÖ¾Î»
+  252   2        }
+  253   1      }
+  254          
+  255          //-------------------------------------------------------------------------------------------------------
+             -------------
+  256          // º¯Êý¼ò½é     SPIÐ´½Ó¿Ú
+  257          // ·µ»Ø²ÎÊý     void
+  258          // Ê¹ÓÃÊ¾Àý     ÄÚ²¿Ê¹ÓÃ£¬ÓÃ»§ÎÞÐè¹ØÐÄ
+  259          //-------------------------------------------------------------------------------------------------------
+             -------------
+  260          void spi_dma_write(spi_index_enum spi_n, const uint8 *write_buffer, uint32 len)
+  261          {
+  262   1          #define BUFF_LEN 64
+  263   1        
+  264   1        // ÒòDMAÖ»ÄÜ²Ù×÷xdataÇøÓòµÄÊý¾Ý£¬ËùÒÔ£¬ÕâÀïÐÂ½¨Ò»¸öÊý×é£¬°áÒÆ¡£
+  265   1        uint8 xdata tmp_buff[BUFF_LEN] = {0};
+  266   1          uint16 tmp_len = 0;
+  267   1      
+  268   1          // Ö¸ÕëµØÖ·´óÓÚ0x800000µÄÊ±ºò£¬ÎªFLASHµØÖ·
+  269   1          // FLASHµØÖ·£¬²»Ö§³ÖDMA°áÒÆ¡£
+  270   1          if((uint32)write_buffer >= 0x800000)
+  271   1          {
+  272   2              while(len)
+  273   2              {
+  274   3                  tmp_len = (len > BUFF_LEN) ? BUFF_LEN : len;                    // ¼ÆËã³¤¶È
+  275   3                  memcpy(tmp_buff, write_buffer, tmp_len);                               // ¿½±´
+  276   3                  len -= tmp_len;                                                 // È¥µôÒÑ¾­·¢ËÍµÄ³¤¶È
+  277   3                  write_buffer += tmp_len;                                               // Ö¸ÕëÖ¸ÏòºóÃæ
+  278   3                  
+  279   3                  DMA_SPIX_AMT(spi_n)  = (uint8)((tmp_len - 1) & 0xFF);         //ÉèÖÃ´«Êä×Ü×Ö½ÚÊý(µÍ8Î»)£ºn+1
+  280   3                  DMA_SPIX_AMTH(spi_n) = (uint8)(((tmp_len - 1) & 0xFF00) >> 8);  //ÉèÖÃ´«Êä×Ü×Ö½ÚÊý(¸ß8Î»)£ºn+1
+  281   3      
+  282   3                  DMA_SPIX_TXAH(spi_n) = (uint8)((uint16)&tmp_buff[0] >> 8);      // SPI·¢ËÍÊý¾Ý´æ´¢µØÖ·
+  283   3                  DMA_SPIX_TXAL(spi_n) = (uint8)((uint16)&tmp_buff[0]);
+  284   3      
+  285   3                  DMA_SPIX_CFG(spi_n)  = 1 << 6;                                  // ·¢ËÍÊý¾Ý
+  286   3                  DMA_SPIX_CR(spi_n)   = 0xC1;                                    // Ê¹ÄÜSPI_DMA ÉèÖÃÎªÖ÷»úÄ£Ê½
+             - Çå¿ÕFIFO
+  287   3                  while(!(DMA_SPIX_STA(spi_n) & 0x01));
+  288   3                  DMA_SPIX_STA(spi_n)  = 0;                                       // Çå¿Õ±êÖ¾Î»
+  289   3              }
+  290   2          }
+  291   1          else
+  292   1          {
+  293   2              DMA_SPIX_AMT(spi_n)  = (uint8)((len - 1) & 0xFF);           //ÉèÖÃ´«Êä×Ü×Ö½ÚÊý(µÍ8Î»)£ºn+1
+  294   2              DMA_SPIX_AMTH(spi_n) = (uint8)(((len - 1) & 0xFF00) >> 8);    //ÉèÖÃ´«Êä×Ü×Ö½ÚÊý(¸ß8Î»)£ºn+1
+  295   2        
+  296   2              DMA_SPIX_TXAH(spi_n) = (uint8)((uint16)&write_buffer[0] >> 8);        // SPI·¢ËÍÊý¾Ý´æ´¢µØÖ·
+  297   2              DMA_SPIX_TXAL(spi_n) = (uint8)((uint16)&write_buffer[0]);
+  298   2      
+  299   2              DMA_SPIX_CFG(spi_n)  = 1 << 6;                                  // ·¢ËÍÊý¾Ý
+  300   2              DMA_SPIX_CR(spi_n)   = 0xC1;                                    // Ê¹ÄÜSPI_DMA ÉèÖÃÎªÖ÷»úÄ£Ê½ Çå¿
+             -ÕFIFO
+  301   2              while(!(DMA_SPIX_STA(spi_n) & 0x01));
+  302   2              DMA_SPIX_STA(spi_n)  = 0;                                       // Çå¿Õ±êÖ¾Î»
+  303   2          }
+  304   1      }
+  305          
+  306          //-------------------------------------------------------------------------------------------------------
+             -------------
+  307          // º¯Êý¼ò½é     SPI¶Á½Ó¿Ú
+  308          // ·µ»Ø²ÎÊý     void
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 6   
+
+  309          // Ê¹ÓÃÊ¾Àý     ÄÚ²¿Ê¹ÓÃ£¬ÓÃ»§ÎÞÐè¹ØÐÄ
+  310          //-------------------------------------------------------------------------------------------------------
+             -------------
+  311          void spi_dma_read(spi_index_enum spi_n, const uint8 *read_buffer, uint32 len)
+  312          {
+  313   1          DMA_SPIX_AMT(spi_n)  = (uint8)((len - 1) & 0xFF);             //ÉèÖÃ´«Êä×Ü×Ö½ÚÊý(µÍ8Î»)£ºn+1
+  314   1          DMA_SPIX_AMTH(spi_n) = (uint8)(((len - 1) & 0xFF00) >> 8);    //ÉèÖÃ´«Êä×Ü×Ö½ÚÊý(¸ß8Î»)£ºn+1
+  315   1          DMA_SPIX_RXAH(spi_n) = (uint8)((uint16)&read_buffer[0] >> 8);         // SPI½ÓÊÕÊý¾Ý´æ´¢µØÖ·
+  316   1          DMA_SPIX_RXAL(spi_n) = (uint8)((uint16)&read_buffer[0]);
+  317   1      
+  318   1          DMA_SPIX_CFG(spi_n)  = 1 << 5;                                  // ¶ÁÈ¡Êý¾Ý
+  319   1          DMA_SPIX_CR(spi_n)   = 0xC1;                                    // Ê¹ÄÜSPI_DMA ÉèÖÃÎªÖ÷»úÄ£Ê½ Çå¿ÕFIF
+             -O
+  320   1          while(!(DMA_SPIX_STA(spi_n) & 0x01));
+  321   1          DMA_SPIX_STA(spi_n)  = 0;                                       // Çå¿Õ±êÖ¾Î»
+  322   1      }
+  323          
+  324          //-------------------------------------------------------------------------------------------------------
+             -------------
+  325          // º¯Êý¼ò½é     SPI_DMA ½Ó¿ÚÐ´ 8bit Êý¾Ý
+  326          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  327          // ²ÎÊýËµÃ÷     data            Êý¾Ý
+  328          // ·µ»Ø²ÎÊý     void
+  329          // Ê¹ÓÃÊ¾Àý     spi_write_8bit(SPI_1,0x11);
+  330          //-------------------------------------------------------------------------------------------------------
+             -------------
+  331          void spi_dma_write_8bit (spi_index_enum spi_n, const uint8 dat)
+  332          {
+  333   1          spi_dma_write(spi_n, &dat, 1);  
+  334   1      }
+  335          
+  336          //-------------------------------------------------------------------------------------------------------
+             -------------
+  337          // º¯Êý¼ò½é     SPI_DMA ½Ó¿ÚÐ´ 8bit Êý×é
+  338          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  339          // ²ÎÊýËµÃ÷     *data           Êý¾Ý´æ·Å»º³åÇø
+  340          // ²ÎÊýËµÃ÷     len             »º³åÇø³¤¶È
+  341          // ·µ»Ø²ÎÊý     void
+  342          // Ê¹ÓÃÊ¾Àý     spi_write_8bit_array(SPI_1,data,64);
+  343          //-------------------------------------------------------------------------------------------------------
+             -------------
+  344          void spi_dma_write_8bit_array (spi_index_enum spi_n, const uint8 *dat, uint32 len)
+  345          {
+  346   1          spi_dma_write(spi_n, dat, len);
+  347   1      }
+  348          
+  349          //-------------------------------------------------------------------------------------------------------
+             -------------
+  350          // º¯Êý¼ò½é     SPI_DMA ½Ó¿ÚÐ´ 16bit Êý¾Ý
+  351          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  352          // ²ÎÊýËµÃ÷     data            Êý¾Ý
+  353          // ·µ»Ø²ÎÊý     void
+  354          // Ê¹ÓÃÊ¾Àý     spi_write_16bit(SPI_1,0x1101);
+  355          //-------------------------------------------------------------------------------------------------------
+             -------------
+  356          void spi_dma_write_16bit (spi_index_enum spi_n, const uint16 dat)
+  357          {
+  358   1          spi_dma_write(spi_n, (uint8 *)&dat, 2);
+  359   1      }
+  360          
+  361          //-------------------------------------------------------------------------------------------------------
+             -------------
+  362          // º¯Êý¼ò½é     SPI_DMA ½Ó¿ÚÐ´ 16bit Êý×é
+  363          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  364          // ²ÎÊýËµÃ÷     *data           Êý¾Ý´æ·Å»º³åÇø
+  365          // ²ÎÊýËµÃ÷     len             »º³åÇø³¤¶È
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 7   
+
+  366          // ·µ»Ø²ÎÊý     void
+  367          // Ê¹ÓÃÊ¾Àý     spi_write_16bit_array(SPI_1,data,64);
+  368          //-------------------------------------------------------------------------------------------------------
+             -------------
+  369          void spi_dma_write_16bit_array (spi_index_enum spi_n, const uint16 *dat, uint32 len)
+  370          {
+  371   1          spi_dma_write(spi_n, (uint8 *)&dat[0], len * 2);
+  372   1      }
+  373          
+  374          //-------------------------------------------------------------------------------------------------------
+             -------------
+  375          // º¯Êý¼ò½é      SPI_DMA ½Ó¿ÚÏò´«¸ÐÆ÷µÄ¼Ä´æÆ÷Ð´ 8bit Êý¾Ý
+  376          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  377          // ²ÎÊýËµÃ÷     register_name   ¼Ä´æÆ÷µØÖ·
+  378          // ²ÎÊýËµÃ÷     data            Êý¾Ý
+  379          // ·µ»Ø²ÎÊý     void
+  380          // Ê¹ÓÃÊ¾Àý     spi_write_8bit_register(SPI_1,0x11,0x01);
+  381          //-------------------------------------------------------------------------------------------------------
+             -------------
+  382          void spi_dma_write_8bit_register (spi_index_enum spi_n, const uint8 register_name, const uint8 dat)
+  383          {
+  384   1          spi_dma_write(spi_n, &register_name, 1);
+  385   1          spi_dma_write(spi_n, &dat, 1);
+  386   1      }
+  387          
+  388          //-------------------------------------------------------------------------------------------------------
+             -------------
+  389          // º¯Êý¼ò½é     SPI_DMA ½Ó¿ÚÏò´«¸ÐÆ÷µÄ¼Ä´æÆ÷Ð´ 8bit Êý×é
+  390          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  391          // ²ÎÊýËµÃ÷     register_name   ¼Ä´æÆ÷µØÖ·
+  392          // ²ÎÊýËµÃ÷     *data           Êý¾Ý´æ·Å»º³åÇø
+  393          // ²ÎÊýËµÃ÷     len             »º³åÇø³¤¶È
+  394          // ·µ»Ø²ÎÊý     void
+  395          // Ê¹ÓÃÊ¾Àý     spi_write_8bit_registers(SPI_1,0x11,data,32);
+  396          //-------------------------------------------------------------------------------------------------------
+             -------------
+  397          void spi_dma_write_8bit_registers (spi_index_enum spi_n, const uint8 register_name, const uint8 *dat, uin
+             -t32 len)
+  398          {
+  399   1          spi_dma_write(spi_n, &register_name, 1);
+  400   1          spi_dma_write(spi_n, dat, len);
+  401   1      }
+  402          
+  403          //-------------------------------------------------------------------------------------------------------
+             -------------
+  404          // º¯Êý¼ò½é     SPI_DMA ½Ó¿ÚÏò´«¸ÐÆ÷µÄ¼Ä´æÆ÷Ð´ 16bit Êý¾Ý
+  405          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  406          // ²ÎÊýËµÃ÷     register_name   ¼Ä´æÆ÷µØÖ·
+  407          // ²ÎÊýËµÃ÷     data            Êý¾Ý
+  408          // ·µ»Ø²ÎÊý     void
+  409          // Ê¹ÓÃÊ¾Àý     spi_write_16bit_register(SPI_1,0x1011,0x0101);
+  410          //-------------------------------------------------------------------------------------------------------
+             -------------
+  411          void spi_dma_write_16bit_register (spi_index_enum spi_n, const uint16 register_name, const uint16 dat)
+  412          {
+  413   1          spi_dma_write(spi_n, (uint8 *)&register_name, 2);
+  414   1          spi_dma_write(spi_n, (uint8 *)&dat, 2);
+  415   1      }
+  416          
+  417          //-------------------------------------------------------------------------------------------------------
+             -------------
+  418          // º¯Êý¼ò½é     SPI_DMA ½Ó¿ÚÏò´«¸ÐÆ÷µÄ¼Ä´æÆ÷Ð´ 16bit Êý×é
+  419          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  420          // ²ÎÊýËµÃ÷     register_name   ¼Ä´æÆ÷µØÖ·
+  421          // ²ÎÊýËµÃ÷     *data           Êý¾Ý´æ·Å»º³åÇø
+  422          // ²ÎÊýËµÃ÷     len             »º³åÇø³¤¶È
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 8   
+
+  423          // ·µ»Ø²ÎÊý     void
+  424          // Ê¹ÓÃÊ¾Àý     spi_write_16bit_registers(SPI_1,0x1011,data,32);
+  425          //-------------------------------------------------------------------------------------------------------
+             -------------
+  426          void spi_dma_write_16bit_registers (spi_index_enum spi_n, const uint16 register_name, const uint16 *dat, 
+             -uint32 len)
+  427          {
+  428   1          spi_dma_write(spi_n, (uint8 *)&register_name, 2);
+  429   1          spi_dma_write(spi_n, (uint8 *)&dat[0], len*2);
+  430   1      }
+  431          
+  432          //-------------------------------------------------------------------------------------------------------
+             -------------
+  433          // º¯Êý¼ò½é     SPI_DMA ½Ó¿Ú¶Á 8bit Êý¾Ý
+  434          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  435          // ²ÎÊýËµÃ÷     register_name   ¼Ä´æÆ÷µØÖ·
+  436          // ·µ»Ø²ÎÊý     uint8         Êý¾Ý
+  437          // Ê¹ÓÃÊ¾Àý     spi_read_8bit(SPI_1);
+  438          //-------------------------------------------------------------------------------------------------------
+             -------------
+  439          uint8 spi_dma_read_8bit (spi_index_enum spi_n)
+  440          {
+  441   1          uint8 value = 0;
+  442   1          spi_dma_read(spi_n, &value, 1);
+  443   1          return value;
+  444   1      }
+  445          
+  446          //-------------------------------------------------------------------------------------------------------
+             -------------
+  447          // º¯Êý¼ò½é     SPI_DMA ½Ó¿Ú¶Á 8bit Êý×é
+  448          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  449          // ²ÎÊýËµÃ÷     *data           Êý¾Ý´æ·Å»º³åÇø
+  450          // ²ÎÊýËµÃ÷     len             ·¢ËÍ»º³åÇø³¤¶È
+  451          // ·µ»Ø²ÎÊý     void
+  452          // Ê¹ÓÃÊ¾Àý     spi_read_8bit_array(SPI_1,data,64);
+  453          //-------------------------------------------------------------------------------------------------------
+             -------------
+  454          void spi_dma_read_8bit_array (spi_index_enum spi_n, uint8 *dat, uint32 len)
+  455          {
+  456   1          spi_dma_read(spi_n, dat, len);
+  457   1      }
+  458          
+  459          //-------------------------------------------------------------------------------------------------------
+             -------------
+  460          // º¯Êý¼ò½é     SPI_DMA ½Ó¿Ú¶Á 16bit Êý¾Ý
+  461          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  462          // ²ÎÊýËµÃ÷     register_name   ¼Ä´æÆ÷µØÖ·
+  463          // ·µ»Ø²ÎÊý     uint16        Êý¾Ý
+  464          // Ê¹ÓÃÊ¾Àý     spi_read_16bit(SPI_1);
+  465          //-------------------------------------------------------------------------------------------------------
+             -------------
+  466          uint16 spi_dma_read_16bit (spi_index_enum spi_n)
+  467          {
+  468   1          uint16 dat;
+  469   1          spi_dma_read(spi_n, (uint8 *)&dat, 2);
+  470   1          return dat;
+  471   1      }
+  472          
+  473          //-------------------------------------------------------------------------------------------------------
+             -------------
+  474          // º¯Êý¼ò½é     SPI_DMA ½Ó¿Ú¶Á 16bit Êý×é
+  475          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  476          // ²ÎÊýËµÃ÷     *data           Êý¾Ý´æ·Å»º³åÇø
+  477          // ²ÎÊýËµÃ÷     len             ·¢ËÍ»º³åÇø³¤¶È
+  478          // ·µ»Ø²ÎÊý     void
+  479          // Ê¹ÓÃÊ¾Àý     spi_read_16bit_array(SPI_1,data,64);
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 9   
+
+  480          //-------------------------------------------------------------------------------------------------------
+             -------------
+  481          void spi_dma_read_16bit_array (spi_index_enum spi_n, uint16 *dat, uint32 len)
+  482          {
+  483   1          spi_dma_read(spi_n, (uint8 * )&dat[0], len*2);
+  484   1      }
+  485          
+  486          //-------------------------------------------------------------------------------------------------------
+             -------------
+  487          // º¯Êý¼ò½é     SPI_DMA ½Ó¿Ú´Ó´«¸ÐÆ÷µÄ¼Ä´æÆ÷¶Á 8bit Êý¾Ý
+  488          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  489          // ²ÎÊýËµÃ÷     register_name   ¼Ä´æÆ÷µØÖ·
+  490          // ·µ»Ø²ÎÊý     uint8         Êý¾Ý
+  491          // Ê¹ÓÃÊ¾Àý     spi_read_8bit_register(SPI_1,0x11);
+  492          //-------------------------------------------------------------------------------------------------------
+             -------------
+  493          uint8 spi_dma_read_8bit_register (spi_index_enum spi_n, const uint8 register_name)
+  494          {
+  495   1          uint8 reg = 0;
+  496   1          spi_dma_write(spi_n, &register_name, 1);
+  497   1          spi_dma_read(spi_n, &reg, 1);
+  498   1          return reg;
+  499   1      }
+  500          
+  501          //-------------------------------------------------------------------------------------------------------
+             -------------
+  502          // º¯Êý¼ò½é     SPI_DMA ½Ó¿Ú´Ó´«¸ÐÆ÷µÄ¼Ä´æÆ÷¶Á 8bit Êý×é
+  503          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  504          // ²ÎÊýËµÃ÷     register_name   ¼Ä´æÆ÷µØÖ·
+  505          // ²ÎÊýËµÃ÷     *data           Êý¾Ý´æ·Å»º³åÇø
+  506          // ²ÎÊýËµÃ÷     len             ·¢ËÍ»º³åÇø³¤¶È
+  507          // ·µ»Ø²ÎÊý     void
+  508          // Ê¹ÓÃÊ¾Àý     spi_read_8bit_registers(SPI_1,0x11,data,32);
+  509          //-------------------------------------------------------------------------------------------------------
+             -------------
+  510          void spi_dma_read_8bit_registers (spi_index_enum spi_n, const uint8 register_name, uint8 *dat, uint32 len
+             -)
+  511          {
+  512   1          spi_dma_write(spi_n, &register_name, 1);
+  513   1          spi_dma_read(spi_n, dat, len);
+  514   1      }
+  515          
+  516          //-------------------------------------------------------------------------------------------------------
+             -------------
+  517          // º¯Êý¼ò½é     SPI_DMA ½Ó¿Ú´Ó´«¸ÐÆ÷µÄ¼Ä´æÆ÷¶Á 16bit Êý¾Ý
+  518          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  519          // ²ÎÊýËµÃ÷     register_name   ¼Ä´æÆ÷µØÖ·
+  520          // ·µ»Ø²ÎÊý     uint16        Êý¾Ý
+  521          // Ê¹ÓÃÊ¾Àý     spi_read_16bit_register(SPI_1,0x1011);
+  522          //-------------------------------------------------------------------------------------------------------
+             -------------
+  523          uint16 spi_dma_read_16bit_register (spi_index_enum spi_n, const uint16 register_name)
+  524          {
+  525   1          uint16 dat;
+  526   1          spi_dma_write(spi_n, (uint8 *)&register_name, 2);
+  527   1          spi_dma_read(spi_n, (uint8 *)&dat, 2);
+  528   1          return dat;
+  529   1      }
+  530          
+  531          //-------------------------------------------------------------------------------------------------------
+             -------------
+  532          // º¯Êý¼ò½é     SPI_DMA ½Ó¿Ú´Ó´«¸ÐÆ÷µÄ¼Ä´æÆ÷¶Á 16bit Êý×é
+  533          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  534          // ²ÎÊýËµÃ÷     register_name   ¼Ä´æÆ÷µØÖ·
+  535          // ²ÎÊýËµÃ÷     *dat           Êý¾Ý´æ·Å»º³åÇø
+  536          // ²ÎÊýËµÃ÷     len             ·¢ËÍ»º³åÇø³¤¶È
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 10  
+
+  537          // ·µ»Ø²ÎÊý     void
+  538          // Ê¹ÓÃÊ¾Àý     spi_read_16bit_registers(SPI_1,0x1101,dat,32);
+  539          //-------------------------------------------------------------------------------------------------------
+             -------------
+  540          void spi_dma_read_16bit_registers (spi_index_enum spi_n, const uint16 register_name, uint16 *dat, uint32 
+             -len)
+  541          {
+  542   1          spi_dma_write(spi_n, (uint8 *)&register_name, 2);
+  543   1          spi_dma_read(spi_n, (uint8 *)&dat[0], len);
+  544   1      }
+  545          
+  546          //-------------------------------------------------------------------------------------------------------
+             -------------
+  547          // º¯Êý¼ò½é     SPI_DMA 8bit Êý¾Ý´«Êä ·¢ËÍÓë½ÓÊÕÊý¾ÝÊÇÍ¬Ê±½øÐÐµÄ
+  548          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  549          // ²ÎÊýËµÃ÷     write_buffer    ·¢ËÍµÄÊý¾Ý»º³åÇøµØÖ·
+  550          // ²ÎÊýËµÃ÷     read_buffer     ·¢ËÍÊý¾ÝÊ±½ÓÊÕµ½µÄÊý¾ÝµÄ´æ´¢µØÖ·(²»ÐèÒª½ÓÊÕÔò´« NULL)
+  551          // ²ÎÊýËµÃ÷     len             »º³åÇø³¤¶È
+  552          // ·µ»Ø²ÎÊý     void
+  553          // Ê¹ÓÃÊ¾Àý     spi_transfer_8bit(SPI_1,buf,buf,1);
+  554          //-------------------------------------------------------------------------------------------------------
+             -------------
+  555          void spi_dma_transfer_8bit (spi_index_enum spi_n, const uint8 *write_buffer, uint8 *read_buffer, uint32 l
+             -en)
+  556          {
+  557   1          spi_dma_transfer(spi_n, write_buffer, read_buffer, len);
+  558   1      }
+  559          
+  560          //-------------------------------------------------------------------------------------------------------
+             -------------
+  561          // º¯Êý¼ò½é     SPI_DMA 16bit Êý¾Ý´«Êä ·¢ËÍÓë½ÓÊÕÊý¾ÝÊÇÍ¬Ê±½øÐÐµÄ
+  562          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  563          // ²ÎÊýËµÃ÷     write_buffer    ·¢ËÍµÄÊý¾Ý»º³åÇøµØÖ·
+  564          // ²ÎÊýËµÃ÷     read_buffer     ·¢ËÍÊý¾ÝÊ±½ÓÊÕµ½µÄÊý¾ÝµÄ´æ´¢µØÖ·(²»ÐèÒª½ÓÊÕÔò´« NULL)
+  565          // ²ÎÊýËµÃ÷     len             »º³åÇø³¤¶È
+  566          // ·µ»Ø²ÎÊý     void
+  567          // Ê¹ÓÃÊ¾Àý     spi_transfer_16bit(SPI_1,buf,buf,1);
+  568          //-------------------------------------------------------------------------------------------------------
+             -------------
+  569          void spi_dma_transfer_16bit (spi_index_enum spi_n, const uint16 *write_buffer, uint16 *read_buffer, uint3
+             -2 len)
+  570          {
+  571   1          spi_dma_transfer(spi_n, (uint8 *)&write_buffer[0], (uint8 *)&read_buffer[0], len * 2);
+  572   1      }
+  573          
+  574          //-------------------------------------------------------------------------------------------------------
+             -------------
+  575          // º¯Êý¼ò½é     SPI_DMA ½Ó¿Ú³õÊ¼»¯
+  576          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  577          // ²ÎÊýËµÃ÷     mode            SPI_DMA Ä£Ê½ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_mode_enum Ã¶¾ÙÌå¶¨Òå
+  578          // ²ÎÊýËµÃ÷     baud            ÉèÖÃ SPI_DMA µÄ²¨ÌØÂÊ ²»³¬¹ýÏµÍ³Ê±ÖÓµÄÒ»°ë ²¿·ÖËÙÂÊ»á±»ÊÊÅä³ÉÏà½üµÄËÙÂÊ
+  579          // ²ÎÊýËµÃ÷     sck_pin         Ñ¡Ôñ SCK Òý½Å ²ÎÕÕ zf_driver_spi.h ÄÚ spi_pin_enum Ã¶¾ÙÌå¶¨Òå
+  580          // ²ÎÊýËµÃ÷     mosi_pin        Ñ¡Ôñ MOSI Òý½Å ²ÎÕÕ zf_driver_spi.h ÄÚ spi_pin_enum Ã¶¾ÙÌå¶¨Òå
+  581          // ²ÎÊýËµÃ÷     miso_pin        Ñ¡Ôñ MISO Òý½Å ²ÎÕÕ zf_driver_spi.h ÄÚ spi_pin_enum Ã¶¾ÙÌå¶¨Òå
+  582          // ²ÎÊýËµÃ÷     cs_pin          Ñ¡Ôñ CS Òý½Å ²ÎÕÕ zf_driver_gpio.h ÄÚ gpio_pin_enum Ã¶¾ÙÌå¶¨Òå
+  583          // ·µ»Ø²ÎÊý     void
+  584          // Ê¹ÓÃÊ¾Àý     spi_init(SPI_1, 0, 1*1000*1000, SPI1_SCK_A5, SPI1_MOSI_A7, SPI1_MISO_A6, A4);  //Ó²¼þSPI³
+             -õÊ¼»¯  Ä£Ê½0 ²¨ÌØÂÊÎª1Mhz
+  585          //-------------------------------------------------------------------------------------------------------
+             -------------
+  586          void spi_dma_init(spi_index_enum spi_n, spi_mode_enum mode, uint32 baud, spi_pin_enum sck_pin, spi_pin_en
+             -um mosi_pin, spi_pin_enum miso_pin, gpio_pin_enum cs_pin)
+  587          {
+  588   1          // Ê¹ÓÃSPI_DMA CLKÆµÂÊ¾Í±ØÐëÒªÁ½·ÖÆµ£¬ËùÒÔÕâÀïÌîÐ´Ê±ÖÓ
+  589   1          uint32 spi_psc = 0;
+  590   1          
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 11  
+
+  591   1          if((sck_pin & 0xFF00) != (mosi_pin & 0xFF00))
+  592   1          {
+  593   2              zf_assert(0);
+  594   2              // SPIÖ»ÄÜÊ¹ÓÃÍ¬Ò»×éÒý½Å£¬²»ÔÊÐí»ìÓÃÒý½Å
+  595   2          }
+  596   1          
+  597   1          gpio_init(sck_pin  & 0xFF, GPO, 1, GPO_PUSH_PULL);
+  598   1          gpio_init(mosi_pin & 0xFF, GPO, 1, GPO_PUSH_PULL);
+  599   1          
+  600   1          if(miso_pin != SPI_NULL_PIN)
+  601   1          {
+  602   2              gpio_init(miso_pin & 0xFF, GPI, 1, GPI_PULL_UP);
+  603   2          }
+  604   1          
+  605   1          if(cs_pin != SPI_NULL_PIN)
+  606   1          {
+  607   2              gpio_init(cs_pin & 0xFF, GPO, 0, GPO_PUSH_PULL);
+  608   2          }
+  609   1      
+  610   1        // ²¨ÌØÂÊ´óÓÚµÈÓÚ10M¾ÍÐèÒªÉèÖÃGPIOµçÆ½×ª»»ËÙ¶È
+  611   1        if(baud >= (10*1000*1000U))
+  612   1        {
+  613   2          gpio_set_level_speed(sck_pin  & 0xFF, GPIO_SPEED_FAST);
+  614   2          gpio_set_level_speed(mosi_pin  & 0xFF, GPIO_SPEED_FAST);
+  615   2          if(miso_pin != SPI_NULL_PIN)
+  616   2          {
+  617   3            gpio_set_level_speed(miso_pin & 0xFF, GPIO_SPEED_FAST);
+  618   3          }
+  619   2          if(cs_pin != SPI_NULL_PIN)
+  620   2          {
+  621   3            gpio_set_level_speed(cs_pin & 0xFF, GPIO_SPEED_FAST);
+  622   3          }
+  623   2        }
+  624   1          
+  625   1          switch(spi_n)
+  626   1          {
+  627   2              case SPI_1:
+  628   2              {
+  629   3                  P_SW1 &= ~(0x03 << 2); // Çå³ýSPI_1Òý½ÅÑ¡ÔñÎ»
+  630   3                  switch((sck_pin >> 8) & 0x03) 
+  631   3                  {
+  632   4                      case 0: P_SW1 |= 0x00 << 2; break;
+  633   4                      case 1: P_SW1 |= 0x01 << 2; break;
+  634   4                      case 2: P_SW1 |= 0x02 << 2; break;
+  635   4                      case 3: P_SW1 |= 0x03 << 2; break;
+  636   4                  }
+  637   3      
+  638   3                  SPCTL = 0; // ³õÊ¼»¯SPI_1¿ØÖÆ¼Ä´æÆ÷
+  639   3                  SPCTL |= (1 << 7) | (1 << 4); // ºöÂÔSSÒý½Å + Ö÷»úÄ£Ê½
+  640   3                  
+  641   3                  SPCTL |= 0x03; // Ê±ÖÓ/2
+  642   3      
+  643   3                  // ÅäÖÃSPI_1¼«ÐÔÏàÎ»
+  644   3                  switch(mode) 
+  645   3                  {
+  646   4                      case SPI_MODE1: SPCTL |= 0x01 << 2; break;
+  647   4                      case SPI_MODE2: SPCTL |= 0x02 << 2; break;
+  648   4                      case SPI_MODE3: SPCTL |= 0x03 << 2; break;
+  649   4                      default: break; // MODE0Ä¬ÈÏ
+  650   4                  }
+  651   3                  SPCTL |= 1 << 6; // Ê¹ÄÜSPI_1
+  652   3                  break;
+  653   3              }
+  654   2              
+  655   2              case SPI_2:
+  656   2              {
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 12  
+
+  657   3                  P_SWX4 &= ~(0x03 << 0); // Çå³ýSPI_2Òý½ÅÑ¡ÔñÎ»
+  658   3                  switch((sck_pin >> 8) & 0x03) 
+  659   3                  {
+  660   4                      case 0: P_SWX4 |= 0x00 << 0; break;
+  661   4                      case 1: P_SWX4 |= 0x01 << 0; break;
+  662   4                      case 2: P_SWX4 |= 0x02 << 0; break;
+  663   4                      case 3: P_SWX4 |= 0x03 << 0; break;
+  664   4                  }
+  665   3      
+  666   3                  SPI2CTL = 0; // ³õÊ¼»¯SPI_2¿ØÖÆ¼Ä´æÆ÷
+  667   3                  SPI2CTL |= (1 << 7) | (1 << 4); // ºöÂÔSSÒý½Å + Ö÷»úÄ£Ê½
+  668   3                  
+  669   3                  spi_psc = system_clock / baud;
+  670   3                  SPI2CTL |= 0x03; // Ê±ÖÓ/2
+  671   3      
+  672   3                  // ÅäÖÃSPI_2¼«ÐÔÏàÎ»
+  673   3                  switch(mode) 
+  674   3                  {
+  675   4                      case SPI_MODE1: SPI2CTL |= 0x01 << 2; break;
+  676   4                      case SPI_MODE2: SPI2CTL |= 0x02 << 2; break;
+  677   4                      case SPI_MODE3: SPI2CTL |= 0x03 << 2; break;
+  678   4                      default: break; // MODE0Ä¬ÈÏ
+  679   4                  }
+  680   3                  SPI2CTL |= 1 << 6; // Ê¹ÄÜSPI_2
+  681   3                  break;
+  682   3              }
+  683   2      
+  684   2              case SPI_3:
+  685   2              {
+  686   3                  P_SWX4 &= ~(0x03 << 2); // Çå³ýSPI_3Òý½ÅÑ¡ÔñÎ»
+  687   3                  switch((sck_pin >> 8) & 0x03) 
+  688   3                  {
+  689   4                      case 0: P_SWX4 |= 0x00 << 2; break;
+  690   4                      case 1: P_SWX4 |= 0x01 << 2; break;
+  691   4                      case 2: P_SWX4 |= 0x02 << 2; break;
+  692   4                      case 3: P_SWX4 |= 0x03 << 2; break;
+  693   4                  }
+  694   3      
+  695   3                  SPI3CTL = 0; // ³õÊ¼»¯SPI_3¿ØÖÆ¼Ä´æÆ÷
+  696   3                  SPI3CTL |= (1 << 7) | (1 << 4); // ºöÂÔSSÒý½Å + Ö÷»úÄ£Ê½
+  697   3                  
+  698   3                  
+  699   3                  SPI3CTL |= 0x03; // Ê±ÖÓ/2
+  700   3      
+  701   3                  // ÅäÖÃSPI_3¼«ÐÔÏàÎ»
+  702   3                  switch(mode) 
+  703   3                  {
+  704   4                      case SPI_MODE1: SPI3CTL |= 0x01 << 2; break;
+  705   4                      case SPI_MODE2: SPI3CTL |= 0x02 << 2; break;
+  706   4                      case SPI_MODE3: SPI3CTL |= 0x03 << 2; break;
+  707   4                      default: break; // MODE0Ä¬ÈÏ
+  708   4                  }
+  709   3                  SPI3CTL |= 1 << 6; // Ê¹ÄÜSPI_3
+  710   3                  break;
+  711   3              }
+  712   2      
+  713   2              default:
+  714   2                  // ÎÞÐ§SPI±àºÅ£¨¿ÉÑ¡£ºzf_assert(0);£©
+  715   2                  break;
+  716   2          }
+  717   1      
+  718   1          HSSPIX_CFG(spi_n) = 0;
+  719   1          // HSSPI2_CFG2 = 1<<5 | 1<<4 | 1<< 7; // Ê¹ÄÜSPI¸ßËÙÄ£Ê½£¬ Ê¹ÄÜFIFO
+  720   1      
+  721   1          HSSPIX_CFG2(spi_n) = 0x10; // Ê¹ÄÜSPI¸ßËÙÄ£Ê½£¬ Ê¹ÄÜFIFO
+  722   1      
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 13  
+
+  723   1          spi_psc = system_clock / baud + ((system_clock % baud) == 0? 0:1);
+  724   1          if(spi_psc > 255) spi_psc = 255;
+  725   1          SPIX_CLKDIV(spi_n) = spi_psc;
+  726   1          
+  727   1          DMA_SPIX_STA(spi_n)  = 0x00;
+  728   1        DMA_SPIX_CFG(spi_n)  = 0x00;    // bit7->SPI_DMAÖÐ¶Ï bit6->·¢ËÍÊý¾Ý¿ØÖÆÎ» bit5->½ÓÊÜÊý¾Ý¿ØÖÆÎ» 
+  729   1                                              // bit[3:2] ÖÐ¶ÏÓÅÏÈ¼¶
+  730   1                                              // bit[1:0] DMA×ÜÏßÓÅÏÈ¼¶
+  731   1      
+  732   1          DMA_SPIX_ITVH(spi_n) = 0;
+  733   1          DMA_SPIX_ITVL(spi_n) = 0;
+  734   1      
+  735   1        DMA_SPIX_CR(spi_n)   = 0xc1;    //bit7 1:Ê¹ÄÜ SPI_DMA, bit6 1:¿ªÊ¼ SPI_DMA Ö÷»úÄ£Ê½,  bit5 1:¿ªÊ¼ SPI_DMA 
+             -´Ó»úÄ£Ê½, bit0 1:Çå³ý SPI_DMA FIFO
+  736   1      }
+  737          
+  738          #define SPI_WRITE_DAT(spi_n, dat) spi_write_dat(spi_n, dat)
+  739          void spi_write_dat(spi_index_enum spi_n, const uint8 dat)
+  740          {
+  741   1        switch (spi_n)          
+  742   1        {                               
+  743   2          case SPI_1:                 
+  744   2                  SPSTAT = 0xc0;              
+  745   2            SPDAT = dat;        
+  746   2            while (!(SPSTAT & 0x80));  
+  747   2            break;                  
+  748   2          case SPI_2:
+  749   2                  SPI2STAT = 0xc0;              
+  750   2            SPI2DAT = dat;        
+  751   2            while (!(SPI2STAT & 0x80));
+  752   2            break;     
+  753   2              case SPI_3:
+  754   2                  SPI3STAT = 0xc0;              
+  755   2            SPI3DAT = dat;        
+  756   2            while (!(SPI3STAT & 0x80));  
+  757   2            break;           
+  758   2          default:                    
+  759   2            zf_assert(0);           
+  760   2            break;                  
+  761   2        }
+  762   1      }
+  763            
+  764          #define SPI_READ_DAT(spi_n, dat) spi_read_dat(spi_n, dat)
+  765          uint8 spi_read_dat(spi_index_enum spi_n, const uint8 dat)
+  766          {
+  767   1        uint8 ret = 0xFF;
+  768   1        switch (spi_n)          
+  769   1        {                               
+  770   2          case SPI_1:                 
+  771   2            SPSTAT = 0xc0;              
+  772   2            SPDAT = dat;        
+  773   2            while (!(SPSTAT & 0x80));  
+  774   2            ret = SPDAT;
+  775   2            break;             
+  776   2          case SPI_2:
+  777   2            SPI2STAT = 0xc0;              
+  778   2            SPI2DAT = dat;        
+  779   2            while (!(SPI2STAT & 0x80));  
+  780   2            ret = SPI2DAT;
+  781   2            break;   
+  782   2              case SPI_3:
+  783   2            SPI3STAT = 0xc0;              
+  784   2            SPI3DAT = dat;        
+  785   2            while (!(SPI3STAT & 0x80));  
+  786   2            ret = SPI3DAT;
+  787   2            break;         
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 14  
+
+  788   2          default:                    
+  789   2            zf_assert(0);           
+  790   2            break;                  
+  791   2        }
+  792   1        
+  793   1        return ret;
+  794   1      }
+  795          
+  796          
+  797          
+  798          //-------------------------------------------------------------------------------------------------------
+             -------------
+  799          // º¯Êý¼ò½é      SPI ½Ó¿ÚÐ´ 8bit Êý¾Ý
+  800          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  801          // ²ÎÊýËµÃ÷     data            Êý¾Ý
+  802          // ·µ»Ø²ÎÊý     void
+  803          // Ê¹ÓÃÊ¾Àý     spi_write_8bit(SPI_1,0x11);
+  804          //-------------------------------------------------------------------------------------------------------
+             -------------
+  805          void spi_write_8bit (spi_index_enum spi_n, const uint8 dat)
+  806          {
+  807   1        SPI_WRITE_DAT(spi_n, dat);
+  808   1      }
+  809          
+  810          //-------------------------------------------------------------------------------------------------------
+             -------------
+  811          // º¯Êý¼ò½é      SPI ½Ó¿ÚÐ´ 8bit Êý×é
+  812          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  813          // ²ÎÊýËµÃ÷     *data           Êý¾Ý´æ·Å»º³åÇø
+  814          // ²ÎÊýËµÃ÷     len             »º³åÇø³¤¶È
+  815          // ·µ»Ø²ÎÊý     void
+  816          // Ê¹ÓÃÊ¾Àý     spi_write_8bit_array(SPI_1,data,64);
+  817          //-------------------------------------------------------------------------------------------------------
+             -------------
+  818          void spi_write_8bit_array (spi_index_enum spi_n, const uint8 *dat, uint32 len)
+  819          {
+  820   1        while(len--)
+  821   1        {
+  822   2          SPI_WRITE_DAT(spi_n, *dat++);
+  823   2        }
+  824   1      }
+  825          
+  826          //-------------------------------------------------------------------------------------------------------
+             -------------
+  827          // º¯Êý¼ò½é      SPI ½Ó¿ÚÐ´ 16bit Êý¾Ý
+  828          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  829          // ²ÎÊýËµÃ÷     data            Êý¾Ý
+  830          // ·µ»Ø²ÎÊý     void
+  831          // Ê¹ÓÃÊ¾Àý     spi_write_16bit(SPI_1,0x1101);
+  832          //-------------------------------------------------------------------------------------------------------
+             -------------
+  833          void spi_write_16bit (spi_index_enum spi_n, const uint16 dat)
+  834          {
+  835   1        SPI_WRITE_DAT(spi_n, (uint8)((dat & 0xFF00) >> 8));
+  836   1        SPI_WRITE_DAT(spi_n, (uint8)(dat & 0x00FF));
+  837   1      }
+  838          
+  839          //-------------------------------------------------------------------------------------------------------
+             -------------
+  840          // º¯Êý¼ò½é      SPI ½Ó¿ÚÐ´ 16bit Êý×é
+  841          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  842          // ²ÎÊýËµÃ÷     *data           Êý¾Ý´æ·Å»º³åÇø
+  843          // ²ÎÊýËµÃ÷     len             »º³åÇø³¤¶È
+  844          // ·µ»Ø²ÎÊý     void
+  845          // Ê¹ÓÃÊ¾Àý     spi_write_16bit_array(SPI_1,data,64);
+  846          //-------------------------------------------------------------------------------------------------------
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 15  
+
+             -------------
+  847          void spi_write_16bit_array (spi_index_enum spi_n, const uint16 *dat, uint32 len)
+  848          {
+  849   1          while(len--)
+  850   1          {
+  851   2          SPI_WRITE_DAT(spi_n, (uint8)((*dat & 0xFF00) >> 8));
+  852   2          SPI_WRITE_DAT(spi_n, (uint8)(*dat++ & 0x00FF));
+  853   2          }
+  854   1      }
+  855          
+  856          //-------------------------------------------------------------------------------------------------------
+             -------------
+  857          // º¯Êý¼ò½é      SPI ½Ó¿ÚÏò´«¸ÐÆ÷µÄ¼Ä´æÆ÷Ð´ 8bit Êý¾Ý
+  858          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  859          // ²ÎÊýËµÃ÷     register_name   ¼Ä´æÆ÷µØÖ·
+  860          // ²ÎÊýËµÃ÷     data            Êý¾Ý
+  861          // ·µ»Ø²ÎÊý     void
+  862          // Ê¹ÓÃÊ¾Àý     spi_write_8bit_register(SPI_1,0x11,0x01);
+  863          //-------------------------------------------------------------------------------------------------------
+             -------------
+  864          void spi_write_8bit_register (spi_index_enum spi_n, const uint8 register_name, const uint8 dat)
+  865          {
+  866   1        SPI_WRITE_DAT(spi_n, register_name);
+  867   1        SPI_WRITE_DAT(spi_n, dat);
+  868   1      }
+  869          
+  870          
+  871          //-------------------------------------------------------------------------------------------------------
+             -------------
+  872          // º¯Êý¼ò½é      SPI ½Ó¿ÚÏò´«¸ÐÆ÷µÄ¼Ä´æÆ÷Ð´ 8bit Êý×é
+  873          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  874          // ²ÎÊýËµÃ÷     register_name   ¼Ä´æÆ÷µØÖ·
+  875          // ²ÎÊýËµÃ÷     *data           Êý¾Ý´æ·Å»º³åÇø
+  876          // ²ÎÊýËµÃ÷     len             »º³åÇø³¤¶È
+  877          // ·µ»Ø²ÎÊý     void
+  878          // Ê¹ÓÃÊ¾Àý     spi_write_8bit_registers(SPI_1,0x11,data,32);
+  879          //-------------------------------------------------------------------------------------------------------
+             -------------
+  880          void spi_write_8bit_registers (spi_index_enum spi_n, const uint8 register_name, const uint8 *dat, uint32 
+             -len)
+  881          {
+  882   1        SPI_WRITE_DAT(spi_n, register_name);
+  883   1          while(len--)
+  884   1          {
+  885   2          SPI_WRITE_DAT(spi_n, *dat++);
+  886   2          }
+  887   1      }
+  888          
+  889          //-------------------------------------------------------------------------------------------------------
+             -------------
+  890          // º¯Êý¼ò½é     SPI ½Ó¿ÚÏò´«¸ÐÆ÷µÄ¼Ä´æÆ÷Ð´ 16bit Êý¾Ý
+  891          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  892          // ²ÎÊýËµÃ÷     register_name   ¼Ä´æÆ÷µØÖ·
+  893          // ²ÎÊýËµÃ÷     data            Êý¾Ý
+  894          // ·µ»Ø²ÎÊý     void
+  895          // Ê¹ÓÃÊ¾Àý     spi_write_16bit_register(SPI_1,0x1011,0x0101);
+  896          //-------------------------------------------------------------------------------------------------------
+             -------------
+  897          void spi_write_16bit_register (spi_index_enum spi_n, const uint16 register_name, const uint16 dat)
+  898          {
+  899   1        SPI_WRITE_DAT(spi_n, (uint8)((register_name & 0xFF00) >> 8));
+  900   1        SPI_WRITE_DAT(spi_n, (uint8)(register_name & 0x00FF));
+  901   1        SPI_WRITE_DAT(spi_n, (uint8)((dat & 0xFF00) >> 8));
+  902   1        SPI_WRITE_DAT(spi_n, (uint8)(dat & 0x00FF));
+  903   1      }
+  904          
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 16  
+
+  905          //-------------------------------------------------------------------------------------------------------
+             -------------
+  906          // º¯Êý¼ò½é      SPI ½Ó¿ÚÏò´«¸ÐÆ÷µÄ¼Ä´æÆ÷Ð´ 16bit Êý×é
+  907          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  908          // ²ÎÊýËµÃ÷     register_name   ¼Ä´æÆ÷µØÖ·
+  909          // ²ÎÊýËµÃ÷     *data           Êý¾Ý´æ·Å»º³åÇø
+  910          // ²ÎÊýËµÃ÷     len             »º³åÇø³¤¶È
+  911          // ·µ»Ø²ÎÊý     void
+  912          // Ê¹ÓÃÊ¾Àý     spi_write_16bit_registers(SPI_1,0x1011,data,32);
+  913          //-------------------------------------------------------------------------------------------------------
+             -------------
+  914          void spi_write_16bit_registers (spi_index_enum spi_n, const uint16 register_name, const uint16 *dat, uint
+             -32 len)
+  915          {
+  916   1        SPI_WRITE_DAT(spi_n, (uint8)((register_name & 0xFF00) >> 8));
+  917   1        SPI_WRITE_DAT(spi_n, (uint8)(register_name & 0x00FF));
+  918   1        SPI_WRITE_DAT(spi_n, (uint8)((*dat & 0xFF00) >> 8));
+  919   1        SPI_WRITE_DAT(spi_n, (uint8)(*dat++ & 0x00FF));
+  920   1      }
+  921          
+  922          //-------------------------------------------------------------------------------------------------------
+             -------------
+  923          // º¯Êý¼ò½é      SPI ½Ó¿Ú¶Á 8bit Êý¾Ý
+  924          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  925          // ²ÎÊýËµÃ÷     register_name   ¼Ä´æÆ÷µØÖ·
+  926          // ·µ»Ø²ÎÊý     uint8         Êý¾Ý
+  927          // Ê¹ÓÃÊ¾Àý     spi_read_8bit(SPI_1);
+  928          //-------------------------------------------------------------------------------------------------------
+             -------------
+  929          uint8 spi_read_8bit (spi_index_enum spi_n)
+  930          {
+  931   1          return SPI_READ_DAT(spi_n, 0);
+  932   1      }
+  933          
+  934          //-------------------------------------------------------------------------------------------------------
+             -------------
+  935          // º¯Êý¼ò½é      SPI ½Ó¿Ú¶Á 8bit Êý×é
+  936          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  937          // ²ÎÊýËµÃ÷     *data           Êý¾Ý´æ·Å»º³åÇø
+  938          // ²ÎÊýËµÃ÷     len             ·¢ËÍ»º³åÇø³¤¶È
+  939          // ·µ»Ø²ÎÊý     void
+  940          // Ê¹ÓÃÊ¾Àý     spi_read_8bit_array(SPI_1,data,64);
+  941          //-------------------------------------------------------------------------------------------------------
+             -------------
+  942          void spi_read_8bit_array (spi_index_enum spi_n, uint8 *dat, uint32 len)
+  943          {
+  944   1          while(len--)
+  945   1          {
+  946   2              *dat++ = SPI_READ_DAT(spi_n, 0);
+  947   2          }
+  948   1      }
+  949          
+  950          //-------------------------------------------------------------------------------------------------------
+             -------------
+  951          // º¯Êý¼ò½é      SPI ½Ó¿Ú¶Á 16bit Êý¾Ý
+  952          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  953          // ²ÎÊýËµÃ÷     register_name   ¼Ä´æÆ÷µØÖ·
+  954          // ·µ»Ø²ÎÊý     uint16        Êý¾Ý
+  955          // Ê¹ÓÃÊ¾Àý     spi_read_16bit(SPI_1);
+  956          //-------------------------------------------------------------------------------------------------------
+             -------------
+  957          uint16 spi_read_16bit (spi_index_enum spi_n)
+  958          {
+  959   1          uint16 dat = 0;
+  960   1      
+  961   1          dat = SPI_READ_DAT(spi_n, 0);
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 17  
+
+  962   1      
+  963   1          dat = ((dat << 8) | SPI_READ_DAT(spi_n, 0));
+  964   1          
+  965   1          return dat;
+  966   1      }
+  967          
+  968          //-------------------------------------------------------------------------------------------------------
+             -------------
+  969          // º¯Êý¼ò½é      SPI ½Ó¿Ú¶Á 16bit Êý×é
+  970          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  971          // ²ÎÊýËµÃ÷     *data           Êý¾Ý´æ·Å»º³åÇø
+  972          // ²ÎÊýËµÃ÷     len             ·¢ËÍ»º³åÇø³¤¶È
+  973          // ·µ»Ø²ÎÊý     void
+  974          // Ê¹ÓÃÊ¾Àý     spi_read_16bit_array(SPI_1,data,64);
+  975          //-------------------------------------------------------------------------------------------------------
+             -------------
+  976          void spi_read_16bit_array (spi_index_enum spi_n, uint16 *dat, uint32 len)
+  977          {
+  978   1          while(len--)
+  979   1          {
+  980   2              *dat = SPI_READ_DAT(spi_n, 0);
+  981   2              *dat = ((*dat << 8) | SPI_READ_DAT(spi_n, 0));
+  982   2              dat++;
+  983   2          }
+  984   1      }
+  985          
+  986          //-------------------------------------------------------------------------------------------------------
+             -------------
+  987          // º¯Êý¼ò½é      SPI ½Ó¿Ú´Ó´«¸ÐÆ÷µÄ¼Ä´æÆ÷¶Á 8bit Êý¾Ý
+  988          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+  989          // ²ÎÊýËµÃ÷     register_name   ¼Ä´æÆ÷µØÖ·
+  990          // ·µ»Ø²ÎÊý     uint8         Êý¾Ý
+  991          // Ê¹ÓÃÊ¾Àý     spi_read_8bit_register(SPI_1,0x11);
+  992          //-------------------------------------------------------------------------------------------------------
+             -------------
+  993          uint8 spi_read_8bit_register (spi_index_enum spi_n, const uint8 register_name)
+  994          {
+  995   1        SPI_WRITE_DAT(spi_n, register_name);
+  996   1          return SPI_READ_DAT(spi_n, 0);
+  997   1      }
+  998          
+  999          //-------------------------------------------------------------------------------------------------------
+             -------------
+ 1000          // º¯Êý¼ò½é      SPI ½Ó¿Ú´Ó´«¸ÐÆ÷µÄ¼Ä´æÆ÷¶Á 8bit Êý×é
+ 1001          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+ 1002          // ²ÎÊýËµÃ÷     register_name   ¼Ä´æÆ÷µØÖ·
+ 1003          // ²ÎÊýËµÃ÷     *data           Êý¾Ý´æ·Å»º³åÇø
+ 1004          // ²ÎÊýËµÃ÷     len             ·¢ËÍ»º³åÇø³¤¶È
+ 1005          // ·µ»Ø²ÎÊý     void
+ 1006          // Ê¹ÓÃÊ¾Àý     spi_read_8bit_registers(SPI_1,0x11,data,32);
+ 1007          //-------------------------------------------------------------------------------------------------------
+             -------------
+ 1008          void spi_read_8bit_registers (spi_index_enum spi_n, const uint8 register_name, uint8 *dat, uint32 len)
+ 1009          {
+ 1010   1        SPI_WRITE_DAT(spi_n, register_name);
+ 1011   1          while(len--)
+ 1012   1          {
+ 1013   2              *dat++ = SPI_READ_DAT(spi_n, 0);
+ 1014   2          }
+ 1015   1      }
+ 1016          
+ 1017          //-------------------------------------------------------------------------------------------------------
+             -------------
+ 1018          // º¯Êý¼ò½é      SPI ½Ó¿Ú´Ó´«¸ÐÆ÷µÄ¼Ä´æÆ÷¶Á 16bit Êý¾Ý
+ 1019          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+ 1020          // ²ÎÊýËµÃ÷     register_name   ¼Ä´æÆ÷µØÖ·
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 18  
+
+ 1021          // ·µ»Ø²ÎÊý     uint16        Êý¾Ý
+ 1022          // Ê¹ÓÃÊ¾Àý     spi_read_16bit_register(SPI_1,0x1011);
+ 1023          //-------------------------------------------------------------------------------------------------------
+             -------------
+ 1024          uint16 spi_read_16bit_register (spi_index_enum spi_n, const uint16 register_name)
+ 1025          {
+ 1026   1          uint16 dat = 0;
+ 1027   1          
+ 1028   1        SPI_WRITE_DAT(spi_n, (uint8)((register_name & 0xFF00) >> 8));
+ 1029   1        SPI_WRITE_DAT(spi_n, (uint8)(register_name & 0x00FF));
+ 1030   1        
+ 1031   1        dat = SPI_READ_DAT(spi_n, 0);
+ 1032   1        dat = ((dat << 8) |  SPI_READ_DAT(spi_n, 0));
+ 1033   1      
+ 1034   1          return dat;
+ 1035   1      }
+ 1036          
+ 1037          //-------------------------------------------------------------------------------------------------------
+             -------------
+ 1038          // º¯Êý¼ò½é      SPI ½Ó¿Ú´Ó´«¸ÐÆ÷µÄ¼Ä´æÆ÷¶Á 16bit Êý×é
+ 1039          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+ 1040          // ²ÎÊýËµÃ÷     register_name   ¼Ä´æÆ÷µØÖ·
+ 1041          // ²ÎÊýËµÃ÷     *dat           Êý¾Ý´æ·Å»º³åÇø
+ 1042          // ²ÎÊýËµÃ÷     len             ·¢ËÍ»º³åÇø³¤¶È
+ 1043          // ·µ»Ø²ÎÊý     void
+ 1044          // Ê¹ÓÃÊ¾Àý     spi_read_16bit_registers(SPI_1,0x1101,dat,32);
+ 1045          //-------------------------------------------------------------------------------------------------------
+             -------------
+ 1046          void spi_read_16bit_registers (spi_index_enum spi_n, const uint16 register_name, uint16 *dat, uint32 len)
+ 1047          {
+ 1048   1        SPI_WRITE_DAT(spi_n, (uint8)((register_name & 0xFF00) >> 8));
+ 1049   1        SPI_WRITE_DAT(spi_n, (uint8)(register_name & 0x00FF));
+ 1050   1          
+ 1051   1          while(len--)
+ 1052   1          {
+ 1053   2          *dat = SPI_READ_DAT(spi_n, 0);
+ 1054   2          *dat = ((*dat << 8) |  SPI_READ_DAT(spi_n, 0));
+ 1055   2              dat++;
+ 1056   2          }
+ 1057   1      }
+ 1058          
+ 1059          //-------------------------------------------------------------------------------------------------------
+             -------------
+ 1060          // º¯Êý¼ò½é      SPI 8bit Êý¾Ý´«Êä ·¢ËÍÓë½ÓÊÕÊý¾ÝÊÇÍ¬Ê±½øÐÐµÄ
+ 1061          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+ 1062          // ²ÎÊýËµÃ÷     write_buffer    ·¢ËÍµÄÊý¾Ý»º³åÇøµØÖ·
+ 1063          // ²ÎÊýËµÃ÷     read_buffer     ·¢ËÍÊý¾ÝÊ±½ÓÊÕµ½µÄÊý¾ÝµÄ´æ´¢µØÖ·(²»ÐèÒª½ÓÊÕÔò´« NULL)
+ 1064          // ²ÎÊýËµÃ÷     len             »º³åÇø³¤¶È
+ 1065          // ·µ»Ø²ÎÊý     void
+ 1066          // Ê¹ÓÃÊ¾Àý     spi_transfer_8bit(SPI_1,buf,buf,1);
+ 1067          //-------------------------------------------------------------------------------------------------------
+             -------------
+ 1068          void spi_transfer_8bit (spi_index_enum spi_n, const uint8 *write_buffer, uint8 *read_buffer, uint32 len)
+ 1069          {
+ 1070   1          while(len--)
+ 1071   1          {
+ 1072   2              if(read_buffer != NULL)
+ 1073   2              {
+ 1074   3                  *read_buffer++ = SPI_READ_DAT(spi_n, *(write_buffer++));
+ 1075   3              }
+ 1076   2          else
+ 1077   2          {
+ 1078   3            SPI_WRITE_DAT(spi_n, *(write_buffer++));
+ 1079   3          }
+ 1080   2          }
+ 1081   1      }
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 19  
+
+ 1082          
+ 1083          //-------------------------------------------------------------------------------------------------------
+             -------------
+ 1084          // º¯Êý¼ò½é      SPI 16bit Êý¾Ý´«Êä ·¢ËÍÓë½ÓÊÕÊý¾ÝÊÇÍ¬Ê±½øÐÐµÄ
+ 1085          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+ 1086          // ²ÎÊýËµÃ÷     write_buffer    ·¢ËÍµÄÊý¾Ý»º³åÇøµØÖ·
+ 1087          // ²ÎÊýËµÃ÷     read_buffer     ·¢ËÍÊý¾ÝÊ±½ÓÊÕµ½µÄÊý¾ÝµÄ´æ´¢µØÖ·(²»ÐèÒª½ÓÊÕÔò´« NULL)
+ 1088          // ²ÎÊýËµÃ÷     len             »º³åÇø³¤¶È
+ 1089          // ·µ»Ø²ÎÊý     void
+ 1090          // Ê¹ÓÃÊ¾Àý     spi_transfer_16bit(SPI_1,buf,buf,1);
+ 1091          //-------------------------------------------------------------------------------------------------------
+             -------------
+ 1092          void spi_transfer_16bit (spi_index_enum spi_n, const uint16 *write_buffer, uint16 *read_buffer, uint32 le
+             -n)
+ 1093          {
+ 1094   1          while(len--)
+ 1095   1          {
+ 1096   2          if(read_buffer != NULL)
+ 1097   2              {
+ 1098   3                  *read_buffer = SPI_READ_DAT(spi_n, (uint8)((*write_buffer & 0xFF00) >> 8));
+ 1099   3            *read_buffer = *read_buffer << 8 | (uint8)(SPI_READ_DAT(spi_n, (*write_buffer & 0x00FF)));
+ 1100   3            read_buffer++;
+ 1101   3              }
+ 1102   2          else
+ 1103   2          {
+ 1104   3            SPI_WRITE_DAT(spi_n, (uint8)((*write_buffer & 0xFF00) >> 8));
+ 1105   3            SPI_WRITE_DAT(spi_n, (uint8)(*write_buffer & 0x00FF));
+ 1106   3          }
+ 1107   2              write_buffer++;
+ 1108   2          }
+ 1109   1      }
+ 1110          
+ 1111          
+ 1112          //-------------------------------------------------------------------------------------------------------
+             -------------
+ 1113          // º¯Êý¼ò½é     SPI ½Ó¿Ú³õÊ¼»¯
+ 1114          // ²ÎÊýËµÃ÷     spi_n           SPI Ä£¿éºÅ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_index_enum Ã¶¾ÙÌå¶¨Òå
+ 1115          // ²ÎÊýËµÃ÷     mode            SPI Ä£Ê½ ²ÎÕÕ zf_driver_spi.h ÄÚ spi_mode_enum Ã¶¾ÙÌå¶¨Òå
+ 1116          // ²ÎÊýËµÃ÷     baud            ÉèÖÃ SPI µÄ²¨ÌØÂÊ ²»³¬¹ýÏµÍ³Ê±ÖÓµÄÒ»°ë ²¿·ÖËÙÂÊ»á±»ÊÊÅä³ÉÏà½üµÄËÙÂÊ
+ 1117          // ²ÎÊýËµÃ÷     sck_pin         Ñ¡Ôñ SCK Òý½Å ²ÎÕÕ zf_driver_spi.h ÄÚ spi_pin_enum Ã¶¾ÙÌå¶¨Òå
+ 1118          // ²ÎÊýËµÃ÷     mosi_pin        Ñ¡Ôñ MOSI Òý½Å ²ÎÕÕ zf_driver_spi.h ÄÚ spi_pin_enum Ã¶¾ÙÌå¶¨Òå
+ 1119          // ²ÎÊýËµÃ÷     miso_pin        Ñ¡Ôñ MISO Òý½Å ²ÎÕÕ zf_driver_spi.h ÄÚ spi_pin_enum Ã¶¾ÙÌå¶¨Òå
+ 1120          // ²ÎÊýËµÃ÷     cs_pin          Ñ¡Ôñ CS Òý½Å ²ÎÕÕ zf_driver_gpio.h ÄÚ gpio_pin_enum Ã¶¾ÙÌå¶¨Òå
+ 1121          // ·µ»Ø²ÎÊý     void
+ 1122          // Ê¹ÓÃÊ¾Àý     spi_init(SPI_1, 0, 1*1000*1000, SPI1_SCK_A5, SPI1_MOSI_A7, SPI1_MISO_A6, A4);  //Ó²¼þSPI³
+             -õÊ¼»¯  Ä£Ê½0 ²¨ÌØÂÊÎª1Mhz
+ 1123          //-------------------------------------------------------------------------------------------------------
+             -------------
+ 1124          void spi_init(spi_index_enum spi_n, spi_mode_enum mode, uint32 baud, spi_pin_enum sck_pin, spi_pin_enum m
+             -osi_pin, spi_pin_enum miso_pin, gpio_pin_enum cs_pin)
+ 1125          {
+ 1126   1          uint32 spi_psc = 0;
+ 1127   1          
+ 1128   1          if((sck_pin & 0xFF00) != (mosi_pin & 0xFF00))
+ 1129   1          {
+ 1130   2              zf_assert(0);
+ 1131   2              // SPIÖ»ÄÜÊ¹ÓÃÍ¬Ò»×éÒý½Å£¬²»ÔÊÐí»ìÓÃÒý½Å
+ 1132   2          }
+ 1133   1          
+ 1134   1          gpio_init(sck_pin  & 0xFF, GPO, 1, GPO_PUSH_PULL);
+ 1135   1          gpio_init(mosi_pin & 0xFF, GPO, 1, GPO_PUSH_PULL);
+ 1136   1          
+ 1137   1          if(miso_pin != SPI_NULL_PIN)
+ 1138   1          {
+ 1139   2              gpio_init(miso_pin & 0xFF, GPI, 1, GPI_IMPEDANCE);
+ 1140   2          }
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 20  
+
+ 1141   1          
+ 1142   1          if(cs_pin != SPI_NULL_PIN)
+ 1143   1          {
+ 1144   2              gpio_init(cs_pin & 0xFF, GPO, 0, GPO_PUSH_PULL);
+ 1145   2          }
+ 1146   1      
+ 1147   1        // ²¨ÌØÂÊ´óÓÚµÈÓÚ10M¾ÍÐèÒªÉèÖÃGPIOµçÆ½×ª»»ËÙ¶È
+ 1148   1        if(baud >= (10*1000*1000U))
+ 1149   1        {
+ 1150   2          gpio_set_level_speed(sck_pin  & 0xFF, GPIO_SPEED_FAST);
+ 1151   2          gpio_set_level_speed(mosi_pin  & 0xFF, GPIO_SPEED_FAST);
+ 1152   2          if(miso_pin != SPI_NULL_PIN)
+ 1153   2          {
+ 1154   3            gpio_set_level_speed(miso_pin & 0xFF, GPIO_SPEED_FAST);
+ 1155   3          }
+ 1156   2          if(cs_pin != SPI_NULL_PIN)
+ 1157   2          {
+ 1158   3            gpio_set_level_speed(cs_pin & 0xFF, GPIO_SPEED_FAST);
+ 1159   3          }
+ 1160   2        }
+ 1161   1          
+ 1162   1          switch(spi_n)
+ 1163   1          {
+ 1164   2              case SPI_1:
+ 1165   2              {
+ 1166   3                  P_SW1 &= ~(0x03 << 2); // Çå³ýSPI_1Òý½ÅÑ¡ÔñÎ»
+ 1167   3                  switch((sck_pin >> 8) & 0x03) 
+ 1168   3                  {
+ 1169   4                      case 0: P_SW1 |= 0x00 << 2; break;
+ 1170   4                      case 1: P_SW1 |= 0x01 << 2; break;
+ 1171   4                      case 2: P_SW1 |= 0x02 << 2; break;
+ 1172   4                      case 3: P_SW1 |= 0x03 << 2; break;
+ 1173   4                  }
+ 1174   3      
+ 1175   3                  SPCTL = 0; // ³õÊ¼»¯SPI_1¿ØÖÆ¼Ä´æÆ÷
+ 1176   3                  SPCTL |= (1 << 7) | (1 << 4); // ºöÂÔSSÒý½Å + Ö÷»úÄ£Ê½
+ 1177   3                  
+ 1178   3                  spi_psc = system_clock / baud;
+ 1179   3      //            if(spi_psc > 8) SPCTL |= 0x02;  // Ê±ÖÓ/16
+ 1180   3      //            else if(spi_psc > 4) SPCTL |= 0x01; // Ê±ÖÓ/8
+ 1181   3      //            else if(spi_psc > 2) SPCTL |= 0x00; // Ê±ÖÓ/4
+ 1182   3      //            else SPCTL |= 0x03; // Ê±ÖÓ/2
+ 1183   3                  
+ 1184   3      
+ 1185   3                  SPI_CLKDIV = spi_psc / 2 + 1;
+ 1186   3                  // ÅäÖÃSPI_1¼«ÐÔÏàÎ»
+ 1187   3                  switch(mode) 
+ 1188   3                  {
+ 1189   4                      case SPI_MODE1: SPCTL |= 0x01 << 2; break;
+ 1190   4                      case SPI_MODE2: SPCTL |= 0x02 << 2; break;
+ 1191   4                      case SPI_MODE3: SPCTL |= 0x03 << 2; break;
+ 1192   4                      default: break; // MODE0Ä¬ÈÏ
+ 1193   4                  }
+ 1194   3                  SPCTL |= 1 << 6; // Ê¹ÄÜSPI_1
+ 1195   3                  break;
+ 1196   3              }
+ 1197   2              
+ 1198   2              case SPI_2:
+ 1199   2              {
+ 1200   3                  P_SWX4 &= ~(0x03 << 0); // Çå³ýSPI_2Òý½ÅÑ¡ÔñÎ»
+ 1201   3                  switch((sck_pin >> 8) & 0x03) 
+ 1202   3                  {
+ 1203   4                      case 0: P_SWX4 |= 0x00 << 0; break;
+ 1204   4                      case 1: P_SWX4 |= 0x01 << 0; break;
+ 1205   4                      case 2: P_SWX4 |= 0x02 << 0; break;
+ 1206   4                      case 3: P_SWX4 |= 0x03 << 0; break;
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 21  
+
+ 1207   4                  }
+ 1208   3      
+ 1209   3                  SPI2CTL = 0; // ³õÊ¼»¯SPI_2¿ØÖÆ¼Ä´æÆ÷
+ 1210   3                  SPI2CTL |= (1 << 7) | (1 << 4); // ºöÂÔSSÒý½Å + Ö÷»úÄ£Ê½
+ 1211   3                  
+ 1212   3                  spi_psc = system_clock / baud;
+ 1213   3      //            if(spi_psc > 8) SPI2CTL |= 0x02;  // Ê±ÖÓ/16
+ 1214   3      //            else if(spi_psc > 4) SPI2CTL |= 0x01; // Ê±ÖÓ/8
+ 1215   3      //            else if(spi_psc > 2) SPI2CTL |= 0x00; // Ê±ÖÓ/4
+ 1216   3      //            else SPI2CTL |= 0x03; // Ê±ÖÓ/2
+ 1217   3      
+ 1218   3                  SPI2_CLKDIV = spi_psc / 2 + 1;
+ 1219   3                  // ÅäÖÃSPI_2¼«ÐÔÏàÎ»
+ 1220   3                  switch(mode) 
+ 1221   3                  {
+ 1222   4                      case SPI_MODE1: SPI2CTL |= 0x01 << 2; break;
+ 1223   4                      case SPI_MODE2: SPI2CTL |= 0x02 << 2; break;
+ 1224   4                      case SPI_MODE3: SPI2CTL |= 0x03 << 2; break;
+ 1225   4                      default: break; // MODE0Ä¬ÈÏ
+ 1226   4                  }
+ 1227   3                  SPI2CTL |= 1 << 6; // Ê¹ÄÜSPI_2
+ 1228   3                  break;
+ 1229   3              }
+ 1230   2      
+ 1231   2              case SPI_3:
+ 1232   2              {
+ 1233   3                  P_SWX4 &= ~(0x03 << 2); // Çå³ýSPI_3Òý½ÅÑ¡ÔñÎ»
+ 1234   3                  switch((sck_pin >> 8) & 0x03) 
+ 1235   3                  {
+ 1236   4                      case 0: P_SWX4 |= 0x00 << 2; break;
+ 1237   4                      case 1: P_SWX4 |= 0x01 << 2; break;
+ 1238   4                      case 2: P_SWX4 |= 0x02 << 2; break;
+ 1239   4                      case 3: P_SWX4 |= 0x03 << 2; break;
+ 1240   4                  }
+ 1241   3      
+ 1242   3                  SPI3CTL = 0; // ³õÊ¼»¯SPI_3¿ØÖÆ¼Ä´æÆ÷
+ 1243   3                  SPI3CTL |= (1 << 7) | (1 << 4); // ºöÂÔSSÒý½Å + Ö÷»úÄ£Ê½
+ 1244   3                  
+ 1245   3                  spi_psc = system_clock / baud;
+ 1246   3      //            if(spi_psc > 8) SPI3CTL |= 0x02;  // Ê±ÖÓ/16
+ 1247   3      //            else if(spi_psc > 4) SPI3CTL |= 0x01; // Ê±ÖÓ/8
+ 1248   3      //            else if(spi_psc > 2) SPI3CTL |= 0x00; // Ê±ÖÓ/4
+ 1249   3      //            else SPI3CTL |= 0x03; // Ê±ÖÓ/2
+ 1250   3      
+ 1251   3                  SPI3_CLKDIV = spi_psc / 2 + 1;
+ 1252   3                  
+ 1253   3                  // ÅäÖÃSPI_3¼«ÐÔÏàÎ»
+ 1254   3                  switch(mode) 
+ 1255   3                  {
+ 1256   4                      case SPI_MODE1: SPI3CTL |= 0x01 << 2; break;
+ 1257   4                      case SPI_MODE2: SPI3CTL |= 0x02 << 2; break;
+ 1258   4                      case SPI_MODE3: SPI3CTL |= 0x03 << 2; break;
+ 1259   4                      default: break; // MODE0Ä¬ÈÏ
+ 1260   4                  }
+ 1261   3                  SPI3CTL |= 1 << 6; // Ê¹ÄÜSPI_3
+ 1262   3                  break;
+ 1263   3              }
+ 1264   2      
+ 1265   2              default:
+ 1266   2                  // ÎÞÐ§SPI±àºÅ£¨¿ÉÑ¡£ºzf_assert(0);£©
+ 1267   2                  break;
+ 1268   2          }   
+ 1269   1      }
+ 1270          
+ 1271          
+ 1272          
+C251 COMPILER V5.60.0,  zf_driver_spi                                                      13/06/26  12:52:07  PAGE 22  
+
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =      8548     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =       509     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =       338     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,155 @@
+C251 COMPILER V5.60.0,  seekfree_assistant_interface                                       13/06/26  12:52:09  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE seekfree_assistant_interface
+OBJECT MODULE PLACED IN .\out_file\seekfree_assistant_interface.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\..\libraries\zf_components\seekfree_assistant\seekfree_assistant_in
+                    -terface.c LARGE ROM(HUGE) WARNINGLEVEL(3) OPTIMIZE(0,SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_co
+                    -mponents;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_li
+                    -b;..\..\libraries\zf_components\seekfree_assistant) DEBUG PRINT(.\out_file\seekfree_assistant_interface.lst) TABS(2) OBJ
+                    -ECT(.\out_file\seekfree_assistant_interface.obj) 
+
+stmt  level    source
+
+    1          /********************************************************************************************************
+             -*************
+    2          * STC32G144K Opensourec Library ¼´£¨STC32G144K ¿ªÔ´¿â£©ÊÇÒ»¸ö»ùÓÚ¹Ù·½ SDK ½Ó¿ÚµÄµÚÈı·½¿ªÔ´¿â
+    3          * Copyright (c) 2025 SEEKFREE Öğ·É¿Æ¼¼
+    4          *
+    5          * ±¾ÎÄ¼şÊÇSTC32G144K¿ªÔ´¿âµÄÒ»²¿·Ö
+    6          *
+    7          * STC32G144K ¿ªÔ´¿â ÊÇÃâ·ÑÈí¼ş
+    8          * Äú¿ÉÒÔ¸ù¾İ×ÔÓÉÈí¼ş»ù½ğ»á·¢²¼µÄ GPL£¨GNU General Public License£¬¼´ GNUÍ¨ÓÃ¹«¹²Ğí¿ÉÖ¤£©µÄÌõ¿î
+    9          * ¼´ GPL µÄµÚ3°æ£¨¼´ GPL3.0£©»ò£¨ÄúÑ¡ÔñµÄ£©ÈÎºÎºóÀ´µÄ°æ±¾£¬ÖØĞÂ·¢²¼ºÍ/»òĞŞ¸ÄËü
+   10          *
+   11          * ±¾¿ªÔ´¿âµÄ·¢²¼ÊÇÏ£ÍûËüÄÜ·¢»Ó×÷ÓÃ£¬µ«²¢Î´¶ÔÆä×÷ÈÎºÎµÄ±£Ö¤
+   12          * ÉõÖÁÃ»ÓĞÒşº¬µÄÊÊÏúĞÔ»òÊÊºÏÌØ¶¨ÓÃÍ¾µÄ±£Ö¤
+   13          * ¸ü¶àÏ¸½ÚÇë²Î¼û GPL
+   14          *
+   15          * ÄúÓ¦¸ÃÔÚÊÕµ½±¾¿ªÔ´¿âµÄÍ¬Ê±ÊÕµ½Ò»·İ GPL µÄ¸±±¾
+   16          * Èç¹ûÃ»ÓĞ£¬Çë²ÎÔÄ<https://www.gnu.org/licenses/>
+   17          *
+   18          * ¶îÍâ×¢Ã÷£º
+   19          * ±¾¿ªÔ´¿âÊ¹ÓÃ GPL3.0 ¿ªÔ´Ğí¿ÉÖ¤Ğ­Òé ÒÔÉÏĞí¿ÉÉêÃ÷ÎªÒëÎÄ°æ±¾
+   20          * Ğí¿ÉÉêÃ÷Ó¢ÎÄ°æÔÚ libraries/doc ÎÄ¼ş¼ĞÏÂµÄ GPL3_permission_statement.txt ÎÄ¼şÖĞ
+   21          * Ğí¿ÉÖ¤¸±±¾ÔÚ libraries ÎÄ¼ş¼ĞÏÂ ¼´¸ÃÎÄ¼ş¼ĞÏÂµÄ LICENSE ÎÄ¼ş
+   22          * »¶Ó­¸÷Î»Ê¹ÓÃ²¢´«²¥±¾³ÌĞò µ«ĞŞ¸ÄÄÚÈİÊ±±ØĞë±£ÁôÖğ·É¿Æ¼¼µÄ°æÈ¨ÉùÃ÷£¨¼´±¾ÉùÃ÷£©
+   23          *
+   24          * ÎÄ¼şÃû³Æ          
+   25          * ¹«Ë¾Ãû³Æ          ³É¶¼Öğ·É¿Æ¼¼ÓĞÏŞ¹«Ë¾
+   26          * °æ±¾ĞÅÏ¢          ²é¿´ libraries/doc ÎÄ¼ş¼ĞÄÚ version ÎÄ¼ş °æ±¾ËµÃ÷
+   27          * ¿ª·¢»·¾³          MDK FOR C251
+   28          * ÊÊÓÃÆ½Ì¨          STC32G144K
+   29          * µêÆÌÁ´½Ó          https://seekfree.taobao.com/
+   30          *
+   31          * ĞŞ¸Ä¼ÇÂ¼
+   32          * ÈÕÆÚ              ×÷Õß           ±¸×¢
+   33          * 2025-11-20        ´óW            first version
+   34          *********************************************************************************************************
+             -***********/
+   35          
+   36          #include "seekfree_assistant.h"
+   37          
+   38          //-------------------------------------------------------------------------------------------------------
+             -------------
+   39          // º¯Êı¼ò½é     Öğ·ÉÖúÊÖ·¢ËÍº¯Êı
+   40          // ²ÎÊıËµÃ÷     *buff           ĞèÒª·¢ËÍµÄÊı¾İµØÖ·
+   41          // ²ÎÊıËµÃ÷     length          ĞèÒª·¢ËÍµÄ³¤¶È
+   42          // ·µ»Ø²ÎÊı     uint32          Ê£ÓàÎ´·¢ËÍÊı¾İ³¤¶È
+   43          // Ê¹ÓÃÊ¾Àı
+   44          //-------------------------------------------------------------------------------------------------------
+             -------------
+   45          uint32 (*seekfree_assistant_transfer_callback)   (const uint8 *buff, uint32 length);
+   46          
+   47          
+   48          //-------------------------------------------------------------------------------------------------------
+             -------------
+   49          // º¯Êı¼ò½é     Öğ·ÉÖúÊÖ½ÓÊÕÊı¾İº¯Êı
+   50          // ²ÎÊıËµÃ÷     *buff           ĞèÒª½ÓÊÕµÄÊı¾İµØÖ·
+C251 COMPILER V5.60.0,  seekfree_assistant_interface                                       13/06/26  12:52:09  PAGE 2   
+
+   51          // ²ÎÊıËµÃ÷     length          Òª½ÓÊÕµÄÊı¾İ×î´ó³¤¶È
+   52          // ·µ»Ø²ÎÊı     uint32          ½ÓÊÕµ½µÄÊı¾İ³¤¶È
+   53          // Ê¹ÓÃÊ¾Àı
+   54          //-------------------------------------------------------------------------------------------------------
+             -------------
+   55          uint32 (*seekfree_assistant_receive_callback)    (uint8 *buff, uint32 length);
+   56          
+   57          
+   58          //-------------------------------------------------------------------------------------------------------
+             -------------
+   59          // º¯Êı¼ò½é     Öğ·ÉÖúÊÖ½Ó¿Ú ³õÊ¼»¯
+   60          // ²ÎÊıËµÃ÷
+   61          // ·µ»Ø²ÎÊı     void
+   62          // Ê¹ÓÃÊ¾Àı     seekfree_assistant_interface_init(SEEKFREE_ASSISTANT_WIFI_SPI); Ê¹ÓÃ¸ßËÙWIFI SPIÄ£¿é½øĞĞÊ
+             -ı¾İÊÕ·¢
+   63          // ±¸×¢         ĞèÒª×ÔĞĞµ÷ÓÃÉè±¸µÄ³õÊ¼»¯£¬ÀıÈçÊ¹ÓÃÎŞÏß×ª´®¿Ú½øĞĞÊı¾İµÄÊÕ·¢£¬ÔòĞèÒª×ÔĞĞµ÷ÓÃÎŞÏß×ª´®¿ÚµÄ³õÊ
+             -¼»¯£¬È»ºóÔÙµ÷ÓÃseekfree_assistant_interface_initÍê³ÉÖğ·ÉÖúÊÖµÄ½Ó¿Ú³õÊ¼»¯
+   64          //-------------------------------------------------------------------------------------------------------
+             -------------
+   65          void seekfree_assistant_interface_init (seekfree_assistant_transfer_device_enum transfer_device)
+   66          {
+   67   1          switch(transfer_device)
+   68   1          {
+   69   2              case SEEKFREE_ASSISTANT_DEBUG_UART:
+   70   2              {
+   71   3                  seekfree_assistant_transfer_callback = debug_send_buffer;
+   72   3                  seekfree_assistant_receive_callback = debug_read_buffer;
+   73   3              }break;
+   74   2              
+   75   2              case SEEKFREE_ASSISTANT_WIRELESS_UART:
+   76   2              {
+   77   3                  // seekfree_assistant_transfer_callback = wireless_uart_send_buffer;
+   78   3                  // seekfree_assistant_receive_callback = wireless_uart_read_buffer;
+   79   3              }break;
+   80   2              
+   81   2      
+   82   2              case SEEKFREE_ASSISTANT_BLE6A20:
+   83   2              {
+   84   3                  // seekfree_assistant_transfer_callback = ble6a20_send_buffer;
+   85   3                  // seekfree_assistant_receive_callback = ble6a20_read_buffer;
+   86   3              }break;
+   87   2      
+   88   2                      
+   89   2              case SEEKFREE_ASSISTANT_WIFI_SPI:
+   90   2              {
+   91   3                  seekfree_assistant_transfer_callback = wifi_spi_send_buffer;
+   92   3                  seekfree_assistant_receive_callback = wifi_spi_read_buffer;
+   93   3              }break;
+   94   2              
+   95   2              case SEEKFREE_ASSISTANT_CUSTOM:
+   96   2              {         
+   97   3                  // ¸ù¾İ×Ô¼ºµÄĞèÇó ×ÔĞĞÊµÏÖseekfree_assistant_transferÓëseekfree_assistant_receiveº¯Êı£¬Íê³ÉÊı
+             -¾İµÄÊÕ·¢
+   98   3                  
+   99   3              }break;
+  100   2          }
+  101   1      }
+  102          
+  103          
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =        95     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+C251 COMPILER V5.60.0,  seekfree_assistant_interface                                       13/06/26  12:52:09  PAGE 3   
+
+  pdata size           =    ------     ------
+  xdata size           =        10     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =    ------     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

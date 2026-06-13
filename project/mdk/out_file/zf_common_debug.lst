@@ -1,0 +1,321 @@
+C251 COMPILER V5.60.0,  zf_common_debug                                                    13/06/26  12:52:06  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_common_debug
+OBJECT MODULE PLACED IN .\out_file\zf_common_debug.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\..\libraries\zf_common\zf_common_debug.c LARGE ROM(HUGE) WARNINGLEV
+                    -EL(3) OPTIMIZE(0,SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;.
+                    -.\..\libraries\zf_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seek
+                    -free_assistant) DEBUG PRINT(.\out_file\zf_common_debug.lst) TABS(2) OBJECT(.\out_file\zf_common_debug.obj) 
+
+stmt  level    source
+
+    1          /********************************************************************************************************
+             -*************
+    2          * STC32G144K Opensourec Library ¼´£¨STC32G144K ¿ªÔ´¿â£©ÊÇÒ»¸ö»ùÓÚ¹Ù·½ SDK ½Ó¿ÚµÄµÚÈý·½¿ªÔ´¿â
+    3          * Copyright (c) 2025 SEEKFREE Öð·É¿Æ¼¼
+    4          *
+    5          * ±¾ÎÄ¼þÊÇSTC32G144K¿ªÔ´¿âµÄÒ»²¿·Ö
+    6          *
+    7          * STC32G144K ¿ªÔ´¿â ÊÇÃâ·ÑÈí¼þ
+    8          * Äú¿ÉÒÔ¸ù¾Ý×ÔÓÉÈí¼þ»ù½ð»á·¢²¼µÄ GPL£¨GNU General Public License£¬¼´ GNUÍ¨ÓÃ¹«¹²Ðí¿ÉÖ¤£©µÄÌõ¿î
+    9          * ¼´ GPL µÄµÚ3°æ£¨¼´ GPL3.0£©»ò£¨ÄúÑ¡ÔñµÄ£©ÈÎºÎºóÀ´µÄ°æ±¾£¬ÖØÐÂ·¢²¼ºÍ/»òÐÞ¸ÄËü
+   10          *
+   11          * ±¾¿ªÔ´¿âµÄ·¢²¼ÊÇÏ£ÍûËüÄÜ·¢»Ó×÷ÓÃ£¬µ«²¢Î´¶ÔÆä×÷ÈÎºÎµÄ±£Ö¤
+   12          * ÉõÖÁÃ»ÓÐÒþº¬µÄÊÊÏúÐÔ»òÊÊºÏÌØ¶¨ÓÃÍ¾µÄ±£Ö¤
+   13          * ¸ü¶àÏ¸½ÚÇë²Î¼û GPL
+   14          *
+   15          * ÄúÓ¦¸ÃÔÚÊÕµ½±¾¿ªÔ´¿âµÄÍ¬Ê±ÊÕµ½Ò»·Ý GPL µÄ¸±±¾
+   16          * Èç¹ûÃ»ÓÐ£¬Çë²ÎÔÄ<https://www.gnu.org/licenses/>
+   17          *
+   18          * ¶îÍâ×¢Ã÷£º
+   19          * ±¾¿ªÔ´¿âÊ¹ÓÃ GPL3.0 ¿ªÔ´Ðí¿ÉÖ¤Ð­Òé ÒÔÉÏÐí¿ÉÉêÃ÷ÎªÒëÎÄ°æ±¾
+   20          * Ðí¿ÉÉêÃ÷Ó¢ÎÄ°æÔÚ libraries/doc ÎÄ¼þ¼ÐÏÂµÄ GPL3_permission_statement.txt ÎÄ¼þÖÐ
+   21          * Ðí¿ÉÖ¤¸±±¾ÔÚ libraries ÎÄ¼þ¼ÐÏÂ ¼´¸ÃÎÄ¼þ¼ÐÏÂµÄ LICENSE ÎÄ¼þ
+   22          * »¶Ó­¸÷Î»Ê¹ÓÃ²¢´«²¥±¾³ÌÐò µ«ÐÞ¸ÄÄÚÈÝÊ±±ØÐë±£ÁôÖð·É¿Æ¼¼µÄ°æÈ¨ÉùÃ÷£¨¼´±¾ÉùÃ÷£©
+   23          *
+   24          * ÎÄ¼þÃû³Æ          
+   25          * ¹«Ë¾Ãû³Æ          ³É¶¼Öð·É¿Æ¼¼ÓÐÏÞ¹«Ë¾
+   26          * °æ±¾ÐÅÏ¢          ²é¿´ libraries/doc ÎÄ¼þ¼ÐÄÚ version ÎÄ¼þ °æ±¾ËµÃ÷
+   27          * ¿ª·¢»·¾³          MDK FOR C251
+   28          * ÊÊÓÃÆ½Ì¨          STC32G144K
+   29          * µêÆÌÁ´½Ó          https://seekfree.taobao.com/
+   30          *
+   31          * ÐÞ¸Ä¼ÇÂ¼
+   32          * ÈÕÆÚ              ×÷Õß           ±¸×¢
+   33          * 2025-11-20        ´óW            first version
+   34          *********************************************************************************************************
+             -***********/
+   35          
+   36          #include "zf_common_fifo.h"
+   37          #include "zf_common_debug.h"
+   38          #include "zf_common_clock.h"
+   39          #include "zf_common_interrupt.h"
+   40          #include "zf_common_typedef.h"
+   41          
+   42          #include "zf_driver_uart.h"
+   43          #include "zf_driver_usb_cdc.h"
+   44          #include "zf_driver_delay.h"
+   45          
+   46          
+   47          #pragma warning disable = 183
+   48          #pragma warning disable = 177
+   49          
+   50          
+   51          #if DEBUG_UART_USE_INTERRUPT                                                    // Èç¹ûÆôÓÃ debug uart ½Ó
+             -ÊÕÖÐ¶Ï
+   52              uint8                       debug_uart_buffer[DEBUG_RING_BUFFER_LEN];           // Êý¾Ý´æ·ÅÊý×é
+   53          #endif
+C251 COMPILER V5.60.0,  zf_common_debug                                                    13/06/26  12:52:06  PAGE 2   
+
+   54          
+   55          fifo_struct                 debug_uart_fifo;
+   56          
+   57          static volatile uint8       zf_debug_init_flag = 1;
+   58          static volatile uint8       zf_debug_assert_enable = 1;
+   59          
+   60          //-------------------------------------------------------------------------------------------------------
+             -------------
+   61          // º¯Êý¼ò½é     µ÷ÊÔ´®¿Ú·¢ËÍ»º³åÇø
+   62          // ²ÎÊýËµÃ÷     *buff       ¶Á³öÊý¾Ý´æ·ÅµÄÊý×éÖ¸Õë
+   63          // ²ÎÊýËµÃ÷     len         ÐèÒª·¢ËÍµÄ³¤¶È
+   64          // ·µ»Ø²ÎÊý     uint32      Ê£ÓàÎ´·¢ËÍµÄ³¤¶È
+   65          // Ê¹ÓÃÊ¾Àý
+   66          // ±¸×¢ÐÅÏ¢     ±¾º¯ÊýÐèÒª¿ªÆô DEBUG_UART_USE_INTERRUPT ºê¶¨Òå²Å¿ÉÊ¹ÓÃ
+   67          //-------------------------------------------------------------------------------------------------------
+             -------------
+   68          uint32 debug_send_buffer(const uint8 *buff, uint32 len)
+   69          {
+   70   1          
+   71   1      #if(USER_USB_CDC)
+   72   1          if(len > 0xFFFF)
+   73   1        {
+   74   2          usb_cdc_write_buffer(buff, 0xFFFF);
+   75   2          return  len - 0xFFFF;
+   76   2        }
+   77   1        else
+   78   1        {
+   79   2          usb_cdc_write_buffer(buff, (uint16)len);
+   80   2        }
+   81   1          return 0;
+   82   1      #else
+                   if(len > 0xFFFF)
+                 {
+                   uart_write_buffer(DEBUG_UART_INDEX, buff, 0xFFFF);
+                   return  len - 0xFFFF;
+                 }
+                 else
+                 {
+                   uart_write_buffer(DEBUG_UART_INDEX, buff, (uint16)len);
+                 }
+                   
+                   return 0;
+               #endif
+   95   1      
+   96   1      }
+   97          
+   98          //-------------------------------------------------------------------------------------------------------
+             -------------
+   99          // º¯Êý¼ò½é     ¶ÁÈ¡ debug »·ÐÎ»º³åÇøÊý¾Ý
+  100          // ²ÎÊýËµÃ÷     *buff       ¶Á³öÊý¾Ý´æ·ÅµÄÊý×éÖ¸Õë
+  101          // ²ÎÊýËµÃ÷     len         ÐèÒª¶ÁÈ¡µÄ³¤¶È
+  102          // ·µ»Ø²ÎÊý     uint32      ¶Á³öÊý¾ÝµÄÊµ¼Ê³¤¶È
+  103          // Ê¹ÓÃÊ¾Àý
+  104          // ±¸×¢ÐÅÏ¢     ±¾º¯ÊýÐèÒª¿ªÆô DEBUG_UART_USE_INTERRUPT ºê¶¨Òå²Å¿ÉÊ¹ÓÃ
+  105          //-------------------------------------------------------------------------------------------------------
+             -------------
+  106          uint32 debug_read_buffer (uint8 *buff, uint32 len)
+  107          {
+  108   1          fifo_read_buffer(&debug_uart_fifo, buff, &len, FIFO_READ_AND_CLEAN);
+  109   1          return len;
+  110   1      }
+  111          extern uint8 test_count ;
+  112          //-------------------------------------------------------------------------------------------------------
+             -------------
+  113          // º¯Êý¼ò½é     debug ´®¿ÚÖÐ¶Ï´¦Àíº¯Êý isr.c ÖÐ¶ÔÓ¦´®¿ÚÖÐ¶Ï·þÎñº¯Êýµ÷ÓÃ
+  114          // ²ÎÊýËµÃ÷     void
+C251 COMPILER V5.60.0,  zf_common_debug                                                    13/06/26  12:52:06  PAGE 3   
+
+  115          // ·µ»Ø²ÎÊý     void
+  116          // Ê¹ÓÃÊ¾Àý     debug_interrupr_handler();
+  117          // ±¸×¢ÐÅÏ¢     ±¾º¯ÊýÐèÒª¿ªÆô DEBUG_UART_USE_INTERRUPT ºê¶¨Òå²Å¿ÉÊ¹ÓÃ
+  118          //              ²¢ÇÒ±¾º¯ÊýÄ¬ÈÏ·ÅÖÃÔÚ UART1 µÄ´®¿Ú½ÓÊÕÖÐ¶Ï´¦Àí´¦
+  119          //-------------------------------------------------------------------------------------------------------
+             -------------
+  120          #if DEBUG_UART_USE_INTERRUPT                                                    // Ìõ¼þ±àÒë Ö»ÓÐÔÚÆôÓÃ´®¿
+             -ÚÖÐ¶Ï²Å±àÒë
+  121              #if(USER_USB_CDC)
+  122                  void debug_interrupr_handler(uint8 *buff, uint16 len)
+  123                  {
+  124   1                  
+  125   1                  // ¼ì²âÈí¼þ¸´Î»Ö¸Áî
+  126   1                  const uint8 reboot_str[8] = "@STCISP#";
+  127   1                  if(0 == strncmp(buff, reboot_str, 8))
+  128   1                  {
+  129   2                      EA = 0;
+  130   2                      CLKSEL = 0;             // ÇÐ»»ÎªÄ¬ÈÏÏµÍ³Ê±ÖÓ
+  131   2                      USBCON = 0;             // Çå³ýUSBÉèÖÃ
+  132   2                      USBCLK &= 0xF0;
+  133   2                      IRC48MCR = 0;           // Í£Ö¹48M IRCÊ±ÖÓ
+  134   2                      XOSCCR = 0;             // Í£Ö¹Íâ²¿Ê±ÖÓ
+  135   2                      system_delay_ms(10);    // µÈ´ýUSB×ÜÏß¸´Î»
+  136   2                      IAP_CONTR = 0x60;       // ´¥·¢Èí¼þ¸´Î»
+  137   2                  }
+  138   1                  
+  139   1                  if(zf_debug_init_flag)
+  140   1                  {
+  141   2                      fifo_write_buffer(&debug_uart_fifo, buff, len);               // ´æÈë FIFO
+  142   2                  }
+  143   1              }
+  144              #else
+                       void debug_interrupr_handler (uint8 dat)
+                       {
+                           if(zf_debug_init_flag)
+                           {
+                               uart_query_byte(DEBUG_UART_INDEX, &dat);                    // ¶ÁÈ¡´®¿ÚÊý¾Ý
+                               fifo_write_buffer(&debug_uart_fifo, &dat, 1);               // ´æÈë FIFO
+                           }
+                       }
+                   #endif
+  154          #endif
+  155          
+  156          
+  157          //-------------------------------------------------------------------------     // printf ÖØ¶¨Ïò ´Ë²¿·Ö²»
+             -ÔÊÐíÓÃ»§¸ü¸Ä
+  158          //-------------------------------------------------------------------------------------------------------
+             -------------
+  159          // º¯Êý¼ò½é     printfÖØ¶¨Ïò
+  160          // ²ÎÊýËµÃ÷     void
+  161          // ·µ»Ø²ÎÊý     void
+  162          //  @since      v1.0
+  163          // ±¸×¢ÐÅÏ¢              ÖØ¶¨Ïòprintfµ½DEBUG´®¿ÚÉÏ
+  164          //-------------------------------------------------------------------------------------------------------
+             -------------
+  165          #if(PRINTF_ENABLE)      //³õÊ¼»¯µ÷ÊÔ´®¿Ú
+  166              //ÖØ¶¨Òåprintf Êý×Ö Ö»ÄÜÊä³öuint16
+  167              char putchar(char c)
+  168              {
+  169   1              #if(USER_USB_CDC)
+  170   1                  usb_cdc_write_byte(c);
+  171   1                  return c;
+  172   1              #else
+                           uart_write_byte(DEBUG_UART_INDEX, c);//°Ñ×Ô¼ºÊµÏÖµÄ´®¿Ú´òÓ¡Ò»×Ö½ÚÊý¾ÝµÄº¯ÊýÌæ»»µ½ÕâÀï
+                           return c;
+                       #endif
+C251 COMPILER V5.60.0,  zf_common_debug                                                    13/06/26  12:52:06  PAGE 4   
+
+  176   1      
+  177   1          }
+  178          #endif
+  179          //-------------------------------------------------------------------------     // printf ÖØ¶¨Ïò ´Ë²¿·Ö²»
+             -ÔÊÐíÓÃ»§¸ü¸Ä
+  180          
+  181          //-------------------------------------------------------------------------------------------------------
+             -------------
+  182          // º¯Êý¼ò½é      debug ¶ÏÑÔ´¦Àíº¯Êý ´Ë²¿·Ö²»ÔÊÐíÓÃ»§¸ü¸Ä
+  183          // ²ÎÊýËµÃ÷     pass        ÅÐ¶ÏÊÇ·ñ´¥·¢¶ÏÑÔ
+  184          // ²ÎÊýËµÃ÷     *file       ÎÄ¼þÃû
+  185          // ²ÎÊýËµÃ÷     line        Ä¿±êÐÐÊý
+  186          // ·µ»Ø²ÎÊý     void
+  187          // Ê¹ÓÃÊ¾Àý     zf_assert(0);
+  188          // ±¸×¢ÐÅÏ¢     Õâ¸öº¯Êý²»ÊÇÖ±½Óµ÷ÓÃµÄ ´Ë²¿·Ö²»ÔÊÐíÓÃ»§¸ü¸Ä
+  189          //              Ê¹ÓÃ zf_commmon_debug.h ÖÐµÄ zf_assert(x) ½Ó¿Ú
+  190          //-------------------------------------------------------------------------------------------------------
+             -------------
+  191          void debug_assert_handler (uint8 pass, char *file, int line)
+  192          {
+  193   1        uint8 log_str[] = "Assert error";
+  194   1      
+  195   1        while(!pass)
+  196   1        {
+  197   2          // Èç¹û´úÂëÌø×ªµ½ÕâÀïÍ£×¡ÁË
+  198   2          // Ò»°ãÄãµÄº¯Êý²ÎÊý´«µÝ³ö´íÁË
+  199   2          // »òÕßÄã×Ô¼ºµ÷ÓÃµÄ zf_assert(x) ½Ó¿Ú´¦±¨´íÁË
+  200   2      
+  201   2          // Èç¹ûµ÷ÓÃÁË debug_init ³õÊ¼»¯ÁË log Êä³ö
+  202   2          // ¾ÍÔÚ¶ÔÓ¦´®¿ÚÊä³öÈ¥²é¿´ÊÇÄÄ¸öÎÄ¼þµÄÄÄÒ»ÐÐ±¨´í
+  203   2      
+  204   2          // Èç¹ûÃ»ÓÐ³õÊ¼»¯ debug
+  205   2          // ÄÇ¾Í¿´¿´Õâ¸ö file µÄ×Ö·û´®ÖµºÍ line µÄÐÐÊý
+  206   2          // ÄÇ´ú±í±¨´íµÄÎÄ¼þÂ·¾¶Ãû³ÆºÍ¶ÔÓ¦±¨´íÐÐÊý
+  207   2      
+  208   2          // ÔÙÈ¥µ÷ÊÔ¿´¿´ÊÇÎªÊ²Ã´²ÎÊý³ö´í
+  209   2      
+  210   2      
+  211   2          printf("\r\n %s file %s line %d\r\n", log_str, file, line);
+  212   2      
+  213   2      
+  214   2          system_delay_ms(500);
+  215   2        }
+  216   1      }
+  217          
+  218          
+  219          //-------------------------------------------------------------------------------------------------------
+             -------------
+  220          // º¯Êý¼ò½é      debug ´®¿Ú³õÊ¼»¯ ´Ë²¿·Ö²»ÔÊÐíÓÃ»§¸ü¸Ä
+  221          // ²ÎÊýËµÃ÷     void
+  222          // ·µ»Ø²ÎÊý     void
+  223          // Ê¹ÓÃÊ¾Àý     debug_init();
+  224          // ±¸×¢ÐÅÏ¢     ¿ªÔ´¿âÊ¾ÀýÄ¬ÈÏµ÷ÓÃ µ«Ä¬ÈÏ½ûÓÃÖÐ¶Ï½ÓÊÕ
+  225          //-------------------------------------------------------------------------------------------------------
+             -------------
+  226          void debug_init (void)
+  227          {
+  228   1      #if(USER_USB_CDC)
+  229   1          usb_cdc_init();
+  230   1          #if DEBUG_UART_USE_INTERRUPT                                               // Ìõ¼þ±àÒë Ö»ÓÐÔÚÆôÓÃ´®¿Ú
+             -ÖÐ¶Ï²Å±àÒë
+  231   1              fifo_init(&debug_uart_fifo, FIFO_DATA_8BIT, debug_uart_buffer, DEBUG_RING_BUFFER_LEN);
+  232   1              usb_cdc_rx_interrupt(debug_interrupr_handler);
+  233   1          #endif
+  234   1      #else
+                   uint8 uartx = DEBUG_UART_INDEX;
+C251 COMPILER V5.60.0,  zf_common_debug                                                    13/06/26  12:52:06  PAGE 5   
+
+                   
+                   uart_init(
+                       DEBUG_UART_INDEX,                                                       // ÔÚ zf_common_debug.h Ö
+             -Ð²é¿´¶ÔÓ¦Öµ
+                       DEBUG_UART_BAUDRATE,                                                    // ÔÚ zf_common_debug.h Ö
+             -Ð²é¿´¶ÔÓ¦Öµ
+                       DEBUG_UART_TX_PIN,                                                      // ÔÚ zf_common_debug.h Ö
+             -Ð²é¿´¶ÔÓ¦Öµ
+                       DEBUG_UART_RX_PIN);                                                     // ÔÚ zf_common_debug.h Ö
+             -Ð²é¿´¶ÔÓ¦Öµ
+                   
+                   #if DEBUG_UART_USE_INTERRUPT                                                // Ìõ¼þ±àÒë Ö»ÓÐÔÚÆôÓÃ´®¿
+             -ÚÖÐ¶Ï²Å±àÒë
+                       fifo_init(&debug_uart_fifo, FIFO_DATA_8BIT, debug_uart_buffer, DEBUG_RING_BUFFER_LEN);
+                       uart_rx_interrupt(DEBUG_UART_INDEX, 1, debug_interrupr_handler);                                 
+             -    // Ê¹ÄÜ¶ÔÓ¦´®¿Ú½ÓÊÕÖÐ¶Ï
+                   #endif   
+               #endif
+  248   1      }
+  249          
+  250          
+  251          
+  252          
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =       606     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =       204     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =        57     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

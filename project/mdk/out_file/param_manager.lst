@@ -1,0 +1,96 @@
+C251 COMPILER V5.60.0,  param_manager                                                      02/05/26  17:12:22  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE param_manager
+OBJECT MODULE PLACED IN .\out_file\param_manager.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE param_manager.c LARGE ROM(HUGE) WARNINGLEVEL(3) OPTIMIZE(0,SIZE) BROWS
+                    -E INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\
+                    -user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekfree_assistant) DEBUG PRINT(
+                    -.\out_file\param_manager.lst) TABS(2) OBJECT(.\out_file\param_manager.obj) 
+
+stmt  level    source
+
+    1          #include "param_manager.h"
+    2          #include "zf_driver_eeprom.h"
+    3          
+    4          Config_TypeDef g_sys_config;
+    5          #define PARAM_MAGIC_NUMBER  0x5AA5
+    6          // 计算校验码：把所有参数加起来，看结果变没变
+    7          static uint32 Calculate_CheckSum(Config_TypeDef *cfg) {
+    8   1          uint32 sum = 0;
+    9   1          // 将魔数也加入校验
+   10   1          sum += (uint32)cfg->magic_pad; 
+   11   1          
+   12   1          sum += cfg->steer_kp + cfg->steer_kd;
+   13   1          sum += cfg->kff1 + cfg->kff2;
+   14   1          sum += cfg->motor_kp + cfg->motor_ki + cfg->motor_kd;
+   15   1          sum += (uint32)cfg->ack_k + (uint32)cfg->base_speed;
+   16   1          sum += (uint32)cfg->system_en + (uint32)cfg->gyro_kd + (uint32)cfg->jerk_kf; 
+   17   1          return sum;
+   18   1      }
+   19          
+   20          // 参数初始化：开机第一件事就是跑它
+   21          void Param_Init(void) {
+   22   1          iap_init(); 
+   23   1          iap_read_buff(CONFIG_EEPROM_ADDR, (uint8 *)&g_sys_config, sizeof(g_sys_config));
+   24   1          
+   25   1          // 判定逻辑升级：魔数不对 OR 校验不对 OR 关键参数出现非法值(-1)
+   26   1          if (g_sys_config.magic_pad != PARAM_MAGIC_NUMBER || 
+   27   1              g_sys_config.check_sum != Calculate_CheckSum(&g_sys_config) ||
+   28   1              g_sys_config.gyro_kd == -1) 
+   29   1          {
+   30   2              // 强制灌入物理安全参数
+   31   2              g_sys_config.magic_pad = PARAM_MAGIC_NUMBER;
+   32   2              g_sys_config.steer_kp = 2048;  
+   33   2              g_sys_config.steer_kd = 800;   
+   34   2              g_sys_config.kff1 = 512;       
+   35   2              g_sys_config.kff2 = 20;
+   36   2              g_sys_config.motor_kp = 1536;  
+   37   2              g_sys_config.motor_ki = 102;
+   38   2              g_sys_config.motor_kd = 512;
+   39   2              g_sys_config.ack_k = 102;      
+   40   2              g_sys_config.base_speed = 0;   // 必须为 0
+   41   2              
+   42   2              g_sys_config.system_en = 0;    // 开机必须禁用
+   43   2              g_sys_config.gyro_kd = 500;    // 绝不能是 -1
+   44   2              g_sys_config.jerk_kf = 100;    // 绝不能是 -1
+   45   2              
+   46   2              Param_Save(); // 立即写回，洗掉 EEPROM 里的脏数据
+   47   2          }
+   48   1      }
+   49          
+   50          // 参数保存：WiFi 调爽了，按一下按键调用这个
+   51          void Param_Save(void) {
+   52   1          // 1. 更新校验码
+   53   1          g_sys_config.check_sum = Calculate_CheckSum(&g_sys_config);
+   54   1          
+   55   1          // 2. 使用你提供的“核弹级”函数：自动完成 读-改-擦-写
+   56   1          // 注意：这个函数内部有 system_delay_ms(10)，不要在高速中断里调用
+C251 COMPILER V5.60.0,  param_manager                                                      02/05/26  17:12:22  PAGE 2   
+
+   57   1          extern_iap_write_buff(CONFIG_EEPROM_ADDR, (uint8 *)&g_sys_config, sizeof(g_sys_config));
+   58   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =       722     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =        57     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =    ------     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,228 @@
+C251 COMPILER V5.60.0,  zf_device_mt9v03x                                                  13/06/26  12:52:07  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_device_mt9v03x
+OBJECT MODULE PLACED IN .\out_file\zf_device_mt9v03x.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\..\libraries\zf_device\zf_device_mt9v03x.c LARGE ROM(HUGE) WARNINGL
+                    -EVEL(3) OPTIMIZE(0,SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device
+                    -;..\..\libraries\zf_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\se
+                    -ekfree_assistant) DEBUG PRINT(.\out_file\zf_device_mt9v03x.lst) TABS(2) OBJECT(.\out_file\zf_device_mt9v03x.obj) 
+
+stmt  level    source
+
+    1          /********************************************************************************************************
+             -*************
+    2          * STC32G144K Opensourec Library 即（STC32G144K 开源库）是一个基于官方 SDK 接口的第三方开源库
+    3          * Copyright (c) 2022 SEEKFREE 逐飞科技
+    4          *
+    5          * 本文件是STC 开源库的一部分
+    6          *
+    7          * STC32G144K 开源库 是免费软件
+    8          * 您可以根据自由软件基金会发布的 GPL（GNU General Public License，即 GNU通用公共许可证）的条款
+    9          * 即 GPL 的第3版（即 GPL3.0）或（您选择的）任何后来的版本，重新发布和/或修改它
+   10          *
+   11          * 本开源库的发布是希望它能发挥作用，但并未对其作任何的保证
+   12          * 甚至没有隐含的适销性或适合特定用途的保证
+   13          * 更多细节请参见 GPL
+   14          *
+   15          * 您应该在收到本开源库的同时收到一份 GPL 的副本
+   16          * 如果没有，请参阅<https://www.gnu.org/licenses/>
+   17          *
+   18          * 额外注明：
+   19          * 本开源库使用 GPL3.0 开源许可证协议 以上许可申明为译文版本
+   20          * 许可申明英文版在 libraries/doc 文件夹下的 GPL3_permission_statement.txt 文件中
+   21          * 许可证副本在 libraries 文件夹下 即该文件夹下的 LICENSE 文件
+   22          * 欢迎各位使用并传播本程序 但修改内容时必须保留逐飞科技的版权声明（即本声明）
+   23          *
+   24          * 文件名称          
+   25          * 公司名称          成都逐飞科技有限公司
+   26          * 版本信息          查看 libraries/doc 文件夹内 version 文件 版本说明
+   27          * 开发环境          MDK FOR C251
+   28          * 适用平台          STC32G144K
+   29          * 店铺链接          https://seekfree.taobao.com/
+   30          *
+   31          * 修改记录
+   32          * 日期              作者           备注
+   33          * 2025-11-12        大W            first version
+   34          *********************************************************************************************************
+             -***********/
+   35          
+   36          
+   37          #include "zf_common_fifo.h"
+   38          #include "zf_common_interrupt.h"
+   39          
+   40          #include "zf_driver_gpio.h"
+   41          #include "zf_driver_soft_iic.h"
+   42          #include "zf_driver_uart.h"
+   43          #include "zf_driver_delay.h"
+   44          #include "zf_driver_exti.h"
+   45          
+   46          #include "zf_device_type.h"
+   47          #include "zf_device_config.h"
+   48          #include "zf_device_mt9v03x.h"
+   49          #include "zf_device_mt9v03x_dma.h"
+   50          
+   51          
+   52          
+   53          
+   54          
+C251 COMPILER V5.60.0,  zf_device_mt9v03x                                                  13/06/26  12:52:07  PAGE 2   
+
+   55          
+   56          // 需要配置到摄像头的数据 不允许在这修改参数
+   57          const int16 mt9v03x_set_confing_buffer[MT9V03X_CONFIG_FINISH][2]=
+   58          {
+   59              {MT9V03X_INIT,              0},                                     // 摄像头开始初始化
+   60          
+   61              {MT9V03X_AUTO_EXP,          MT9V03X_AUTO_EXP_DEF},                  // 自动曝光设置
+   62              {MT9V03X_EXP_TIME,          MT9V03X_EXP_TIME_DEF},                  // 曝光时间
+   63              {MT9V03X_FPS,               MT9V03X_FPS_DEF},                       // 图像帧率
+   64              {MT9V03X_SET_COL,           MT9V03X_W},                             // 图像列数量
+   65              {MT9V03X_SET_ROW,           MT9V03X_H},                             // 图像行数量
+   66              {MT9V03X_LR_OFFSET,         MT9V03X_LR_OFFSET_DEF},                 // 图像左右偏移量
+   67              {MT9V03X_UD_OFFSET,         MT9V03X_UD_OFFSET_DEF},                 // 图像上下偏移量
+   68              {MT9V03X_GAIN,              MT9V03X_GAIN_DEF},                      // 图像增益
+   69          };
+   70          
+   71          //-------------------------------------------------------------------------------------------------------
+             -------------
+   72          // 函数简介     单独设置摄像头曝光时间
+   73          // 参数说明     light           设定曝光时间
+   74          // 返回参数     uint8           1-失败 0-成功
+   75          // 使用示例     mt9v03x_set_exposure_time(100);                 // 调用该函数前请先初始化串口
+   76          // 备注信息     设置曝光时间越大图像越亮
+   77          //              摄像头收到后会根据分辨率及FPS计算最大曝光时间如果设置的数据过大
+   78          //              那么摄像头将会设置这个最大值
+   79          //-------------------------------------------------------------------------------------------------------
+             -------------
+   80          uint8 mt9v03x_set_exposure_time (uint16 light)
+   81          {
+   82   1          uint8 return_state = mt9v03x_sccb_set_exposure_time(light);
+   83   1          return return_state;
+   84   1      }
+   85          
+   86          //-------------------------------------------------------------------------------------------------------
+             -------------
+   87          // 函数简介     对摄像头内部寄存器进行写操作
+   88          // 参数说明     addr            摄像头内部寄存器地址
+   89          // 参数说明     dat            需要写入的数据
+   90          // 返回参数     uint8           1-失败 0-成功
+   91          // 使用示例     mt9v03x_set_reg(addr, dat);                    // 调用该函数前请先初始化串口
+   92          // 备注信息
+   93          //-------------------------------------------------------------------------------------------------------
+             -------------
+   94          uint8 mt9v03x_set_reg (uint8 addr, uint16 dat)
+   95          {
+   96   1          uint8 return_state = mt9v03x_sccb_set_reg(addr, dat);
+   97   1          return return_state;
+   98   1      }
+   99          
+  100          //-------------------------------------------------------------------------------------------------------
+             -------------
+  101          // 函数简介     MT9V03X SCCB 初始化
+  102          // 参数说明     void
+  103          // 返回参数     uint8           0-成功 x-失败
+  104          // 使用示例     mt9v03x_sccb_init();
+  105          // 备注信息
+  106          //-------------------------------------------------------------------------------------------------------
+             -------------
+  107          uint8 mt9v03x_sccb_init (void)
+  108          {
+  109   1          uint8 return_state  = 1;
+  110   1          soft_iic_info_struct mt9v03x_iic_struct;
+  111   1      
+  112   1      
+  113   1          soft_iic_init(
+  114   1              &mt9v03x_iic_struct, 0,
+C251 COMPILER V5.60.0,  zf_device_mt9v03x                                                  13/06/26  12:52:07  PAGE 3   
+
+  115   1              MT9V03X_COF_IIC_DELAY,
+  116   1              MT9V03X_COF_IIC_SCL,
+  117   1              MT9V03X_COF_IIC_SDA);
+  118   1          
+  119   1          if(!mt9v03x_sccb_check_id(&mt9v03x_iic_struct))
+  120   1          {
+  121   2      
+  122   2              return_state = mt9v03x_sccb_set_config(&mt9v03x_set_confing_buffer[0][0]);
+  123   2          }
+  124   1      
+  125   1          return return_state;
+  126   1      }
+  127          
+  128          
+  129          //-------------------------------------------------------------------------------------------------------
+             -------------
+  130          // 函数简介     MT9V03X 摄像头初始化
+  131          // 参数说明     void
+  132          // 返回参数     uint8           0-成功 x-失败
+  133          // 使用示例     mt9v03x_init();
+  134          // 备注信息     
+  135          //-------------------------------------------------------------------------------------------------------
+             -------------
+  136          uint8 mt9v03x_init (void)
+  137          {
+  138   1          uint8 loop_count    = 0;
+  139   1          uint8 return_state  = 0;
+  140   1          
+  141   1          do
+  142   1          { 
+  143   2              return_state = mt9v03x_sccb_init();
+  144   2      
+  145   2              if(!return_state)
+  146   2              {
+  147   3                  gpio_init(MT9V03X_D0_PIN, GPI, GPIO_LOW, GPI_PULL_UP);
+  148   3                  gpio_init(MT9V03X_D1_PIN, GPI, GPIO_LOW, GPI_PULL_UP);
+  149   3                  gpio_init(MT9V03X_D2_PIN, GPI, GPIO_LOW, GPI_PULL_UP);
+  150   3                  gpio_init(MT9V03X_D3_PIN, GPI, GPIO_LOW, GPI_PULL_UP);
+  151   3                  gpio_init(MT9V03X_D4_PIN, GPI, GPIO_LOW, GPI_PULL_UP);
+  152   3                  gpio_init(MT9V03X_D5_PIN, GPI, GPIO_LOW, GPI_PULL_UP);
+  153   3                  gpio_init(MT9V03X_D6_PIN, GPI, GPIO_LOW, GPI_PULL_UP);
+  154   3                  gpio_init(MT9V03X_D7_PIN, GPI, GPIO_LOW, GPI_PULL_UP);
+  155   3      
+  156   3                  gpio_init(FIFO_WE_PIN,   GPO, 0, GPO_PUSH_PULL);
+  157   3                  gpio_init(FIFO_WRST_PIN, GPO, 1, GPO_PUSH_PULL);
+  158   3                  gpio_init(FIFO_RCK_PIN,  GPO, 1, GPO_PUSH_PULL);
+  159   3                  gpio_init(FIFO_OE_PIN,   GPO, 0, GPO_PUSH_PULL);
+  160   3                  gpio_init(FIFO_RRST_PIN, GPO, 1, GPO_PUSH_PULL);
+  161   3                  gpio_init(FIFO_VSY_PIN,  GPI, 1, GPI_PULL_UP);
+  162   3      
+  163   3                  // 默认中断优先级最高，DMA优先级最高
+  164   3                  mt9v03x_dma_init((uint8 *)&mt9v03x_image[0][0], MT9V03X_IMAGE_SIZE, 0, 3, 3);   
+  165   3                  
+  166   3                  exit_init(INT1_P33, BOTH);
+  167   3                  // 默认中断优先级最高
+  168   3                  interrupt_set_priority(INT1_IRQn, 3);                               
+  169   3                  
+  170   3                  break;
+  171   3              }
+  172   2          }while(0);
+  173   1          
+  174   1          return return_state;
+  175   1      }
+  176          
+
+
+C251 COMPILER V5.60.0,  zf_device_mt9v03x                                                  13/06/26  12:52:07  PAGE 4   
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =       447     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =        19     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =        40     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

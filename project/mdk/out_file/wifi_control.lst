@@ -1,0 +1,126 @@
+C251 COMPILER V5.60.0,  wifi_control                                                       01/05/26  20:34:41  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE wifi_control
+OBJECT MODULE PLACED IN .\out_file\wifi_control.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE wifi_control.c LARGE ROM(HUGE) WARNINGLEVEL(3) OPTIMIZE(0,SIZE) BROWSE
+                    - INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\u
+                    -ser;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekfree_assistant) DEBUG PRINT(.
+                    -\out_file\wifi_control.lst) TABS(2) OBJECT(.\out_file\wifi_control.obj) 
+
+stmt  level    source
+
+    1          #include "wifi_control.h"
+    2          #include <stdio.h>
+    3          #include "servo.h"
+    4          #include "motor.h" // 包含你之前的电机控制库
+    5          
+    6          static uint8 wifi_recv_buf[64]; // 接收缓冲区
+    7          static int16 target_speed = 0;  // 目标速度
+    8          static int16 target_dir = 0;    // 目标转向偏差（用于辅助转向）
+    9          
+   10          //-------------------------------------------------------------------------------------------------------
+             -------------
+   11          // 函数功能：WiFi 控制模块初始化
+   12          //-------------------------------------------------------------------------------------------------------
+             -------------
+   13          void My_WiFi_Init(void)
+   14          {
+   15   1          uint8 status;
+   16   1          // 1. 初始化 WiFi 硬件并连接热点
+   17   1          status = wifi_spi_init(WIFI_SSID, WIFI_PASSWORD);
+   18   1          
+   19   1          if(status == 0)
+   20   1          {
+   21   2              // 2. 连接手机上的 TCP 服务器（假设手机开启了网络调试助手并作为服务端）
+   22   2              wifi_spi_socket_connect("TCP", TCP_SERVER_IP, TCP_SERVER_PORT, LOCAL_PORT);
+   23   2              wifi_spi_send_string("STC32 WiFi Control Ready!\r\n");
+   24   2          }
+   25   1      }
+   26          
+   27          //-------------------------------------------------------------------------------------------------------
+             -------------
+   28          // 函数功能：解析 WiFi 指令并转换运动状态
+   29          //-------------------------------------------------------------------------------------------------------
+             -------------
+   30          void WiFi_Cmd_Parse(void)
+   31          {
+   32   1          uint32 len = 0;
+   33   1          uint8 cmd;
+   34   1          char ack_str[32];
+   35   1      
+   36   1          len = wifi_spi_read_buffer(wifi_recv_buf, 64);
+   37   1          
+   38   1          // 1. 状态更新区：只有收到新数据时才进去修改目标值
+   39   1          if(len > 0)
+   40   1          {
+   41   2              wifi_recv_buf[len] = '\0'; 
+   42   2              cmd = wifi_recv_buf[0]; 
+   43   2      
+   44   2              if (cmd == 'D') 
+   45   2              {
+   46   3                  int16 parsed_dir = 0;
+   47   3                  if (sscanf((char *)wifi_recv_buf, "D%hd", &parsed_dir) == 1) 
+   48   3                  {
+   49   4                      target_dir = parsed_dir;
+   50   4                  }
+   51   3              }
+   52   2              else 
+C251 COMPILER V5.60.0,  wifi_control                                                       01/05/26  20:34:41  PAGE 2   
+
+   53   2              {
+   54   3                  switch(cmd)
+   55   3                  {
+   56   4                      case 'F': target_speed = 2000;   break; 
+   57   4                      case 'B': target_speed = -2000;  break; 
+   58   4                      case 'L': target_dir -= 10; if(target_dir < -90) target_dir = -90; break;                
+             -      
+   59   4                      case 'R': target_dir += 10; if(target_dir > 80)  target_dir = 80;  break; 
+   60   4                      case 'C': target_dir = 0;        break; 
+   61   4                      case 'S': target_speed = 0; target_dir = 0; break; // 发送S，目标速度清零
+   62   4                      default:
+   63   4                          if(cmd >= '0' && cmd <= '9')
+   64   4                          {
+   65   5                              target_speed = (cmd - '0') * 500; 
+   66   5                          }
+   67   4                          break;
+   68   4                  }
+   69   3              }
+   70   2              
+   71   2              // 打印反馈也可以留在这里，只在收到数据时打印一次
+   72   2              sprintf(ack_str, "ACK: Spd=%d, Dir=%d\r\n", target_speed, target_dir); 
+   73   2              wifi_spi_send_string(ack_str);
+   74   2          }
+   75   1      
+   76   1          // ==========================================================================
+   77   1          // 2. 物理执行区：【核心修复】移出 if 大括号外！
+   78   1          // 无论有没有收到新指令，主循环每次运行到这里，都要强制执行一次平滑计算和舵机输出
+   79   1          // 这样 Smooth 函数就能顺滑地把速度一点点减到 0 了！
+   80   1          // ==========================================================================
+   81   1          Set_Motor_PWM(target_speed, target_speed); 
+   82   1          Set_Servo_Duty(STEER_CENTER + target_dir);          
+   83   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =       589     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =       108     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =       116     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

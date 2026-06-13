@@ -1,0 +1,161 @@
+C251 COMPILER V5.60.0,  wifi_app                                                           09/05/26  22:49:17  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE wifi_app
+OBJECT MODULE PLACED IN .\out_file\wifi_app.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE wifi_app.c LARGE ROM(HUGE) WARNINGLEVEL(3) OPTIMIZE(0,SIZE) BROWSE INC
+                    -DIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\user;
+                    -..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekfree_assistant) DEBUG PRINT(.\out
+                    -_file\wifi_app.lst) TABS(2) OBJECT(.\out_file\wifi_app.obj) 
+
+stmt  level    source
+
+    1          #include "wifi_app.h"
+    2          #include "param.h"
+    3          #include <stdio.h>
+    4          #include <stdlib.h>
+    5          #include <string.h>
+    6          #include "motor.h"
+    7          // 接收缓冲区
+    8          static uint8 xdata wifi_rx_buf[64]; 
+    9          
+   10          // --- 安全限制：防止 Wi-Fi 调参输入过大导致炸管 ---
+   11          #define LIMIT_BASE_SPEED    2500
+   12          #define LIMIT_KP_MOTOR      5000
+   13          #define LIMIT_KI_MOTOR      1000
+   14          
+   15          // ---------------------------------------------------------
+   16          // 函数功能：WiFi 初始化
+   17          // ---------------------------------------------------------
+   18          void My_WiFi_Init(void)
+   19          {
+   20   1          uint8 status;
+   21   1          // 1. 初始化 WiFi 硬件并连接热点
+   22   1          status = wifi_spi_init(WIFI_SSID, WIFI_PASS);
+   23   1          
+   24   1          if(status == 0)
+   25   1          {
+   26   2              // 2. 连接手机上的 TCP 服务器（假设手机开启了网络调试助手并作为服务端）
+   27   2              wifi_spi_socket_connect("TCP", WIFI_TARGET_IP, WIFI_TARGET_PORT, WIFI_LOCAL_PORT);
+   28   2              wifi_spi_send_string("STC32 WiFi Control Ready!\r\n");
+   29   2          }
+   30   1      }
+   31          
+   32          // ---------------------------------------------------------
+   33          // 函数功能：核心指令解析 (严格对齐 SystemParams_t 成员名)
+   34          // ---------------------------------------------------------
+   35          void WiFi_Command_Handler(void) {
+   36   1          uint32 len = 0;
+   37   1          char *p_data;
+   38   1          int32 val;
+   39   1      
+   40   1          len = wifi_spi_read_buffer(wifi_rx_buf, 63);
+   41   1          if (len > 0) {
+   42   2              wifi_rx_buf[len] = '\0';
+   43   2              p_data = (char *)wifi_rx_buf;
+   44   2              
+   45   2              // 1. 【一键急停】最高优先级安全逻辑
+   46   2              if (strncmp(p_data, "STOP", 4) == 0) {
+   47   3                  g_Params.base_speed = 0;
+   48   3                  Set_Motor_PWM(0, 0); // 直接底层断电
+   49   3                  wifi_spi_send_string("!!! EMERGENCY STOP !!!\r\n");
+   50   3                  return;
+   51   3              }
+   52   2      
+   53   2              // 2. 【保存指令】
+   54   2              if (strncmp(p_data, "SAVE", 4) == 0) {
+   55   3                  Params_Save();
+   56   3                  wifi_spi_send_string("EEPROM Saved OK!\r\n");
+C251 COMPILER V5.60.0,  wifi_app                                                           09/05/26  22:49:17  PAGE 2   
+
+   57   3                  return;
+   58   3              }
+   59   2      
+   60   2              // 3. 【参数修改】格式: XX:VALUE
+   61   2              if (p_data[2] == ':') {
+   62   3                  val = atol(&p_data[3]); 
+   63   3                  
+   64   3                  if (strncmp(p_data, "TS", 2) == 0) {
+   65   4                  char debug_buf[64]; // 准备一个空数组用来装组装好的字符串
+   66   4                  
+   67   4                  g_Params.target_speed = (int16)val;
+   68   4                  
+   69   4                  // 1. 把变量和文字打包进 debug_buf 里面
+   70   4                  sprintf(debug_buf, "I Got TS! Now target is: %d\r\n", g_Params.target_speed);
+   71   4                  
+   72   4                  // 2. 调用逐飞库的原生函数发送出去
+   73   4                  wifi_spi_send_string(debug_buf);
+   74   4              }
+   75   3                
+   76   3                  // --- 动力学域 ---
+   77   3                  if (strncmp(p_data, "BS", 2) == 0) { // base_speed
+   78   4                      if(val > LIMIT_BASE_SPEED) val = LIMIT_BASE_SPEED;
+   79   4                      g_Params.base_speed = (int16)val;
+   80   4                  }
+   81   3                  else if (strncmp(p_data, "TS", 2) == 0) { // target_speed
+   82   4                      g_Params.target_speed = (int16)val;
+   83   4                  }
+   84   3                  
+   85   3                  // --- 电机域 (PID) ---
+   86   3                  else if (strncmp(p_data, "KM", 2) == 0) { // Kp_Motor
+   87   4                      if(val > LIMIT_KP_MOTOR) val = LIMIT_KP_MOTOR;
+   88   4                      g_Params.Kp_Motor = (int16)val;
+   89   4                  }
+   90   3                  else if (strncmp(p_data, "IM", 2) == 0) { // Ki_Motor
+   91   4                      if(val > LIMIT_KI_MOTOR) val = LIMIT_KI_MOTOR;
+   92   4                      g_Params.Ki_Motor = (int16)val;
+   93   4                  }
+   94   3      
+   95   3                  // --- 转向域 ---
+   96   3                  else if (strncmp(p_data, "KS", 2) == 0) { // Kp_Steer
+   97   4                      g_Params.Kp_Steer = (int16)val;
+   98   4                  }
+   99   3                  else if (strncmp(p_data, "KD", 2) == 0) { // Kd_Steer
+  100   4                      g_Params.Kd_Steer = (int16)val;
+  101   4                  }
+  102   3                  else if (strncmp(p_data, "KC", 2) == 0) { // Kf_Curve
+  103   4                      g_Params.Kf_Curve = (int16)val;
+  104   4                  }
+  105   3                  else if (strncmp(p_data, "SC", 2) == 0) { // servo_center
+  106   4                      g_Params.servo_center = (int16)val;
+  107   4                  }
+  108   3      
+  109   3                  // --- 视觉域 ---
+  110   3                  else if (strncmp(p_data, "TL", 2) == 0) { // target_lost_tolerance
+  111   4                      g_Params.target_lost_tolerance = (int16)val;
+  112   4                  }
+  113   3              }
+  114   2              
+  115   2              wifi_spi_send_string("param get");
+  116   2          }
+  117   1      }
+  118          
+  119          // ---------------------------------------------------------
+  120          // 函数功能：实时波形发送 (用于手机端绘图)
+  121          // ---------------------------------------------------------
+
+C251 COMPILER V5.60.0,  wifi_app                                                           09/05/26  22:49:17  PAGE 3   
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =      1093     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =       141     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =       196     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

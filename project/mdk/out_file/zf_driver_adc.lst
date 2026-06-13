@@ -1,0 +1,210 @@
+C251 COMPILER V5.60.0,  zf_driver_adc                                                      13/06/26  12:52:06  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_driver_adc
+OBJECT MODULE PLACED IN .\out_file\zf_driver_adc.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\..\libraries\zf_driver\zf_driver_adc.c LARGE ROM(HUGE) WARNINGLEVEL
+                    -(3) OPTIMIZE(0,SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\
+                    -..\libraries\zf_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekfr
+                    -ee_assistant) DEBUG PRINT(.\out_file\zf_driver_adc.lst) TABS(2) OBJECT(.\out_file\zf_driver_adc.obj) 
+
+stmt  level    source
+
+    1          /********************************************************************************************************
+             -*************
+    2          * STC32G144K Opensourec Library ¼´£¨STC32G144K ¿ªÔ´¿â£©ÊÇÒ»¸ö»ùÓÚ¹Ù·½ SDK ½Ó¿ÚµÄµÚÈý·½¿ªÔ´¿â
+    3          * Copyright (c) 2025 SEEKFREE Öð·É¿Æ¼¼
+    4          *
+    5          * ±¾ÎÄ¼þÊÇSTC32G144K¿ªÔ´¿âµÄÒ»²¿·Ö
+    6          *
+    7          * STC32G144K ¿ªÔ´¿â ÊÇÃâ·ÑÈí¼þ
+    8          * Äú¿ÉÒÔ¸ù¾Ý×ÔÓÉÈí¼þ»ù½ð»á·¢²¼µÄ GPL£¨GNU General Public License£¬¼´ GNUÍ¨ÓÃ¹«¹²Ðí¿ÉÖ¤£©µÄÌõ¿î
+    9          * ¼´ GPL µÄµÚ3°æ£¨¼´ GPL3.0£©»ò£¨ÄúÑ¡ÔñµÄ£©ÈÎºÎºóÀ´µÄ°æ±¾£¬ÖØÐÂ·¢²¼ºÍ/»òÐÞ¸ÄËü
+   10          *
+   11          * ±¾¿ªÔ´¿âµÄ·¢²¼ÊÇÏ£ÍûËüÄÜ·¢»Ó×÷ÓÃ£¬µ«²¢Î´¶ÔÆä×÷ÈÎºÎµÄ±£Ö¤
+   12          * ÉõÖÁÃ»ÓÐÒþº¬µÄÊÊÏúÐÔ»òÊÊºÏÌØ¶¨ÓÃÍ¾µÄ±£Ö¤
+   13          * ¸ü¶àÏ¸½ÚÇë²Î¼û GPL
+   14          *
+   15          * ÄúÓ¦¸ÃÔÚÊÕµ½±¾¿ªÔ´¿âµÄÍ¬Ê±ÊÕµ½Ò»·Ý GPL µÄ¸±±¾
+   16          * Èç¹ûÃ»ÓÐ£¬Çë²ÎÔÄ<https://www.gnu.org/licenses/>
+   17          *
+   18          * ¶îÍâ×¢Ã÷£º
+   19          * ±¾¿ªÔ´¿âÊ¹ÓÃ GPL3.0 ¿ªÔ´Ðí¿ÉÖ¤Ð­Òé ÒÔÉÏÐí¿ÉÉêÃ÷ÎªÒëÎÄ°æ±¾
+   20          * Ðí¿ÉÉêÃ÷Ó¢ÎÄ°æÔÚ libraries/doc ÎÄ¼þ¼ÐÏÂµÄ GPL3_permission_statement.txt ÎÄ¼þÖÐ
+   21          * Ðí¿ÉÖ¤¸±±¾ÔÚ libraries ÎÄ¼þ¼ÐÏÂ ¼´¸ÃÎÄ¼þ¼ÐÏÂµÄ LICENSE ÎÄ¼þ
+   22          * »¶Ó­¸÷Î»Ê¹ÓÃ²¢´«²¥±¾³ÌÐò µ«ÐÞ¸ÄÄÚÈÝÊ±±ØÐë±£ÁôÖð·É¿Æ¼¼µÄ°æÈ¨ÉùÃ÷£¨¼´±¾ÉùÃ÷£©
+   23          *
+   24          * ÎÄ¼þÃû³Æ          
+   25          * ¹«Ë¾Ãû³Æ          ³É¶¼Öð·É¿Æ¼¼ÓÐÏÞ¹«Ë¾
+   26          * °æ±¾ÐÅÏ¢          ²é¿´ libraries/doc ÎÄ¼þ¼ÐÄÚ version ÎÄ¼þ °æ±¾ËµÃ÷
+   27          * ¿ª·¢»·¾³          MDK FOR C251
+   28          * ÊÊÓÃÆ½Ì¨          STC32G144K
+   29          * µêÆÌÁ´½Ó          https://seekfree.taobao.com/
+   30          *
+   31          * ÐÞ¸Ä¼ÇÂ¼
+   32          * ÈÕÆÚ              ×÷Õß           ±¸×¢
+   33          * 2025-11-20        ´óW            first version
+   34          *********************************************************************************************************
+             -***********/
+   35          
+   36          #include "zf_common_debug.h"
+   37          #include "zf_driver_adc.h"
+   38          #include "zf_driver_delay.h"
+   39          
+   40          static uint8 adc_resolution[2] = {ADC_12BIT, ADC_12BIT};
+   41          
+   42          
+   43          //-------------------------------------------------------------------------------------------------------
+             -------------
+   44          // º¯Êý¼ò½é     ADC×ª»»N´Î£¬Æ½¾ùÖµÂË²¨
+   45          // ²ÎÊýËµÃ÷     ch              Ñ¡ÔñADCÍ¨µÀ
+   46          // ²ÎÊýËµÃ÷     resolution      ·Ö±æÂÊ(8Î» 10Î» 12Î»)
+   47          // ²ÎÊýËµÃ÷     count           ×ª»»´ÎÊý
+   48          // ·µ»Ø²ÎÊý     void
+   49          // Ê¹ÓÃÊ¾Àý     adc_mean_filter(ADC1_CH0_P10, 5);  //²É¼¯A0¶Ë¿Ú·µ»Ø8Î»·Ö±æÂÊµÄADÖµ£¬²É¼¯Îå´ÎÈ¡Æ½¾ùÖµ
+   50          //-------------------------------------------------------------------------------------------------------
+             -------------
+   51          uint16 adc_mean_filter_convert (adc_channel_enum ch, const uint8 count)
+   52          {
+C251 COMPILER V5.60.0,  zf_driver_adc                                                      13/06/26  12:52:06  PAGE 2   
+
+   53   1          uint8 i;
+   54   1          uint32 sum;
+   55   1      
+   56   1        zf_assert(count);//¶ÏÑÔ´ÎÊý²»ÄÜÎª0
+   57   1        
+   58   1          sum = 0;
+   59   1          for(i=0; i<count; i++)
+   60   1          {
+   61   2              sum += adc_convert(ch);
+   62   2          }
+   63   1      
+   64   1          sum = sum/count;
+   65   1          return sum;
+   66   1      }
+   67          
+   68          //-------------------------------------------------------------------------------------------------------
+             -------------
+   69          //  @brief      ADC×ª»»Ò»´Î
+   70          //  @param      adcn            Ñ¡ÔñADCÍ¨µÀ
+   71          //  @param      resolution      ·Ö±æÂÊ
+   72          //  @return     void
+   73          //  Sample usage:               adc_convert(ADC1_CH0_P10);
+   74          //-------------------------------------------------------------------------------------------------------
+             -------------
+   75          uint16 adc_convert(adc_channel_enum ch)
+   76          {
+   77   1          uint16 adc_value = 0;
+   78   1          
+   79   1          if((ch >> 12 )== 0)
+   80   1          {
+   81   2              ADC_CONTR &= ~0x20;           // ÇåÍê³É±êÖ¾
+   82   2              ADC_CONTR &= (0xF0);          // Çå³ýADC_CHS[3:0] £º ADC Ä£ÄâÍ¨µÀÑ¡ÔñÎ»
+   83   2              ADC_CONTR |= (ch >> 8) & 0xF;   
+   84   2                  
+   85   2              ADC_CONTR |= 0x40;            // Æô¶¯ AD ×ª»»
+   86   2                  
+   87   2              while (!(ADC_CONTR & 0x20));        // ²éÑ¯ ADC Íê³É±êÖ¾
+   88   2                  
+   89   2              adc_value = ADC_RES << 8;       // ´æ´¢ ADC µÄ 12 Î»½á¹ûµÄ¸ß 4 Î»
+   90   2              adc_value |= ADC_RESL;          // ´æ´¢ ADC µÄ 12 Î»½á¹ûµÄµÍ 8 Î»
+   91   2              
+   92   2              ADC_RES = 0;
+   93   2              ADC_RESL = 0;
+   94   2              
+   95   2              adc_value >>= adc_resolution[0];  // È¡¶àÉÙÎ»
+   96   2          }
+   97   1          else if((ch >> 12) == 1)
+   98   1          {
+   99   2              ADC2_CONTR &= ~0x20;            // ÇåÍê³É±êÖ¾
+  100   2              ADC2_CONTR &= (0xF0);         // Çå³ýADC_CHS[3:0] £º ADC Ä£ÄâÍ¨µÀÑ¡ÔñÎ»
+  101   2              ADC2_CONTR |= (ch >> 8) & 0xF;  
+  102   2                  
+  103   2              ADC2_CONTR |= 0x40;           // Æô¶¯ AD ×ª»»
+  104   2                  
+  105   2              while (!(ADC2_CONTR & 0x20));       // ²éÑ¯ ADC Íê³É±êÖ¾
+  106   2                  
+  107   2              adc_value = ADC2_RES << 8;      // ´æ´¢ ADC µÄ 12 Î»½á¹ûµÄ¸ß 4 Î»
+  108   2              adc_value |= ADC2_RESL;         // ´æ´¢ ADC µÄ 12 Î»½á¹ûµÄµÍ 8 Î»
+  109   2              
+  110   2              ADC2_RES = 0;
+  111   2              ADC2_RESL = 0;
+  112   2              
+  113   2              adc_value >>= adc_resolution[1];  //È¡¶àÉÙÎ»
+  114   2          
+  115   2          }
+  116   1          
+C251 COMPILER V5.60.0,  zf_driver_adc                                                      13/06/26  12:52:06  PAGE 3   
+
+  117   1          return adc_value;
+  118   1      }
+  119          
+  120          //-------------------------------------------------------------------------------------------------------
+             -------------
+  121          // º¯Êý¼ò½é     ADC³õÊ¼»¯
+  122          // ²ÎÊýËµÃ÷     ch            ch(¿ÉÑ¡Ôñ·¶Î§ÓÉzf_adc.hÄÚadc_channel_enumÃ¶¾ÙÖµÈ·¶¨)
+  123          // ²ÎÊýËµÃ÷     resolution       resolution(¿ÉÑ¡Ôñ·¶Î§ÓÉzf_adc.hÄÚadc_resolution_enumÃ¶¾ÙÖµÈ·¶¨)
+  124          // ·µ»Ø²ÎÊý     void
+  125          // Ê¹ÓÃÊ¾Àý     adc_init(ADC1_CH0_P10, ADC_12BIT);//³õÊ¼»¯P10Òý½ÅÎªADC¹¦ÄÜ£¬12Î»·Ö±æÂÊ
+  126          //-------------------------------------------------------------------------------------------------------
+             -------------
+  127          void adc_init(adc_channel_enum ch, adc_resolution_enum resolution)
+  128          {
+  129   1          gpio_init(ch & 0xFF, GPI, 1, GPI_ANALOG);
+  130   1      
+  131   1          if((ch >> 12) == 0)
+  132   1          {
+  133   2      
+  134   2              ADC_CONTR &= (0xF0);              // Çå³ýADC_CHS[3:0] £º ADC Ä£ÄâÍ¨µÀÑ¡ÔñÎ»
+  135   2              ADC_CONTR |= (ch >> 8) & 0xF;
+  136   2              
+  137   2              ADCCFG |= ADC_SYSclk_DIV_32;          // ADCÊ±ÖÓÆµÂÊSYSclk/16&0x0F;
+  138   2              ADCCFG |= 1 << 5;             // ×ª»»½á¹ûÓÒ¶ÔÆë¡£ ADC_RES ±£´æ½á¹ûµÄ¸ß 2 Î»£¬ ADC_RESL ±£´æ½á¹ûµÄµÍ 8
+             - Î»¡£
+  139   2              
+  140   2              adc_resolution[0] = resolution;         // ¼ÇÂ¼ADC¾«¶È ½«ÔÚ²É¼¯Ê±Ê¹ÓÃ
+  141   2              
+  142   2              ADC_CONTR |= 1 << 7;            // ´ò¿ª ADC µçÔ´
+  143   2          }
+  144   1          else if((ch >> 12) == 1)
+  145   1          {
+  146   2      
+  147   2              ADC2_CONTR &= (0xF0);             // Çå³ýADC_CHS[3:0] £º ADC Ä£ÄâÍ¨µÀÑ¡ÔñÎ»
+  148   2              ADC2_CONTR |= (ch >> 8) & 0xF;
+  149   2              
+  150   2              ADC2CFG |= ADC_SYSclk_DIV_32;           // ADCÊ±ÖÓÆµÂÊSYSclk/16&0x0F;
+  151   2              ADC2CFG |= 1 << 5;                  // ×ª»»½á¹ûÓÒ¶ÔÆë¡£ ADC_RES ±£´æ½á¹ûµÄ¸ß 2 Î»£¬ ADC_RESL ±£´æ½á¹
+             -ûµÄµÍ 8 Î»¡£
+  152   2              
+  153   2              adc_resolution[1] = resolution;         // ¼ÇÂ¼ADC¾«¶È ½«ÔÚ²É¼¯Ê±Ê¹ÓÃ
+  154   2      
+  155   2              ADC2_CONTR |= 1 << 7;           // ´ò¿ª ADC µçÔ´
+  156   2          }
+  157   1          system_delay_ms(1);
+  158   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =       760     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =        18     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =        49     ------
+End of Module Information.
+
+C251 COMPILER V5.60.0,  zf_driver_adc                                                      13/06/26  12:52:06  PAGE 4   
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,154 @@
+C251 COMPILER V5.60.0,  main                                                               13/06/26  12:52:10  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE main
+OBJECT MODULE PLACED IN .\out_file\main.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\code\main.c LARGE ROM(HUGE) WARNINGLEVEL(3) OPTIMIZE(0,SIZE) BROWSE
+                    - INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\u
+                    -ser;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekfree_assistant) DEBUG PRINT(.
+                    -\out_file\main.lst) TABS(2) OBJECT(.\out_file\main.obj) 
+
+stmt  level    source
+
+    1          #include "zf_common_headfile.h"
+    2          #include "zf_device_mt9v03x.h"
+    3          /* #include "zf_device_ips200.h" */
+    4          #include "wifi_assistant.h"
+    5          #include "assistant_debug.h"
+    6          #include "image.h"
+    7          #include "image2.h"
+    8          #include "ring.h"
+    9          #include "pid.h"
+   10          #include "motor.h"
+   11          #include "servo.h"
+   12          #include "laser.h"
+   13          #include "key.h"
+   14          /* #include "ips_ui.h" */
+   15          #include <stdio.h>
+   16          
+   17          
+   18          /*
+   19           * 运行方式：
+   20           * 1. 主循环等待摄像头完成一帧图像；
+   21           * 2. 图像处理函数更新边线、中线、圆环状态和目标点；
+   22           * 3. 15 ms 定时器根据最新中线控制舵机和电机。
+   23           */
+   24          
+   25          #define CONTROL_PERIOD_MS      15
+   26          
+   27          /* 15 ms 定时任务：读取编码器、刷新舵机/电机输出，并按目标识别结果控制激�
+             -�。 */
+   28          static void Timer0_Callback(void)
+   29          {
+   30   1          /* 中断里只放轻量控制任务，避免影响下一帧图像采集。 */
+   31   1          Encoder_GetValue();
+   32   1      
+   33   1          Servo_Loop();
+   34   1          Motor_Loop();
+   35   1      
+   36   1          Laser_Task();
+   37   1      }
+   38          
+   39          /* 程序入口：完成硬件初始化，之后在主循环中等待并处理摄像头图像。 */
+   40          void main(void)
+   41          {
+   42   1          uint8 wifi_ready;
+   43   1          uint8 assistant_debug_ready;
+   44   1          uint8 wifi_assistant_started;
+   45   1          uint8 car_started;
+   46   1      
+   47   1          clock_init(SYSTEM_CLOCK_96M);
+   48   1          debug_init();
+   49   1      
+   50   1          Motor_Init();
+   51   1          Encoder_Init();
+   52   1          servo_init();
+   53   1          laser_init();
+   54   1          Key_Init();
+   55   1      
+C251 COMPILER V5.60.0,  main                                                               13/06/26  12:52:10  PAGE 2   
+
+   56   1          mt9v03x_init();
+   57   1          /* ips200_init(); */
+   58   1          assistant_debug_ready = 0;
+   59   1          wifi_assistant_started = 0;
+   60   1          car_started = 0;
+   61   1      
+   62   1          /* Control timer starts after KEY1/PB2 is pressed. */
+   63   1          
+   64   1      
+   65   1          while (1) {
+   66   2              if (!car_started && !gpio_get_level(KEY1_PIN)) {
+   67   3                  system_delay_ms(20);
+   68   3                  if (!gpio_get_level(KEY1_PIN)) {
+   69   4                      pit_ms_init(TIM0_PIT, CONTROL_PERIOD_MS, Timer0_Callback);
+   70   4                      car_started = 1;
+   71   4                  }
+   72   3              }
+   73   2      
+   74   2              wifi_ready = 0;
+   75   2              if (!gpio_get_level(SWITCH2_PIN)) {
+   76   3                  if (!wifi_assistant_started) {
+   77   4                      Wifi_Assistant_Init();
+   78   4                      assistant_debug_ready = 0;
+   79   4                      wifi_assistant_started = 1;
+   80   4                  }
+   81   3      
+   82   3                  wifi_ready = Wifi_Assistant_Ready();
+   83   3                  if (wifi_ready) {
+   84   4                      if (!assistant_debug_ready) {
+   85   5                          Assistant_Debug_Init();
+   86   5                          assistant_debug_ready = 1;
+   87   5                      }
+   88   4                      Assistant_Debug_Task();
+   89   4                  }
+   90   3              } else {
+   91   3                  assistant_debug_ready = 0;
+   92   3                  wifi_assistant_started = 0;
+   93   3              }
+   94   2      
+   95   2              /* 摄像头完成一帧后再处理图像，处理完再等下一帧。 */
+   96   2              if (mt9v03x_finish_flag) {
+   97   3                  mt9v03x_finish_flag = 0;
+   98   3      
+   99   3                  Image_OldStyle_Process();
+  100   3      
+  101   3                  if (wifi_ready) {
+  102   4                      Assistant_Debug_On_Frame();
+  103   4                  }
+  104   3      
+  105   3                  /* 按下 SWITCH2 时显示调试画面。 */
+  106   3                  /*
+  107   3                  if (!gpio_get_level(SWITCH2_PIN)) {
+  108   3                      IPS_Show_Image_And_Line(0, 0);
+  109   3                  }
+  110   3                  */
+  111   3              }
+  112   2          }
+  113   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =       380     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+C251 COMPILER V5.60.0,  main                                                               13/06/26  12:52:10  PAGE 3   
+
+  xdata size           =         4     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =         2     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,103 @@
+C251 COMPILER V5.60.0,  image_integrated                                                   29/04/26  20:14:09  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE image_integrated
+OBJECT MODULE PLACED IN .\out_file\image_integrated.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE image_integrated.c LARGE ROM(HUGE) WARNINGLEVEL(3) OPTIMIZE(0,SIZE) BR
+                    -OWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;
+                    -..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekfree_assistant) DEBUG PRI
+                    -NT(.\out_file\image_integrated.lst) TABS(2) OBJECT(.\out_file\image_integrated.obj) 
+
+stmt  level    source
+
+    1          #include "image_integrated.h"
+*** ERROR C318 IN LINE 1 OF image_integrated.c: can't open file 'image_integrated.h'
+    2          
+    3          // ================== 内存分配 (极限压缩) ==================
+    4          uint8 img_94_60[60][94];    
+*** WARNING C34 IN LINE 4 OF image_integrated.c: 'img_94_60': missing declaration specifiers
+*** ERROR C42 IN LINE 4 OF image_integrated.c: 'img_94_60': not in formal parameter list
+    5          uint8 bin_94_60[60][94];    
+*** WARNING C34 IN LINE 5 OF image_integrated.c: 'uint8': missing declaration specifiers
+*** ERROR C42 IN LINE 5 OF image_integrated.c: 'uint8': not in formal parameter list
+*** ERROR C25 IN LINE 5 OF image_integrated.c: syntax error near 'bin_94_60'
+*** WARNING C34 IN LINE 5 OF image_integrated.c: 'bin_94_60': missing declaration specifiers
+*** ERROR C42 IN LINE 5 OF image_integrated.c: 'bin_94_60': not in formal parameter list
+    6          uint8 image_threshold = 128;
+*** WARNING C34 IN LINE 6 OF image_integrated.c: 'uint8': missing declaration specifiers
+*** ERROR C42 IN LINE 6 OF image_integrated.c: 'uint8': not in formal parameter list
+*** ERROR C25 IN LINE 6 OF image_integrated.c: syntax error near 'image_threshold'
+*** ERROR C142 IN LINE 6 OF image_integrated.c: illegal initialization
+    7          
+    8          int16 Left_Line[60];
+*** WARNING C34 IN LINE 8 OF image_integrated.c: 'int16': missing declaration specifiers
+*** ERROR C42 IN LINE 8 OF image_integrated.c: 'int16': not in formal parameter list
+*** ERROR C25 IN LINE 8 OF image_integrated.c: syntax error near 'Left_Line'
+*** WARNING C34 IN LINE 8 OF image_integrated.c: 'Left_Line': missing declaration specifiers
+*** ERROR C42 IN LINE 8 OF image_integrated.c: 'Left_Line': not in formal parameter list
+    9          int16 Right_Line[60];
+*** WARNING C34 IN LINE 9 OF image_integrated.c: 'int16': missing declaration specifiers
+*** ERROR C42 IN LINE 9 OF image_integrated.c: 'int16': not in formal parameter list
+*** ERROR C25 IN LINE 9 OF image_integrated.c: syntax error near 'Right_Line'
+*** WARNING C34 IN LINE 9 OF image_integrated.c: 'Right_Line': missing declaration specifiers
+*** ERROR C42 IN LINE 9 OF image_integrated.c: 'Right_Line': not in formal parameter list
+   10          int16 Center_Line[60];
+*** WARNING C34 IN LINE 10 OF image_integrated.c: 'int16': missing declaration specifiers
+*** ERROR C42 IN LINE 10 OF image_integrated.c: 'int16': not in formal parameter list
+*** ERROR C25 IN LINE 10 OF image_integrated.c: syntax error near 'Center_Line'
+*** WARNING C34 IN LINE 10 OF image_integrated.c: 'Center_Line': missing declaration specifiers
+*** ERROR C42 IN LINE 10 OF image_integrated.c: 'Center_Line': not in formal parameter list
+   11          
+   12          //---------------------------------------------------------
+   13          // 步骤 1：快速下采样 (188x120 -> 94x60)
+   14          //---------------------------------------------------------
+   15          void Image_Downsample(void) {
+*** ERROR C42 IN LINE 15 OF image_integrated.c: 'Image_Downsample': not in formal parameter list
+*** ERROR C25 IN LINE 15 OF image_integrated.c: syntax error near '{'
+   16              uint8 r, c; // 变量必须在最前面声明
+   17              for (r = 0; r < 60; r++) {
+   18                  for (c = 0; c < 94; c++) {
+   19                      img_94_60[r][c] = mt9v03x_image[r << 1][c << 1];
+   20                  }
+   21              }
+   22          }
+   23          
+   24          //---------------------------------------------------------
+   25          // 步骤 2：64 级定点大津法 (内存节约型)
+   26          //---------------------------------------------------------
+   27          uint8 Fast_Otsu_94_60(void) {
+C251 COMPILER V5.60.0,  image_integrated                                                   29/04/26  20:14:09  PAGE 2   
+
+   28              // 【C251 规范】所有变量严禁在执行语句后声明
+   29              uint16 histogram[64] = {0};
+   30              uint16 i, pixels = 5640; 
+   31              uint32 sum_all = 0, sum_bg = 0, max_variance = 0;
+   32              uint16 weight_bg = 0, weight_fg = 0;
+   33              uint8 best_t = 0;
+   34              uint8 *ptr;
+*** ERROR C42 IN LINE 34 OF image_integrated.c: 'ptr': not in formal parameter list
+   35              uint32 u0_Q8, u1_Q8, diff_Q8, var;
+*** WARNING C34 IN LINE 35 OF image_integrated.c: 'uint32': missing declaration specifiers
+*** ERROR C42 IN LINE 35 OF image_integrated.c: 'uint32': not in formal parameter list
+*** ERROR C25 IN LINE 35 OF image_integrated.c: syntax error near 'u0_Q8'
+*** WARNING C34 IN LINE 35 OF image_integrated.c: 'u0_Q8': missing declaration specifiers
+*** ERROR C42 IN LINE 35 OF image_integrated.c: 'u0_Q8': not in formal parameter list
+*** WARNING C34 IN LINE 35 OF image_integrated.c: 'u1_Q8': missing declaration specifiers
+*** ERROR C42 IN LINE 35 OF image_integrated.c: 'u1_Q8': not in formal parameter list
+*** WARNING C34 IN LINE 35 OF image_integrated.c: 'diff_Q8': missing declaration specifiers
+*** ERROR C42 IN LINE 35 OF image_integrated.c: 'diff_Q8': not in formal parameter list
+*** WARNING C34 IN LINE 35 OF image_integrated.c: 'var': missing declaration specifiers
+*** ERROR C42 IN LINE 35 OF image_integrated.c: 'var': not in formal parameter list
+   36          
+   37              ptr = &img_94_60[0][0]; // 执行语句开始
+*** ERROR C142 IN LINE 37 OF image_integrated.c: illegal initialization
+*** ERROR C67 IN LINE 37 OF image_integrated.c: 'img_94_60': undefined identifier
+   38              for (i = 0; i < pixels; i++) {
+*** ERROR C25 IN LINE 38 OF image_integrated.c: syntax error near 'for'
+*** ERROR C25 IN LINE 38 OF image_integrated.c: syntax error near '='
+*** ERROR C25 IN LINE 38 OF image_integrated.c: syntax error near '<'
+*** WARNING C34 IN LINE 38 OF image_integrated.c: 'pixels': missing declaration specifiers
+*** ERROR C25 IN LINE 38 OF image_integrated.c: syntax error near '++'
+*** ERROR C7 IN LINE 38 OF image_integrated.c: compilation aborted
+
+C251 COMPILATION COMPLETE.  16 WARNING(S),  33 ERROR(S)

@@ -1,0 +1,49 @@
+#ifndef __MOTOR_H_
+#define __MOTOR_H_
+
+#include "zf_common_headfile.h"
+
+extern int16 encoder_data_r;
+extern int16 encoder_data_l;
+extern int16 tar_speed;
+extern int16 diff_kp_q10;
+
+/* 左右电机接线。 */
+#define DIR_L              IO_P52
+#define PWM_L              PWMD_CH1_P50
+
+#define DIR_R              IO_P53
+#define PWM_R              PWMD_CH2_P51
+
+#define MOTOR_FREQ         17000
+#define MOTOR_MAX_LIMIT    7500
+
+#define ENCODER_DIR_1          PWMA_ENCODER
+#define ENCODER_DIR_PULSE_1    PWMA_ENCODER_CH1P_P60
+#define ENCODER_DIR_DIR_1      PWMA_ENCODER_CH2P_P62
+
+#define ENCODER_DIR_2          PWMC_ENCODER
+#define ENCODER_DIR_PULSE_2    PWMC_ENCODER_CH1P_P40
+#define ENCODER_DIR_DIR_2      PWMC_ENCODER_CH2P_P42
+
+/* 这里的速度单位是 15 ms 内读到的编码器脉冲数。 */
+#define MAX_SPEED          180
+#define MIN_SPEED          165
+#define BASE_TARGET_SPEED  170
+
+/* 初始化电机 PWM 和方向引脚。 */
+void Motor_Init(void);
+/* 初始化左右编码器。 */
+void Encoder_Init(void);
+/* 电机正反转测试。 */
+void motor_test(void);
+/* 读取编码器脉冲并清零。 */
+void Encoder_GetValue(void);
+/* 电机速度闭环主函数。 */
+void Motor_Loop(void);
+/* 控制指定电机的方向和 PWM 输出。 */
+void Motor_control(pwm_channel_enum wheel, int16 speed);
+/* 根据转向幅度计算目标速度和差速。 */
+void Dream_speed(void);
+
+#endif

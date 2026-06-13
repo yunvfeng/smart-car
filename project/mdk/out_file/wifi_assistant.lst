@@ -1,0 +1,133 @@
+C251 COMPILER V5.60.0,  wifi_assistant                                                     13/06/26  12:52:10  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE wifi_assistant
+OBJECT MODULE PLACED IN .\out_file\wifi_assistant.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\code\wifi_assistant.c LARGE ROM(HUGE) WARNINGLEVEL(3) OPTIMIZE(0,SI
+                    -ZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_d
+                    -river;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekfree_assistant) DEB
+                    -UG PRINT(.\out_file\wifi_assistant.lst) TABS(2) OBJECT(.\out_file\wifi_assistant.obj) 
+
+stmt  level    source
+
+    1          #include "wifi_assistant.h"
+    2          
+    3          #include "key.h"
+    4          #include "zf_device_wifi_spi.h"
+    5          
+    6          #define WIFI_ASSISTANT_RETRY_DELAY_MS 100
+    7          #define WIFI_ASSISTANT_RETRY_MAX      1
+    8          #define WIFI_ASSISTANT_SSID           "yunfeng11"
+    9          #define WIFI_ASSISTANT_PASS           "2b)7034A"
+   10          #define WIFI_ASSISTANT_PC_IP          "192.168.137.1"
+   11          #define WIFI_ASSISTANT_PC_PORT        "8086"
+   12          #define WIFI_ASSISTANT_LOCAL_PORT     "6666"
+   13          
+   14          static uint8 wifi_assistant_ready = 0;
+   15          static uint8 wifi_assistant_tried = 0;
+   16          static wifi_assistant_status_enum wifi_assistant_status = WIFI_ASSISTANT_IDLE;
+   17          
+   18          static uint8 Wifi_Assistant_Switch_On(void)
+   19          {
+   20   1          return gpio_get_level(SWITCH2_PIN) ? 0 : 1;
+   21   1      }
+   22          
+   23          static uint8 Wifi_Assistant_Connect(void)
+   24          {
+   25   1          uint8 i;
+   26   1          uint8 wifi_connected;
+   27   1      
+   28   1          wifi_connected = 0;
+   29   1      
+   30   1          for (i = 0; i < WIFI_ASSISTANT_RETRY_MAX; i++) {
+   31   2              if (wifi_spi_init(WIFI_ASSISTANT_SSID, WIFI_ASSISTANT_PASS)) {
+   32   3                  continue;
+   33   3              }
+   34   2      
+   35   2              wifi_connected = 1;
+   36   2      
+   37   2              if (!wifi_spi_socket_connect("TCP",
+   38   2                                           WIFI_ASSISTANT_PC_IP,
+   39   2                                           WIFI_ASSISTANT_PC_PORT,
+   40   2                                           WIFI_ASSISTANT_LOCAL_PORT)) {
+   41   3                  wifi_spi_send_string("STC32 WiFi Assistant Ready!\r\n");
+   42   3                  return 0;
+   43   3              }
+   44   2      
+   45   2              system_delay_ms(WIFI_ASSISTANT_RETRY_DELAY_MS);
+   46   2          }
+   47   1      
+   48   1          return wifi_connected ? 2 : 1;
+   49   1      }
+   50          
+   51          void Wifi_Assistant_Init(void)
+   52          {
+   53   1          wifi_assistant_ready = 0;
+   54   1          wifi_assistant_tried = 0;
+   55   1          wifi_assistant_status = WIFI_ASSISTANT_IDLE;
+   56   1      }
+C251 COMPILER V5.60.0,  wifi_assistant                                                     13/06/26  12:52:10  PAGE 2   
+
+   57          
+   58          uint8 Wifi_Assistant_Ready(void)
+   59          {
+   60   1          uint8 wifi_error;
+   61   1      
+   62   1          if (!Wifi_Assistant_Switch_On()) {
+   63   2              wifi_assistant_tried = 0;
+   64   2              if (!wifi_assistant_ready) {
+   65   3                  wifi_assistant_status = WIFI_ASSISTANT_IDLE;
+   66   3              }
+   67   2              return 0;
+   68   2          }
+   69   1      
+   70   1          if (wifi_assistant_ready) {
+   71   2              return 1;
+   72   2          }
+   73   1      
+   74   1          if (wifi_assistant_tried) {
+   75   2              return 0;
+   76   2          }
+   77   1      
+   78   1          wifi_assistant_tried = 1;
+   79   1          wifi_error = Wifi_Assistant_Connect();
+   80   1          if (wifi_error) {
+   81   2              wifi_assistant_status = (1 == wifi_error) ?
+   82   2                                      WIFI_ASSISTANT_WIFI_FAIL :
+   83   2                                      WIFI_ASSISTANT_SOCKET_FAIL;
+   84   2              return 0;
+   85   2          }
+   86   1      
+   87   1          wifi_assistant_ready = 1;
+   88   1          wifi_assistant_status = WIFI_ASSISTANT_READY;
+   89   1          return 1;
+   90   1      }
+   91          
+   92          wifi_assistant_status_enum Wifi_Assistant_Status(void)
+   93          {
+   94   1          return wifi_assistant_status;
+   95   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =       364     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =         7     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =        96     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,145 @@
+C251 COMPILER V5.60.0,  vehicle_dynamics                                                   02/05/26  17:12:22  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE vehicle_dynamics
+OBJECT MODULE PLACED IN .\out_file\vehicle_dynamics.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE vehicle_dynamics.c LARGE ROM(HUGE) WARNINGLEVEL(3) OPTIMIZE(0,SIZE) BR
+                    -OWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;
+                    -..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekfree_assistant) DEBUG PRI
+                    -NT(.\out_file\vehicle_dynamics.lst) TABS(2) OBJECT(.\out_file\vehicle_dynamics.obj) 
+
+stmt  level    source
+
+    1          #include "vehicle_dynamics.h"
+    2          #include "zf_device_imu660rb.h"
+    3          #include "param_manager.h"
+    4          #include "servo.h"
+    5          #include "motor.h"
+    6          // 如果你的编译器不支持 labs()，可以自定义宏 #define ABS(x) ((x) > 0 ? (x) : -(x))
+    7          #include <stdlib.h> 
+    8          
+    9          // ==========================================================================
+   10          // 【私密状态保险箱】 
+   11          // ==========================================================================
+   12          static volatile int16 s_gyro_z = 0;       // Z轴角速度
+   13          static volatile int16 s_acc_y  = 0;       // Y轴横向加速度
+   14          static volatile int16 s_last_acc_y = 0;   // 上一次的加速度
+   15          
+   16          // 【关键修复：扩大存储类型】
+   17          // Jerk 差分最大可能达到 ±65534，超出 int16，必须升级为 32 位整型！
+   18          static volatile int32 s_jerk_y = 0;       
+   19          
+   20          static volatile int16 s_last_vision_error = 0; 
+   21          
+   22          //-------------------------------------------------------------------------------------------------------
+             -------------
+   23          // 函数功能：动力学模块初始化
+   24          //-------------------------------------------------------------------------------------------------------
+             -------------
+   25          void Dynamics_Init(void) {
+   26   1          if(imu660rb_init() != 0) {
+   27   2              // 自检失败报警预留
+   28   2          }
+   29   1      }
+   30          
+   31          //-------------------------------------------------------------------------------------------------------
+             -------------
+   32          // 函数功能：车辆动力学核心控制引擎
+   33          //-------------------------------------------------------------------------------------------------------
+             -------------
+   34          void Dynamics_Control_10ms(int16 vision_track_error, int16 curvature, int16 current_speed) {
+   35   1          int32 steer_vision;
+   36   1          int32 steer_gyro;
+   37   1          int32 steer_jerk;
+   38   1          int32 steer_ff;      // 新增：前馈计算中间变量
+   39   1          int32 v_square;      // 新增：速度平方变量
+   40   1          int16 final_servo_pwm;
+   41   1      
+   42   1          // ==========================================================================
+   43   1          // 1. 惯导数据高频采集与预处理 (完全保留你的逻辑)[cite: 1]
+   44   1          // ==========================================================================
+   45   1          imu660rb_get_gyro(); 
+   46   1          imu660rb_get_acc();  
+   47   1          s_gyro_z = imu660rb_gyro_z; 
+   48   1          s_acc_y  = imu660rb_acc_y;  
+   49   1          s_jerk_y = (int32)s_acc_y - s_last_acc_y; 
+   50   1          s_last_acc_y = s_acc_y; 
+   51   1      
+   52   1          // ==========================================================================
+C251 COMPILER V5.60.0,  vehicle_dynamics                                                   02/05/26  17:12:22  PAGE 2   
+
+   53   1          // 2. 绝对安全防线 (完全保留你的逻辑)[cite: 1]
+   54   1          // ==========================================================================
+   55   1          if (g_sys_config.system_en == 0) {
+   56   2              Set_Motor_PWM(0, 0); 
+   57   2              return; 
+   58   2          }
+   59   1      
+   60   1          // ==========================================================================
+   61   1          // 3. 终极防撞保护 (完全保留你的逻辑)[cite: 1]
+   62   1          // ==========================================================================
+   63   1          if (s_jerk_y > 8000 || s_jerk_y < -8000) { 
+   64   2              g_sys_config.system_en = 0; 
+   65   2              Set_Motor_PWM(0, 0);
+   66   2              return; 
+   67   2          }
+   68   1      
+   69   1          // ==========================================================================
+   70   1          // 4. 多源传感器姿态融合解算 (Vision + Gyro + Acc_Jerk + Curvature_FF)
+   71   1          // ==========================================================================
+   72   1          
+   73   1          // A. 视觉主导反馈 (PD) (完全保留)[cite: 1]
+   74   1          steer_vision = (g_sys_config.steer_kp * vision_track_error) >> 10;
+   75   1          steer_vision += (g_sys_config.steer_kd * (vision_track_error - s_last_vision_error)) >> 10;
+   76   1          s_last_vision_error = vision_track_error; 
+   77   1          
+   78   1          // B. 角速度阻尼环 (完全保留)[cite: 1]
+   79   1          steer_gyro = (g_sys_config.gyro_kd * s_gyro_z) >> 10;
+   80   1          
+   81   1          // C. Jerk 瞬态预测环 (完全保留)[cite: 1]
+   82   1          steer_jerk = (g_sys_config.jerk_kf * s_jerk_y) >> 10;
+   83   1      
+   84   1          // D. 核心补完：曲率前馈逻辑 (引入你在 strategy 中定义的物理模型)[cite: 1]
+   85   1          // 这样 current_speed_avg 就被引用了，警告消除。
+   86   1          v_square = (int32)current_speed * current_speed; 
+   87   1          steer_ff = (g_sys_config.kff1 * (int32)curvature) + 
+   88   1                     ((g_sys_config.kff2 * v_square * (int32)curvature) >> 15);
+   89   1          steer_ff = steer_ff >> 10; 
+   90   1      
+   91   1          // ==========================================================================
+   92   1          // 5. 暴力输出与限幅保护 (将 steer_ff 加入总和)[cite: 1]
+   93   1          // ==========================================================================
+   94   1          // 物理意义：反馈 + 前馈 - 阻尼 - 侧滑预测
+   95   1          final_servo_pwm = (int16)(steer_vision + steer_ff - steer_gyro - steer_jerk);
+   96   1          
+   97   1          if (final_servo_pwm > 500)  final_servo_pwm = 500;
+   98   1          if (final_servo_pwm < -500) final_servo_pwm = -500;
+   99   1      
+  100   1          Set_Servo_Duty(STEER_CENTER + final_servo_pwm);
+  101   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =       671     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =        40     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+C251 COMPILER V5.60.0,  vehicle_dynamics                                                   02/05/26  17:12:22  PAGE 3   
+
+  const size           =    ------     ------
+  hconst size          =        37     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,174 @@
+C251 COMPILER V5.60.0,  zf_device_type                                                     13/06/26  12:52:07  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_device_type
+OBJECT MODULE PLACED IN .\out_file\zf_device_type.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\..\libraries\zf_device\zf_device_type.c LARGE ROM(HUGE) WARNINGLEVE
+                    -L(3) OPTIMIZE(0,SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..
+                    -\..\libraries\zf_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekf
+                    -ree_assistant) DEBUG PRINT(.\out_file\zf_device_type.lst) TABS(2) OBJECT(.\out_file\zf_device_type.obj) 
+
+stmt  level    source
+
+    1          /********************************************************************************************************
+             -*************
+    2          * STC32G144K Opensourec Library ¼´£¨STC32G144K ¿ªÔ´¿â£©ÊÇÒ»¸ö»ùÓÚ¹Ù·½ SDK ½Ó¿ÚµÄµÚÈı·½¿ªÔ´¿â
+    3          * Copyright (c) 2025 SEEKFREE Öğ·É¿Æ¼¼
+    4          *
+    5          * ±¾ÎÄ¼şÊÇSTC32G144K¿ªÔ´¿âµÄÒ»²¿·Ö
+    6          *
+    7          * STC32G144K ¿ªÔ´¿â ÊÇÃâ·ÑÈí¼ş
+    8          * Äú¿ÉÒÔ¸ù¾İ×ÔÓÉÈí¼ş»ù½ğ»á·¢²¼µÄ GPL£¨GNU General Public License£¬¼´ GNUÍ¨ÓÃ¹«¹²Ğí¿ÉÖ¤£©µÄÌõ¿î
+    9          * ¼´ GPL µÄµÚ3°æ£¨¼´ GPL3.0£©»ò£¨ÄúÑ¡ÔñµÄ£©ÈÎºÎºóÀ´µÄ°æ±¾£¬ÖØĞÂ·¢²¼ºÍ/»òĞŞ¸ÄËü
+   10          *
+   11          * ±¾¿ªÔ´¿âµÄ·¢²¼ÊÇÏ£ÍûËüÄÜ·¢»Ó×÷ÓÃ£¬µ«²¢Î´¶ÔÆä×÷ÈÎºÎµÄ±£Ö¤
+   12          * ÉõÖÁÃ»ÓĞÒşº¬µÄÊÊÏúĞÔ»òÊÊºÏÌØ¶¨ÓÃÍ¾µÄ±£Ö¤
+   13          * ¸ü¶àÏ¸½ÚÇë²Î¼û GPL
+   14          *
+   15          * ÄúÓ¦¸ÃÔÚÊÕµ½±¾¿ªÔ´¿âµÄÍ¬Ê±ÊÕµ½Ò»·İ GPL µÄ¸±±¾
+   16          * Èç¹ûÃ»ÓĞ£¬Çë²ÎÔÄ<https://www.gnu.org/licenses/>
+   17          *
+   18          * ¶îÍâ×¢Ã÷£º
+   19          * ±¾¿ªÔ´¿âÊ¹ÓÃ GPL3.0 ¿ªÔ´Ğí¿ÉÖ¤Ğ­Òé ÒÔÉÏĞí¿ÉÉêÃ÷ÎªÒëÎÄ°æ±¾
+   20          * Ğí¿ÉÉêÃ÷Ó¢ÎÄ°æÔÚ libraries/doc ÎÄ¼ş¼ĞÏÂµÄ GPL3_permission_statement.txt ÎÄ¼şÖĞ
+   21          * Ğí¿ÉÖ¤¸±±¾ÔÚ libraries ÎÄ¼ş¼ĞÏÂ ¼´¸ÃÎÄ¼ş¼ĞÏÂµÄ LICENSE ÎÄ¼ş
+   22          * »¶Ó­¸÷Î»Ê¹ÓÃ²¢´«²¥±¾³ÌĞò µ«ĞŞ¸ÄÄÚÈİÊ±±ØĞë±£ÁôÖğ·É¿Æ¼¼µÄ°æÈ¨ÉùÃ÷£¨¼´±¾ÉùÃ÷£©
+   23          *
+   24          * ÎÄ¼şÃû³Æ          
+   25          * ¹«Ë¾Ãû³Æ          ³É¶¼Öğ·É¿Æ¼¼ÓĞÏŞ¹«Ë¾
+   26          * °æ±¾ĞÅÏ¢          ²é¿´ libraries/doc ÎÄ¼ş¼ĞÄÚ version ÎÄ¼ş °æ±¾ËµÃ÷
+   27          * ¿ª·¢»·¾³          MDK FOR C251
+   28          * ÊÊÓÃÆ½Ì¨          STC32G144K
+   29          * µêÆÌÁ´½Ó          https://seekfree.taobao.com/
+   30          *
+   31          * ĞŞ¸Ä¼ÇÂ¼
+   32          * ÈÕÆÚ              ×÷Õß           ±¸×¢
+   33          * 2025-11-20        ´óW            first version
+   34          *********************************************************************************************************
+             -***********/
+   35          
+   36          #include "zf_device_type.h"
+   37          
+   38          static void type_default_callback (void);
+   39          
+   40          camera_type_enum    camera_type                     = NO_CAMERE;                    // ÉãÏñÍ·ÀàĞÍ±äÁ¿
+   41          callback_function   camera_uart_handler             = type_default_callback;        // ´®¿ÚÍ¨Ñ¶ÖĞ¶Ïº¯ÊıÖ¸
+             -Õë£¬¸ù¾İ³õÊ¼»¯Ê±ÉèÖÃµÄº¯Êı½øĞĞÌø×ª
+   42          callback_function   camera_vsync_handler            = type_default_callback;        // ³¡ÖĞ¶Ïº¯ÊıÖ¸Õë£¬¸ù
+             -¾İ³õÊ¼»¯Ê±ÉèÖÃµÄº¯Êı½øĞĞÌø×ª
+   43          callback_function   camera_dma_handler              = type_default_callback;        // DMAÍê³ÉÖĞ¶Ïº¯ÊıÖ¸Õ
+             -ë£¬¸ù¾İ³õÊ¼»¯Ê±ÉèÖÃµÄº¯Êı½øĞĞÌø×ª
+   44          
+   45          wireless_type_enum  wireless_type                   = NO_WIRELESS;
+   46          callback_function   wireless_module_uart_handler    = type_default_callback;        // ÎŞÏß´®¿Ú½ÓÊÕÖĞ¶Ïº¯
+             -ÊıÖ¸Õë£¬¸ù¾İ³õÊ¼»¯Ê±ÉèÖÃµÄº¯Êı½øĞĞÌø×ª
+   47          callback_function   wireless_module_spi_handler     = type_default_callback;        // WIFI SPI GPIOÖĞ¶Ïº
+             -¯ÊıÖ¸Õë£¬¸ù¾İ³õÊ¼»¯Ê±ÉèÖÃµÄº¯Êı½øĞĞÌø×ª
+   48          
+   49          tof_type_enum       tof_type                        = NO_TOF;
+C251 COMPILER V5.60.0,  zf_device_type                                                     13/06/26  12:52:07  PAGE 2   
+
+   50          callback_function   tof_module_exti_handler         = type_default_callback;        // ToF Ä£¿é INT ¸üĞÂÖ
+             -Ğ¶Ï
+   51          
+   52          //-------------------------------------------------------------------------------------------------------
+             -------------
+   53          // º¯Êı¼ò½é     Ä¬ÈÏ»Øµ÷º¯Êı
+   54          // ²ÎÊıËµÃ÷     void
+   55          // ·µ»Ø²ÎÊı     void
+   56          // Ê¹ÓÃÊ¾Àı     
+   57          // ±¸×¢ĞÅÏ¢     ±£»¤ĞÔÈßÓàÉè¼Æ ·ÀÖ¹ÔÚÃ»ÓĞ³õÊ¼»¯Éè±¸µÄÊ±ºòÅÜ·É
+   58          //-------------------------------------------------------------------------------------------------------
+             -------------
+   59          static void type_default_callback (void)
+   60          {
+   61   1      
+   62   1      }
+   63          
+   64          //-------------------------------------------------------------------------------------------------------
+             -------------
+   65          // º¯Êı¼ò½é     ÉèÖÃÉãÏñÍ·ÀàĞÍ
+   66          // ²ÎÊıËµÃ÷     type_set        Ñ¡¶¨µÄÉãÏñÍ·ÀàĞÍ
+   67          // ²ÎÊıËµÃ÷     vsync_callback  Éè±¸µÄ³¡ÖĞ¶Ï»Øµ÷º¯Êı
+   68          // ²ÎÊıËµÃ÷     dma_callback    Éè±¸µÄ DMA Íê³ÉÖĞ¶Ï»Øµ÷º¯Êı
+   69          // ²ÎÊıËµÃ÷     uart_callback   Éè±¸µÄ´®¿Ú»Øµ÷º¯Êı
+   70          // ·µ»Ø²ÎÊı     void
+   71          // Ê¹ÓÃÊ¾Àı     set_camera_type(CAMERA_GRAYSCALE);
+   72          // ±¸×¢ĞÅÏ¢     Ò»°ãÓÉ¸÷ÉãÏñÍ·³õÊ¼»¯ÄÚ²¿µ÷ÓÃ
+   73          //-------------------------------------------------------------------------------------------------------
+             -------------
+   74          void set_camera_type (camera_type_enum type_set, callback_function vsync_callback, callback_function dma_
+             -callback, callback_function uart_callback)
+   75          {
+   76   1          camera_type = type_set;
+   77   1          camera_uart_handler  = ((uart_callback == NULL)  ? (type_default_callback) : (uart_callback));
+   78   1          camera_vsync_handler = ((vsync_callback == NULL) ? (type_default_callback) : (vsync_callback));
+   79   1          camera_dma_handler   = ((dma_callback == NULL)   ? (type_default_callback) : (dma_callback));
+   80   1      }
+   81          
+   82          //-------------------------------------------------------------------------------------------------------
+             -------------
+   83          // º¯Êı¼ò½é     ÉèÖÃÎŞÏßÄ£¿éÀàĞÍ
+   84          // ²ÎÊıËµÃ÷     type_set        Ñ¡¶¨µÄÎŞÏßÄ£¿éÀàĞÍ
+   85          // ²ÎÊıËµÃ÷     uart_callback   Éè±¸µÄ´®¿Ú»Øµ÷º¯Êı
+   86          // ·µ»Ø²ÎÊı     void
+   87          // Ê¹ÓÃÊ¾Àı     set_wireless_type(WIRELESS_UART, uart_callback);
+   88          // ±¸×¢ĞÅÏ¢     Ò»°ãÓÉ¸÷ÉãÏñÍ·³õÊ¼»¯ÄÚ²¿µ÷ÓÃ
+   89          //-------------------------------------------------------------------------------------------------------
+             -------------
+   90          void set_wireless_type (wireless_type_enum type_set, callback_function wireless_callback)
+   91          {
+   92   1          wireless_type = type_set;
+   93   1          if(WIFI_SPI == wireless_type)
+   94   1          {
+   95   2              wireless_module_spi_handler  = ((wireless_callback == NULL) ? (type_default_callback) : (wireless
+             -_callback));
+   96   2          }
+   97   1          else
+   98   1          {
+   99   2              wireless_module_uart_handler = ((wireless_callback == NULL) ? (type_default_callback) : (wireless
+             -_callback));
+  100   2          }
+  101   1      }
+  102          
+  103          //-------------------------------------------------------------------------------------------------------
+             -------------
+  104          // º¯Êı¼ò½é     ÉèÖÃ ToF Ä£¿éÀàĞÍ
+C251 COMPILER V5.60.0,  zf_device_type                                                     13/06/26  12:52:07  PAGE 3   
+
+  105          // ²ÎÊıËµÃ÷     type_set        Ñ¡¶¨µÄ ToF Ä£¿éÀàĞÍ
+  106          // ²ÎÊıËµÃ÷     exti_callback   Éè±¸µÄÍâ²¿ÖĞ¶Ï»Øµ÷º¯Êı
+  107          // ·µ»Ø²ÎÊı     void
+  108          // Ê¹ÓÃÊ¾Àı     set_tof_type(TOF_DL1A, dl1a_int_handler);
+  109          // ±¸×¢ĞÅÏ¢     Ò»°ãÓÉ¸÷ÉãÏñÍ·³õÊ¼»¯ÄÚ²¿µ÷ÓÃ
+  110          //-------------------------------------------------------------------------------------------------------
+             -------------
+  111          void set_tof_type (tof_type_enum type_set, callback_function exti_callback)
+  112          {
+  113   1          tof_type = type_set;
+  114   1          tof_module_exti_handler = ((exti_callback == NULL) ? (type_default_callback) : (exti_callback));
+  115   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =       368     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =        56     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =        75     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

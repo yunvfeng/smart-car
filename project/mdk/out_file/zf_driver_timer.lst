@@ -1,0 +1,126 @@
+C251 COMPILER V5.60.0,  zf_driver_timer                                                    13/06/26  12:52:07  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_driver_timer
+OBJECT MODULE PLACED IN .\out_file\zf_driver_timer.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\..\libraries\zf_driver\zf_driver_timer.c LARGE ROM(HUGE) WARNINGLEV
+                    -EL(3) OPTIMIZE(0,SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;.
+                    -.\..\libraries\zf_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seek
+                    -free_assistant) DEBUG PRINT(.\out_file\zf_driver_timer.lst) TABS(2) OBJECT(.\out_file\zf_driver_timer.obj) 
+
+stmt  level    source
+
+    1          /********************************************************************************************************
+             -*************
+    2          * STC32G144K Opensourec Library 即（STC32G144K 开源库）是一个基于官方 SDK 接口的第三方开源库
+    3          * Copyright (c) 2025 SEEKFREE 逐飞科技
+    4          *
+    5          * 本文件是STC32G144K开源库的一部分
+    6          *
+    7          * STC32G144K 开源库 是免费软件
+    8          * 您可以根据自由软件基金会发布的 GPL（GNU General Public License，即 GNU通用公共许可证）的条款
+    9          * 即 GPL 的第3版（即 GPL3.0）或（您选择的）任何后来的版本，重新发布和/或修改它
+   10          *
+   11          * 本开源库的发布是希望它能发挥作用，但并未对其作任何的保证
+   12          * 甚至没有隐含的适销性或适合特定用途的保证
+   13          * 更多细节请参见 GPL
+   14          *
+   15          * 您应该在收到本开源库的同时收到一份 GPL 的副本
+   16          * 如果没有，请参阅<https://www.gnu.org/licenses/>
+   17          *
+   18          * 额外注明：
+   19          * 本开源库使用 GPL3.0 开源许可证协议 以上许可申明为译文版本
+   20          * 许可申明英文版在 libraries/doc 文件夹下的 GPL3_permission_statement.txt 文件中
+   21          * 许可证副本在 libraries 文件夹下 即该文件夹下的 LICENSE 文件
+   22          * 欢迎各位使用并传播本程序 但修改内容时必须保留逐飞科技的版权声明（即本声明）
+   23          *
+   24          * 文件名称          
+   25          * 公司名称          成都逐飞科技有限公司
+   26          * 版本信息          查看 libraries/doc 文件夹内 version 文件 版本说明
+   27          * 开发环境          MDK FOR C251
+   28          * 适用平台          STC32G144K
+   29          * 店铺链接          https://seekfree.taobao.com/
+   30          *
+   31          * 修改记录
+   32          * 日期              作者           备注
+   33          * 2025-11-20        大W            first version
+   34          *********************************************************************************************************
+             -***********/
+   35          
+   36          #include "zf_driver_gpio.h"
+   37          #include "zf_driver_timer.h"
+   38          
+   39          // 该数组禁止修改，内部使用,用户无需关心
+   40          static timer_function_enum timer_function_state[TIM_RESERVE] =
+   41          {
+   42              TIMER_FUNCTION_INIT,
+   43              TIMER_FUNCTION_INIT,
+   44              TIMER_FUNCTION_INIT,      
+   45              TIMER_FUNCTION_INIT,
+   46              TIMER_FUNCTION_INIT,
+   47              
+   48            TIMER_FUNCTION_INIT,
+   49              TIMER_FUNCTION_INIT,
+   50              TIMER_FUNCTION_INIT,
+   51              TIMER_FUNCTION_INIT,
+   52              TIMER_FUNCTION_INIT,
+   53              
+   54              TIMER_FUNCTION_INIT,
+C251 COMPILER V5.60.0,  zf_driver_timer                                                    13/06/26  12:52:07  PAGE 2   
+
+   55              TIMER_FUNCTION_INIT,
+   56              TIMER_FUNCTION_INIT,
+   57              TIMER_FUNCTION_INIT,
+   58              
+   59          };
+   60          
+   61          //-------------------------------------------------------------------------------------------------------
+             -------------
+   62          // 函数简介      TIMER 外设确认功能状态 库内部调用
+   63          // 参数说明     index           TIMER 外设模块号
+   64          // 参数说明     mode            需要确的功能模块
+   65          // 返回参数     uint8           1-可以使用 0-不可以使用
+   66          // 使用示例     zf_assert(timer_funciton_check(TIM_1, TIMER_FUNCTION_PWM);
+   67          //-------------------------------------------------------------------------------------------------------
+             -------------
+   68          uint8 timer_funciton_check (timer_index_enum index, timer_function_enum mode)
+   69          {
+   70   1          uint8 return_state = 1;
+   71   1          if(TIMER_FUNCTION_INIT == timer_function_state[index])
+   72   1          {
+   73   2              timer_function_state[index] = mode;
+   74   2          }
+   75   1          else if(timer_function_state[index] == mode)
+   76   1          {
+   77   2              return_state = 1;
+   78   2          }
+   79   1          else
+   80   1          {
+   81   2              return_state = 0;
+   82   2          }
+   83   1          return return_state;
+   84   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =       129     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =        33     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =        33     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,380 @@
+C251 COMPILER V5.60.0,  zf_driver_encoder                                                  13/06/26  12:52:06  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_driver_encoder
+OBJECT MODULE PLACED IN .\out_file\zf_driver_encoder.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\..\libraries\zf_driver\zf_driver_encoder.c LARGE ROM(HUGE) WARNINGL
+                    -EVEL(3) OPTIMIZE(0,SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device
+                    -;..\..\libraries\zf_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\se
+                    -ekfree_assistant) DEBUG PRINT(.\out_file\zf_driver_encoder.lst) TABS(2) OBJECT(.\out_file\zf_driver_encoder.obj) 
+
+stmt  level    source
+
+    1          /********************************************************************************************************
+             -*************
+    2          * STC32G Opensourec Library 即（STC32G 开源库）是一个基于官方 SDK 接口的第三方开源库
+    3          * Copyright (c) 2025 SEEKFREE 逐飞科技
+    4          *
+    5          * 本文件是STC32G144K开源库的一部分
+    6          *
+    7          * STC32G 开源库 是免费软件
+    8          * 您可以根据自由软件基金会发布的 GPL（GNU General Public License，即 GNU通用公共许可证）的条款
+    9          * 即 GPL 的第3版（即 GPL3.0）或（您选择的）任何后来的版本，重新发布和/或修改它
+   10          *
+   11          * 本开源库的发布是希望它能发挥作用，但并未对其作任何的保证
+   12          * 甚至没有隐含的适销性或适合特定用途的保证
+   13          * 更多细节请参见 GPL
+   14          *
+   15          * 您应该在收到本开源库的同时收到一份 GPL 的副本
+   16          * 如果没有，请参阅<https://www.gnu.org/licenses/>
+   17          *
+   18          * 额外注明：
+   19          * 本开源库使用 GPL3.0 开源许可证协议 以上许可申明为译文版本
+   20          * 许可申明英文版在 libraries/doc 文件夹下的 GPL3_permission_statement.txt 文件中
+   21          * 许可证副本在 libraries 文件夹下 即该文件夹下的 LICENSE 文件
+   22          * 欢迎各位使用并传播本程序 但修改内容时必须保留逐飞科技的版权声明（即本声明）
+   23          *
+   24          * 文件名称
+   25          * 公司名称          成都逐飞科技有限公司
+   26          * 版本信息          查看 libraries/doc 文件夹内 version 文件 版本说明
+   27          * 开发环境          MDK FOR C251
+   28          * 适用平台          STC32G144K
+   29          * 店铺链接          https://seekfree.taobao.com/
+   30          *
+   31          * 修改记录
+   32          * 日期              作者           备注
+   33          * 2024-08-01        大W            first version
+   34          * 2025-07-16        优化           代码可读性、运算效率及健壮性优化
+   35          *********************************************************************************************************
+             -***********/
+   36          
+   37          #include "zf_common_clock.h"
+   38          #include "zf_common_debug.h"
+   39          
+   40          #include "zf_driver_encoder.h"
+   41          #include "zf_common_debug.h"
+   42          
+   43          static volatile uint8 encoder_dir_pin[20] = 
+   44          { 
+   45              // 0-5  为 PWM 接口，一共6个
+   46              // 6-19 为 TIM 接口，一共14个
+   47              0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 
+   48              0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 
+   49              0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+   50              0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+   51          };
+   52          
+   53          //-------------------------------------------------------------------------------------------------------
+             -------------
+C251 COMPILER V5.60.0,  zf_driver_encoder                                                  13/06/26  12:52:06  PAGE 2   
+
+   54          // 函数简介     定时器编码器解码取值
+   55          // 参数说明     timer_ch      定时器枚举体
+   56          // 返回参数     void
+   57          // 备注信息
+   58          // 使用示例    encoder_get_count(TIM2_ENCODER)  // 获取定时器2的采集到的编码器数据
+   59          //-------------------------------------------------------------------------------------------------------
+             -------------
+   60          int16 encoder_get_count(encoder_index_enum encoder_n)
+   61          {
+   62   1          int16 ret = 0;
+   63   1          if(encoder_n >= TIM0_ENCODER)
+   64   1          {
+   65   2              switch(encoder_n)
+   66   2              {
+   67   3                  case TIM0_ENCODER: ret = (uint16)TH0 << 8; ret |= TL0; break;
+   68   3                  case TIM1_ENCODER: ret = (uint16)TH1 << 8; ret |= TL1; break;
+   69   3                  case TIM2_ENCODER: ret = (uint16)T2H << 8; ret |= T2L; break;
+   70   3                  case TIM3_ENCODER: ret = (uint16)T3H << 8; ret |= T3L; break;
+   71   3                  case TIM4_ENCODER: ret = (uint16)T4H << 8; ret |= T4L; break;
+   72   3                  case TIM5_ENCODER: ret = (uint16)T5H << 8; ret |= T5L; break;
+   73   3                  case TIM6_ENCODER: ret = (uint16)T6H << 8; ret |= T6L; break;
+   74   3                  case TIM7_ENCODER: ret = (uint16)T7H << 8; ret |= T7L; break;
+   75   3                  case TIM8_ENCODER: ret = (uint16)T8H << 8; ret |= T8L; break;
+   76   3                  case TIM9_ENCODER: ret = (uint16)T9H << 8; ret |= T9L; break;
+   77   3                  case TIM10_ENCODER: ret = (uint16)T10H << 8; ret |= T10L; break;
+   78   3                  case TIM11_ENCODER: ret = (uint16)T11H << 8; ret |= T11L; break;
+   79   3                  case TIM17_ENCODER: ret = (uint16)T17H << 8; ret |= T17L; break;
+   80   3                  case TIM18_ENCODER: ret = (uint16)T18H << 8; ret |= T18L; break;
+   81   3                  default: zf_assert(0); break;            
+   82   3              }
+   83   2              if(gpio_get_level(encoder_dir_pin[encoder_n & 0x0F + PWMF_ENCODER + 1]) == 0)
+   84   2              {
+   85   3                  ret = -ret;
+   86   3              }
+   87   2          }
+   88   1          else
+   89   1          {
+   90   2              ret  = ((*(vuint8 far *)(PWMX_CNTR_ADDR[encoder_n])) << 8);
+   91   2              ret |= ((*(vuint8 far *)(PWMX_CNTR_ADDR[encoder_n] + 1)));
+   92   2              if(encoder_dir_pin[encoder_n & 0x0F] != 0xFF)
+   93   2              {
+   94   3                  // 方向编码器
+   95   3                  if(gpio_get_level(encoder_dir_pin[encoder_n & 0x0F]) == 0)
+   96   3                  {
+   97   4                      ret = -ret;
+   98   4                  }
+   99   3              }
+  100   2              else
+  101   2              {
+  102   3                  // 正交编码器，四倍频模式
+  103   3                  ret = ret >> 2;
+  104   3              }
+  105   2          }
+  106   1      
+  107   1          return  ret;
+  108   1      }
+  109          
+  110          //-------------------------------------------------------------------------------------------------------
+             -------------
+  111          // 函数简介     定时器的计数器清空
+  112          // 参数说明     timer_ch      定时器枚举体
+  113          // 返回参数     void
+  114          // 备注信息
+  115          // 使用示例    encoder_clear_count(TIM1_ENCODER)  //清除定时器1采集到的编码器数据
+  116          //-------------------------------------------------------------------------------------------------------
+             -------------
+C251 COMPILER V5.60.0,  zf_driver_encoder                                                  13/06/26  12:52:06  PAGE 3   
+
+  117          void encoder_clear_count(encoder_index_enum encoder_n)
+  118          {
+  119   1          if(encoder_n >= TIM0_ENCODER)
+  120   1          {
+  121   2              switch(encoder_n)
+  122   2              {
+  123   3                  case TIM0_ENCODER:  TR0 = 0; TH0 = 0; TL0 = 0; TR0 = 1; break;
+  124   3                  case TIM1_ENCODER:  TR1 = 0; TH1 = 0; TL1 = 0; TR1 = 1; break;
+  125   3                  case TIM2_ENCODER:  AUXR    &= ~(1 << 4); T2H = 0;  T2L = 0;  AUXR    |= (1 << 4); break;
+  126   3                  case TIM3_ENCODER:  T4T3M   &= ~(1 << 3); T3H = 0;  T3L = 0;  T4T3M   |= (1 << 3); break;
+  127   3                  case TIM4_ENCODER:  T4T3M   &= ~(1 << 7); T4H = 0;  T4L = 0;  T4T3M   |= (1 << 7); break;
+  128   3                  case TIM5_ENCODER:  T6T5M   &= ~(1 << 3); T5H = 0;  T5L = 0;  T6T5M   |= (1 << 3); break;
+  129   3                  case TIM6_ENCODER:  T6T5M   &= ~(1 << 7); T6H = 0;  T6L = 0;  T6T5M   |= (1 << 3); break;
+  130   3                  case TIM7_ENCODER:  T8T7M   &= ~(1 << 3); T7H = 0;  T7L = 0;  T8T7M   |= (1 << 3); break;
+  131   3                  case TIM8_ENCODER:  T8T7M   &= ~(1 << 7); T8H = 0;  T8L = 0;  T8T7M   |= (1 << 3); break;
+  132   3                  case TIM9_ENCODER:  T10T9M  &= ~(1 << 3); T9H = 0;  T9L = 0;  T10T9M  |= (1 << 3); break;
+  133   3                  case TIM10_ENCODER: T10T9M  &= ~(1 << 7); T10H = 0; T10L = 0; T10T9M  |= (1 << 3); break;
+  134   3                  case TIM11_ENCODER: T11CR   &= ~(1 << 7); T11H = 0; T11L = 0; T11CR   |= (1 << 7); break;
+  135   3                  case TIM17_ENCODER: T18T17M &= ~(1 << 3); T17H = 0; T17L = 0; T18T17M |= (1 << 3); break;
+  136   3                  case TIM18_ENCODER: T18T17M &= ~(1 << 7); T18H = 0; T18L = 0; T18T17M |= (1 << 7); break;
+  137   3                  default: zf_assert(0); break;            
+  138   3              }                          
+  139   2          }
+  140   1          else
+  141   1          {
+  142   2              // (*(vuint8 far *)(PWMX_CR1_ADDR[encoder_n]))     &= 0xFE;
+  143   2              (*(vuint8 far *)(PWMX_CNTR_ADDR[encoder_n]))     = 0;
+  144   2              (*(vuint8 far *)(PWMX_CNTR_ADDR[encoder_n] + 1)) = 0;
+  145   2              // (*(vuint8 far *)(PWMX_CR1_ADDR[encoder_n]))     |= 0x01;
+  146   2          }
+  147   1      }
+  148          
+  149          
+  150          //-------------------------------------------------------------------------------------------------------
+             -------------
+  151          // 函数简介     定时器编码器解码初始化
+  152          // 参数说明     encoder_n        PWM通道
+  153          // 参数说明     ch1_pin          通道A以及引脚
+  154          // 参数说明     ch2_pin          通道B以及引脚
+  155          // 返回参数     void
+  156          // 备注信息     
+  157          // 使用示例     内部使用，用户无需关心
+  158          // 备注信息     仅支持正交编码器
+  159          //-------------------------------------------------------------------------------------------------------
+             -------------
+  160          static void tim_encoder_dir_init(encoder_index_enum encoder_n, encoder_channel_enum lsb_pin, gpio_pin_enu
+             -m dir_pin)
+  161          {
+  162   1          // 如果程序在输出了断言信息 并且提示出错位置在这里
+  163   1          // 就去查看你在什么地方调用这个函数 检查你的传入参数
+  164   1          // 这里是检查是否有重复使用定时器
+  165   1        // TIM2已经给串口用作波特率发生器了。不能再初始化为其他的。
+  166   1        zf_assert(timer_funciton_check(encoder_n & 0xFF, TIMER_FUNCTION_ENCODER));
+  167   1      
+  168   1          // 传入的引脚错误
+  169   1          zf_assert(((uint16)lsb_pin >> 13) == 6);
+  170   1          gpio_init(dir_pin & 0xFF, GPI, 0, GPI_PULL_UP);
+  171   1          gpio_init(lsb_pin & 0xFF, GPI, 0, GPI_PULL_UP);
+  172   1          encoder_dir_pin[encoder_n & 0x0F + PWMF_ENCODER + 1] = (uint8)(dir_pin & 0xFF);
+  173   1          switch(encoder_n)
+  174   1          {
+  175   2              case TIM0_ENCODER:  TL0=0;  TH0=0;  TMOD|=0x04; TR0=1; break;
+  176   2              case TIM1_ENCODER:  TL1=0;  TH1=0;  TMOD|=0x40; TR1=1; break;
+  177   2              case TIM2_ENCODER:  T2L=0;  T2H=0;  AUXR|=0x18; break;
+  178   2              case TIM3_ENCODER:  T3L=0;  T3H=0;  T4T3M|=0x0c; break;
+  179   2              case TIM4_ENCODER:  T4L=0;  T4H=0;  T4T3M|=0xc0; break;
+C251 COMPILER V5.60.0,  zf_driver_encoder                                                  13/06/26  12:52:06  PAGE 4   
+
+  180   2              case TIM5_ENCODER:  T5L=0;  T5H=0;  T6T5M|=0x0c; break;
+  181   2              case TIM6_ENCODER:  T6L=0;  T6H=0;  T6T5M|=0xc0; break;
+  182   2              case TIM7_ENCODER:  T7L=0;  T7H=0;  T8T7M|=0x0c; break;
+  183   2              case TIM8_ENCODER:  T8L=0;  T8H=0;  T8T7M|=0xc0; break;
+  184   2              case TIM9_ENCODER:  T9L=0;  T9H=0;  T10T9M|=0x0c; break;
+  185   2              case TIM10_ENCODER: T10L=0; T10H=0; T10T9M|=0xc0; break;
+  186   2              case TIM11_ENCODER: T11L=0; T11H=0; T11CR|=0xc0; break;
+  187   2              case TIM17_ENCODER: T17L=0; T17H=0; T18T17M|=0x0c; break;
+  188   2              case TIM18_ENCODER: T18L=0; T18H=0; T18T17M|=0xc0; break;
+  189   2              default: zf_assert(0); break;            
+  190   2          
+  191   2          }
+  192   1      }
+  193          //-------------------------------------------------------------------------------------------------------
+             -------------
+  194          // 函数简介     PWM编码器解码初始化
+  195          // 参数说明     encoder_n        PWM通道
+  196          // 参数说明     ch1_pin          通道A以及引脚
+  197          // 参数说明     ch2_pin          通道B以及引脚
+  198          // 返回参数     void
+  199          // 使用示例     内部使用，用户无需关心
+  200          // 备注信息     支持带方向编码器和正交编码器              
+  201          //-------------------------------------------------------------------------------------------------------
+             -------------
+  202          static void pwm_encoder_dir_init(encoder_index_enum encoder_n, encoder_channel_enum ch1_pin, encoder_chan
+             -nel_enum ch2_pin)
+  203          {
+  204   1      //    encoder_quad_init(encoder_n, ch1_pin, ch2_pin);
+  205   1          gpio_init(ch1_pin & 0xFF, GPI, 0, GPI_PULL_UP);
+  206   1          gpio_init(ch2_pin & 0xFF, GPI, 0, GPI_PULL_UP);
+  207   1          encoder_dir_pin[encoder_n & 0x0F] = (uint8)(ch2_pin & 0xFF);
+  208   1          
+  209   1          
+  210   1          PWMX_CR1(ch1_pin) &= 0xFE;
+  211   1          PWMX_PS(ch1_pin)  |= ((ch1_pin >> 8) & 0x03) << (((ch1_pin >> 11) & 0x03) * 2);       // 选择引脚
+  212   1      
+  213   1          PWMX_ARRH(ch1_pin) = 0xFF;              // 周期寄存器
+  214   1          PWMX_ARRL(ch1_pin) = 0xFF;              // 周期寄存器
+  215   1              
+  216   1          PWMX_PSCRH(ch1_pin) = 0;                // 分频寄存器
+  217   1          PWMX_PSCRL(ch1_pin) = 0;                // 分频寄存器
+  218   1      
+  219   1          PWMX_SMCR(ch1_pin)  = 0x07 | 5 << 4;    // 外部计数模式 , 滤波后的CH1输入
+  220   1      
+  221   1          PWMX_CCERX(ch1_pin) = 0x00;             // 关闭所有输出
+  222   1          PWMX_CCERX(ch2_pin) = 0x00;             // 关闭所有输出
+  223   1          PWMX_CCMRX(ch1_pin) |= 0x01;          // 01:CC1 通道被配置为输入，IC1 映射在TI1 上
+  224   1          PWMX_CR1(ch1_pin)   |= 0x01;          // 开启定时器，向上计数
+  225   1          
+  226   1      }
+  227          
+  228          
+  229          //-------------------------------------------------------------------------------------------------------
+             -------------
+  230          // 函数简介     正交编码器解码初始化
+  231          // 参数说明     timer_ch      定时器枚举体
+  232          // 参数说明     phaseA      通道A以及引脚
+  233          // 参数说明     phaseB      通道B以及引脚
+  234          // 返回参数     void
+  235          // 使用示例             encoder_quad_init(PWMA_ENCODER, PWMA_ENCODER_CH1P_P60, PWMA_ENCODER_CH2P_P62)
+  236          //                      // 使用PWMA 做正交解码使用， 通道1脉冲信号引脚P60，通道2脉冲信号引脚P62
+  237          // 备注信息                                
+  238          //-------------------------------------------------------------------------------------------------------
+             -------------
+  239          void encoder_quad_init(encoder_index_enum encoder_n, encoder_channel_enum ch1_pin, encoder_channel_enum c
+             -h2_pin)
+C251 COMPILER V5.60.0,  zf_driver_encoder                                                  13/06/26  12:52:06  PAGE 5   
+
+  240          {
+  241   1          // 如果程序在输出了断言信息 并且提示出错位置在这里
+  242   1          // 就去查看你在什么地方调用这个函数 检查你的传入参数
+  243   1          zf_assert(((uint16)ch1_pin >> 13) == ((uint8)encoder_n));              // ch1_pin 与 ch2_pin 必须与 e
+             -ncoder_n 匹配
+  244   1          zf_assert(((uint16)ch2_pin >> 13) == ((uint8)encoder_n));              // ch1_pin 与 ch2_pin 必须与 e
+             -ncoder_n 匹配
+  245   1      
+  246   1      
+  247   1          gpio_init(ch1_pin  & 0xFF, GPI, 1, GPI_IMPEDANCE);        // 初始化引脚
+  248   1          gpio_init(ch2_pin  & 0xFF, GPI, 1, GPI_IMPEDANCE);        // 初始化引脚
+  249   1      
+  250   1          PWMX_CR1(ch1_pin) &= 0xFE;
+  251   1          PWMX_PS(ch1_pin)  |= ((ch1_pin >> 8) & 0x03) << (((ch1_pin >> 11) & 0x03) * 2);       // 选择引脚
+  252   1          PWMX_PS(ch2_pin)  |= ((ch2_pin >> 8) & 0x03) << (((ch2_pin >> 11) & 0x03) * 2);       // 选择引脚
+  253   1      
+  254   1          PWMX_ARRH(ch1_pin) = 0xFF;      // 周期寄存器
+  255   1          PWMX_ARRL(ch1_pin) = 0xFF;      // 周期寄存器
+  256   1      
+  257   1          PWMX_PSCRH(ch1_pin) = 0;        // 分频寄存器
+  258   1          PWMX_PSCRL(ch1_pin) = 0;        // 分频寄存器
+  259   1      
+  260   1          PWMX_SMCR(ch1_pin)  = 0x03;   // 边沿计数
+  261   1      
+  262   1          PWMX_CCERX(ch1_pin) = 0x00;     // 关闭所有输出
+  263   1          PWMX_CCERX(ch2_pin) = 0x00;     // 关闭所有输出
+  264   1          PWMX_CCMRX(ch1_pin) |= 0x01;  // 01:CC1 通道被配置为输入，IC1 映射在TI1 上
+  265   1          PWMX_CCMRX(ch2_pin) |= 0x01;    // 01:CC2 通道被配置为输入，IC2 映射在TI2 上
+  266   1          PWMX_CR1(ch1_pin)   |= 0x01;  // 开启定时器，向上计数
+  267   1      
+  268   1      
+  269   1      
+  270   1          // PWMA_PS |= 0x02;   // 选择引脚
+  271   1          // PWMA_PS |= 0x02 << 2;  // 选择引脚
+  272   1          // PWMA_PSCRH = 0;         // 分频寄存器
+  273   1          // PWMA_PSCRL = 1;         // 分频寄存器
+  274   1          // PWMA_CR1 = 0;           // 控制寄存器
+  275   1          // PWMA_CR2 = 0;          // 控制寄存器
+  276   1          // PWMA_SR1 = 0;           // 状态寄存器
+  277   1          // PWMA_SR2 = 0;          // 状态寄存器
+  278   1          // PWMA_ARRH = 0xFF;      // 设置自动重装载值
+  279   1          // PWMA_ARRL = 0xFF;      // 设置自动重装载值
+  280   1          // PWMA_SMCR = 0x02;    // 010:编码器模式2-根据TI2 的电平，计数器在TI1 的边沿向上/向下计数
+  281   1          // PWMA_CCER1 = 0x00;      // 关闭所有输出
+  282   1          // PWMA_CCER2 = 0x00;      // 关闭所有输出
+  283   1          // PWMA_CCMR1 = 0x01;     // 01:CC2 通道被配置为输入，IC2 映射在TI2 上
+  284   1          // PWMA_CCMR2 = 0x01;      // 01:CC1 通道被配置为输入，IC1 映射在TI1 上
+  285   1          // PWMA_CR1 |= 0x01;    // 开启定时器，向上计数
+  286   1            
+  287   1      }
+  288          
+  289          //-------------------------------------------------------------------------------------------------------
+             -------------
+  290          // 函数简介     带方向编码器初始化
+  291          // 参数说明     timer_ch        定时器枚举体
+  292          // 参数说明     phaseA          通道A以及引脚
+  293          // 参数说明     phaseB          通道B以及引脚
+  294          // 返回参数     void
+  295          // 备注信息   
+  296          // 使用示例     encoder_init_dir(PWMA_ENCODER, PWMA_ENCODER_CH1P_P60, PWMA_ENCODER_CH2P_P62)
+  297          //             // 使用PWMA 做正交解码使用， 通道1方向信号引脚P60，通道2脉冲信号引脚P62
+  298          //             encoder_init_dir(TIM17_ENCODER, TIM17_ENCODER_CH1_P80, IO_P45)
+  299          //             // 使用TIM17_ENCODER 读取编码器读取 ，脉冲信号引脚P80 ，方向信号引脚P45
+  300          //-------------------------------------------------------------------------------------------------------
+             -------------
+  301          void encoder_dir_init(uint16 encoder_n, uint16 lsb_pin, uint16 dir_pin)
+C251 COMPILER V5.60.0,  zf_driver_encoder                                                  13/06/26  12:52:06  PAGE 6   
+
+  302          {
+  303   1          if(encoder_n >= TIM0_ENCODER)
+  304   1          {
+  305   2              // 传入的引脚错误
+  306   2              zf_assert(!((uint16)dir_pin & 0xFF00));
+  307   2              tim_encoder_dir_init((encoder_index_enum)encoder_n, (encoder_channel_enum)lsb_pin, (gpio_pin_enum
+             -)dir_pin);
+  308   2          }
+  309   1          else
+  310   1          {
+  311   2              pwm_encoder_dir_init((encoder_index_enum)encoder_n, (encoder_channel_enum)lsb_pin, (encoder_chann
+             -el_enum)dir_pin);
+  312   2          }
+  313   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =      4576     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =        50     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =        71     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

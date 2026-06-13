@@ -1,0 +1,183 @@
+C251 COMPILER V5.60.0,  zf_common_clock                                                    13/06/26  12:52:05  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_common_clock
+OBJECT MODULE PLACED IN .\out_file\zf_common_clock.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\..\libraries\zf_common\zf_common_clock.c LARGE ROM(HUGE) WARNINGLEV
+                    -EL(3) OPTIMIZE(0,SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;.
+                    -.\..\libraries\zf_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seek
+                    -free_assistant) DEBUG PRINT(.\out_file\zf_common_clock.lst) TABS(2) OBJECT(.\out_file\zf_common_clock.obj) 
+
+stmt  level    source
+
+    1          /********************************************************************************************************
+             -*************
+    2          * STC32G144K Opensourec Library 即（STC32G144K 开源库）是一个基于官方 SDK 接口的第三方开源库
+    3          * Copyright (c) 2025 SEEKFREE 逐飞科技
+    4          *
+    5          * 本文件是STC32G144K开源库的一部分
+    6          *
+    7          * STC32G144K 开源库 是免费软件
+    8          * 您可以根据自由软件基金会发布的 GPL（GNU General Public License，即 GNU通用公共许可证）的条款
+    9          * 即 GPL 的第3版（即 GPL3.0）或（您选择的）任何后来的版本，重新发布和/或修改它
+   10          *
+   11          * 本开源库的发布是希望它能发挥作用，但并未对其作任何的保证
+   12          * 甚至没有隐含的适销性或适合特定用途的保证
+   13          * 更多细节请参见 GPL
+   14          *
+   15          * 您应该在收到本开源库的同时收到一份 GPL 的副本
+   16          * 如果没有，请参阅<https://www.gnu.org/licenses/>
+   17          *
+   18          * 额外注明：
+   19          * 本开源库使用 GPL3.0 开源许可证协议 以上许可申明为译文版本
+   20          * 许可申明英文版在 libraries/doc 文件夹下的 GPL3_permission_statement.txt 文件中
+   21          * 许可证副本在 libraries 文件夹下 即该文件夹下的 LICENSE 文件
+   22          * 欢迎各位使用并传播本程序 但修改内容时必须保留逐飞科技的版权声明（即本声明）
+   23          *
+   24          * 文件名称          
+   25          * 公司名称          成都逐飞科技有限公司
+   26          * 版本信息          查看 libraries/doc 文件夹内 version 文件 版本说明
+   27          * 开发环境          MDK FOR C251
+   28          * 适用平台          STC32G144K
+   29          * 店铺链接          https://seekfree.taobao.com/
+   30          *
+   31          * 修改记录
+   32          * 日期              作者           备注
+   33          * 2025-11-20         大W            first version
+   34          *********************************************************************************************************
+             -***********/
+   35          
+   36          #include "zf_common_typedef.h"
+   37          #include "zf_common_clock.h"
+   38          #include "zf_common_debug.h"
+   39          #include "zf_common_interrupt.h"
+   40          
+   41          #include "zf_driver_delay.h"
+   42          #include "zf_driver_uart.h"
+   43          
+   44          //内核频率
+   45          uint32 system_clock = 0;
+   46          
+   47          
+   48          
+   49          void clock_init (uint32 clock)                                              // 核心时钟初始化
+   50          {
+   51   1          uint8 pll_div = ((clock / 1000000UL - 78) / 3);
+   52   1          interrupt_global_disable();
+   53   1          EAXFR = 1;            // 使能访问XFR
+   54   1        // CKCON = 0;
+C251 COMPILER V5.60.0,  zf_common_clock                                                    13/06/26  12:52:05  PAGE 2   
+
+   55   1          if((120*1000*1000UL) <= clock)
+   56   1          {
+   57   2              WTST = 4;
+   58   2          }
+   59   1          else if((80*1000*1000UL) <= clock)
+   60   1          {
+   61   2              WTST = 3;
+   62   2          }
+   63   1          else if((80*1000*1000UL) <= clock)
+   64   1          {
+   65   2              WTST = 2;
+   66   2          }
+   67   1          else
+   68   1          {
+   69   2              WTST = 4;
+   70   2          }
+   71   1      
+   72   1      #if(INTERNAL_CRYSTAL == USER_CRTSTAL)
+   73   1          CLKDIV = 2;                 // 设置系统时钟=xxxMhz/2/2=clock，（因为CLKSEL选择时，已经将HPLL/2了）
+   74   1      
+   75   1        //以下为超过60MHz时，系统时钟使用HPLL方式提供
+   76   1        VRTRIM = CHIPID22;        // 载入27MHz频段的VRTRIM值
+   77   1        IRTRIM = CHIPID12;        // 指定当前HIRC为24MHz，此时会覆盖掉ISP设置的时钟频率
+   78   1        IRCBAND &= ~0x03;     // 清空频段选择
+   79   1        IRCBAND |= 0x01;      // 选择27Mhz频段
+   80   1        HPLLCR &= ~0x10;          // 选择HPLL输入时钟源为HIRC
+   81   1        HPLLPDIV = 4;       // 24MHz/4=6MHz,需要保证输入HPLL的时钟在6MHz附近
+   82   1          HPLLCR |= pll_div & 0x0F;   // 设置PLL1倍频系数
+   83   1        HPLLCR |= 0x80;           // 使能HPLL
+   84   1          soft_delay(50000);
+   85   1        CLKSEL &= ~0x03;      // BASE_CLK选择为HIRC，用以提供给HPLL
+   86   1        CLKSEL &= ~0x0c;      // 清空主时钟源选择
+   87   1        CLKSEL |= 1<<2;       // 设置主时钟源为内部 HPLL1 输出/2
+   88   1         
+   89   1      #elif(EXTERNAL_CRYSTAL == USER_CRTSTAL)
+               
+                   CLKDIV = 2;                 // 设置系统时钟=xxxMhz/2/2=clock，（因为CLKSEL选择时，已经将HPLL/2了）
+               
+                   CLKSEL &= ~0x03;      //BASE_CLK选择为HIRC，用以提供给HPLL
+                 CLKSEL &= ~0x0c;      //清空主时钟源选择
+               
+                   XOSCCR = 3<<6 | 1 << 2 | 1<<5;    // 选择外部晶振,24M晶振
+                   soft_delay(50000);
+                   while (!(XOSCCR & 1));      // 等待时钟稳定
+               
+                   HPLLCR &= ~(1<<4);          // 内部基本时钟(BASECLK)
+                   HPLLPDIV = 4;               // 必须为6M，这里24M晶振4分频
+                   HPLLCR |= pll_div & 0x0F; // 设置PLL1倍频系数
+               
+               //    HPLL2CR |= 6;            // 设置PLL2倍频系数
+                   HPLLCR |= 0<<5;            // PLL1/2提供给两组高速I2S时钟
+               //    HPLL2CR |= 0<<5;            // PLL1/2提供给两组高速外设时钟
+                   HPLLCR |= 1<<7;            // 使能HPLL
+               
+                   // 先设置好时钟，最后切换外部高速晶振
+                   CLKSEL = 1 << 0 | 1 << 2;   // 选择外部高速晶振, 内部HPLL1输出/2
+               
+               #endif
+  113   1      
+  114   1      
+  115   1          ADCCFG = 0;
+  116   1          AUXR = 0;
+  117   1          SCON = 0;
+  118   1          S2CON = 0;
+  119   1          S3CON = 0;
+  120   1          S4CON = 0;
+C251 COMPILER V5.60.0,  zf_common_clock                                                    13/06/26  12:52:05  PAGE 3   
+
+  121   1          P_SW1 = 0;
+  122   1          IE2 = 0;
+  123   1          TMOD = 0;
+  124   1      
+  125   1          system_clock = clock;
+  126   1      
+  127   1      #if(USER_USB_CDC)
+  128   1          // 使能USB时钟，以及初始化USB相关引脚
+  129   1          P3M0 &= ~0x03;
+  130   1          P3M1 |= 0x03;
+  131   1      
+  132   1          IRC48MCR = 0x80;
+  133   1          while (!(IRC48MCR & 0x01));
+  134   1          
+  135   1          // 等待48M稳定
+  136   1          system_delay_ms(10);
+  137   1      #endif
+  138   1      
+  139   1      
+  140   1        interrupt_global_enable();
+  141   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =       445     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =         9     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =         9     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

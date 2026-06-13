@@ -1,0 +1,69 @@
+C251 COMPILER V5.60.0,  encoder                                                            09/05/26  22:49:16  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE encoder
+OBJECT MODULE PLACED IN .\out_file\encoder.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE encoder.c LARGE ROM(HUGE) WARNINGLEVEL(3) OPTIMIZE(0,SIZE) BROWSE INCD
+                    -IR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\user;.
+                    -.\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekfree_assistant) DEBUG PRINT(.\out_
+                    -file\encoder.lst) TABS(2) OBJECT(.\out_file\encoder.obj) 
+
+stmt  level    source
+
+    1          #include "encoder.h" // 包含自己的菜单文件
+    2          #include "param.h"
+    3          // ---------------------------------------------------------
+    4          // 函数功能：编码器初始化
+    5          // 注意事项：如果你实际插的引脚不是 P60 和 P62，请在这里修改
+    6          // ---------------------------------------------------------
+    7          void My_Encoder_Init(void)
+    8          {
+    9   1          // 调用逐飞底层 API，设置 PWMA 正交解码
+   10   1          encoder_quad_init(PWMA_ENCODER, PWMA_ENCODER_CH1P_P60, PWMA_ENCODER_CH2P_P62);
+   11   1          encoder_quad_init(PWMC_ENCODER, PWMC_ENCODER_CH1P_P40, PWMC_ENCODER_CH2P_P42);
+   12   1      }
+   13          
+   14          // ---------------------------------------------------------
+   15          // 函数功能：获取当前速度脉冲，并自动清零（高度封装的体现！）
+   16          // 返回值：  车轮正转返回正数，反转返回负数，不转返回0
+   17          // ---------------------------------------------------------
+   18          void Get_Speed(int16 *left, int16 *right)
+   19          {
+   20   1          // 前面的星号(*)意思是：“顺着钥匙打开门，把等号右边的数字放进去”
+   21   1          *left = encoder_get_count(PWMC_ENCODER);
+   22   1          encoder_clear_count(PWMC_ENCODER);
+   23   1      
+   24   1          *right = encoder_get_count(PWMA_ENCODER)* -1;
+   25   1          encoder_clear_count(PWMA_ENCODER);
+   26   1        
+   27   1          g_State.speed_L = *left;
+   28   1          g_State.speed_R = *right;
+   29   1      
+   30   1          // 3. 计算汇总物理速度 (取绝对值平均)
+   31   1          // 这里的 current_speed 将直接供给 control.c 里的舵机算法使用
+   32   1          g_State.current_speed = (abs(*left) + abs(*right)) >> 1;
+   33   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =       202     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =         8     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =    ------     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

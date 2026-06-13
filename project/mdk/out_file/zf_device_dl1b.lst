@@ -1,0 +1,287 @@
+C251 COMPILER V5.60.0,  zf_device_dl1b                                                     13/06/26  12:52:08  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_device_dl1b
+OBJECT MODULE PLACED IN .\out_file\zf_device_dl1b.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\..\libraries\zf_device\zf_device_dl1b.c LARGE ROM(HUGE) WARNINGLEVE
+                    -L(3) OPTIMIZE(0,SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..
+                    -\..\libraries\zf_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekf
+                    -ree_assistant) DEBUG PRINT(.\out_file\zf_device_dl1b.lst) TABS(2) OBJECT(.\out_file\zf_device_dl1b.obj) 
+
+stmt  level    source
+
+    1          /********************************************************************************************************
+             -*************
+    2          * STC32G Opensourec Library 即（STC32G 开源库）是一个基于官方 SDK 接口的第三方开源库
+    3          * Copyright (c) 2025 SEEKFREE 逐飞科技
+    4          *
+    5          * 本文件是STC32G144K开源库的一部分
+    6          *
+    7          * STC32G 开源库 是免费软件
+    8          * 您可以根据自由软件基金会发布的 GPL（GNU General Public License，即 GNU通用公共许可证）的条款
+    9          * 即 GPL 的第3版（即 GPL3.0）或（您选择的）任何后来的版本，重新发布和/或修改它
+   10          *
+   11          * 本开源库的发布是希望它能发挥作用，但并未对其作任何的保证
+   12          * 甚至没有隐含的适销性或适合特定用途的保证
+   13          * 更多细节请参见 GPL
+   14          *
+   15          * 您应该在收到本开源库的同时收到一份 GPL 的副本
+   16          * 如果没有，请参阅<https://www.gnu.org/licenses/>
+   17          *
+   18          * 额外注明：
+   19          * 本开源库使用 GPL3.0 开源许可证协议 以上许可申明为译文版本
+   20          * 许可申明英文版在 libraries/doc 文件夹下的 GPL3_permission_statement.txt 文件中
+   21          * 许可证副本在 libraries 文件夹下 即该文件夹下的 LICENSE 文件
+   22          * 欢迎各位使用并传播本程序 但修改内容时必须保留逐飞科技的版权声明（即本声明）
+   23          *
+   24          * 文件名称          
+   25          * 公司名称          成都逐飞科技有限公司
+   26          * 版本信息          查看 libraries/doc 文件夹内 version 文件 版本说明
+   27          * 开发环境          MDK FOR C251
+   28          * 适用平台          STC32G144K
+   29          * 店铺链接          https://seekfree.taobao.com/
+   30          *
+   31          * 修改记录
+   32          * 日期              作者           备注
+   33          * 2024-08-01        大W            first version
+   34          *********************************************************************************************************
+             -***********/
+   35          /********************************************************************************************************
+             -*************
+   36          * 接线定义：
+   37          *                   ------------------------------------
+   38          *                   模块管脚            单片机管脚
+   39          *                   SCL                 查看 zf_device_dl1b.h 中 DL1B_SCL_PIN  宏定义
+   40          *                   SDA                 查看 zf_device_dl1b.h 中 DL1B_SDA_PIN  宏定义
+   41          *                   XS                  查看 zf_device_dl1b.h 中 DL1B_XS_PIN   宏定义
+   42          *                   VCC                 5V 电源
+   43          *                   GND                 电源地
+   44          *                   ------------------------------------
+   45          *********************************************************************************************************
+             -***********/
+   46          
+   47          #include "zf_common_debug.h"
+   48          
+   49          #include "zf_driver_delay.h"
+   50          #include "zf_driver_exti.h"
+   51          #include "zf_driver_soft_iic.h"
+   52          
+C251 COMPILER V5.60.0,  zf_device_dl1b                                                     13/06/26  12:52:08  PAGE 2   
+
+   53          #include "zf_device_dl1b.h"
+   54          #include "zf_device_config.h"
+   55          #include "zf_device_type.h"
+   56          
+   57          #pragma warning disable = 177
+   58          #pragma warning disable = 183
+   59          
+   60          static uint8 dl1b_init_flag = 0;
+   61          uint8 dl1b_finsh_flag = 0;
+   62          uint16 dl1b_distance_mm = 8192;
+   63          
+   64          #if (DL1B_USE_INTERFACE==SOFT_IIC) 
+   65            static soft_iic_info_struct dl1b_iic_struct;
+   66            #define dl1b_transfer_8bit_array(tdata, tlen, rdata, rlen)      (soft_iic_transfer_8bit_array(&dl1b_iic_
+             -struct, (tdata), (tlen), (rdata), (rlen)))
+   67          #elif (DL1B_USE_INTERFACE==HARDWARE_IIC)
+                 #define dl1b_transfer_8bit_array(tdata, tlen, rdata, rlen)      (iic_transfer_8bit_array(DL1B_IIC, DL1B_
+             -DEV_ADDR, (tdata), (tlen), (rdata), (rlen)))
+               #endif
+   70          
+   71          //-------------------------------------------------------------------------------------------------------
+             -------------
+   72          // 函数简介     返回以毫米为单位的范围读数
+   73          // 参数说明     void
+   74          // 返回参数     void
+   75          // 使用示例     dl1b_get_distance();
+   76          // 备注信息     在开始单次射程测量后也调用此函数
+   77          //-------------------------------------------------------------------------------------------------------
+             -------------
+   78          void dl1b_get_distance (void)
+   79          {
+   80   1          if(dl1b_init_flag)
+   81   1          {
+   82   2              uint8 data_buffer[3];
+   83   2              int16 dl1b_distance_temp = 0;
+   84   2              
+   85   2              data_buffer[0] = DL1B_GPIO__TIO_HV_STATUS >> 8;
+   86   2              data_buffer[1] = DL1B_GPIO__TIO_HV_STATUS & 0xFF;
+   87   2              dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1);
+   88   2              
+   89   2              if(data_buffer[2])
+   90   2              {
+   91   3              
+   92   3                  data_buffer[0] = DL1B_SYSTEM__INTERRUPT_CLEAR >> 8;
+   93   3                  data_buffer[1] = DL1B_SYSTEM__INTERRUPT_CLEAR & 0xFF;
+   94   3                  data_buffer[2] = 0x01;
+   95   3                  dl1b_transfer_8bit_array(data_buffer, 3, data_buffer, 0);// clear Interrupt
+   96   3                  
+   97   3                  data_buffer[0] = DL1B_RESULT__RANGE_STATUS >> 8;
+   98   3                  data_buffer[1] = DL1B_RESULT__RANGE_STATUS & 0xFF;
+   99   3                  dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1);
+  100   3                  
+  101   3                  if(0x89 == data_buffer[2])
+  102   3                  {
+  103   4                      data_buffer[0] = DL1B_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0 >> 8;
+  104   4                      data_buffer[1] = DL1B_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0 & 0xFF;
+  105   4                      dl1b_transfer_8bit_array(data_buffer, 2, data_buffer, 2);
+  106   4                      dl1b_distance_temp = data_buffer[0];
+  107   4                      dl1b_distance_temp = (dl1b_distance_temp << 8) | data_buffer[1];
+  108   4                      
+  109   4                      if(dl1b_distance_temp > 4000 || dl1b_distance_temp < 0)
+  110   4                      {
+  111   5                          dl1b_distance_mm = 8192;
+  112   5                          dl1b_finsh_flag = 0;
+  113   5                      }
+  114   4                      else
+C251 COMPILER V5.60.0,  zf_device_dl1b                                                     13/06/26  12:52:08  PAGE 3   
+
+  115   4                      {
+  116   5                          dl1b_distance_mm = dl1b_distance_temp;
+  117   5                          dl1b_finsh_flag = 1;
+  118   5                      }
+  119   4                  }
+  120   3                  else
+  121   3                  {
+  122   4                      dl1b_distance_mm = 8192;
+  123   4                      dl1b_finsh_flag = 0;
+  124   4                  }
+  125   3              }
+  126   2              else
+  127   2              {
+  128   3                  dl1b_distance_mm = 8192;
+  129   3                  dl1b_finsh_flag = 0;
+  130   3              }
+  131   2          }
+  132   1      }
+  133          
+  134          //-------------------------------------------------------------------------------------------------------
+             -------------
+  135          // 函数简介     DL1B INT 中断响应处理函数
+  136          // 参数说明     void
+  137          // 返回参数     void
+  138          // 使用示例     dl1b_int_handler();
+  139          // 备注信息     本函数需要在 DL1B_INT_PIN 对应的外部中断处理函数中调用
+  140          //-------------------------------------------------------------------------------------------------------
+             -------------
+  141          void dl1b_int_handler (void)
+  142          {
+  143   1      #if DL1B_INT_ENABLE
+                   dl1b_get_distance();
+               #endif
+  146   1      }
+  147          
+  148          //-------------------------------------------------------------------------------------------------------
+             -------------
+  149          // 函数简介     初始化 DL1B
+  150          // 参数说明     void
+  151          // 返回参数     uint8           1-初始化失败 0-初始化成功
+  152          // 使用示例     dl1b_init();
+  153          // 备注信息
+  154          //-------------------------------------------------------------------------------------------------------
+             -------------
+  155          uint8 dl1b_init (void)
+  156          {
+  157   1          uint8   return_state    = 0;
+  158   1          uint8   data_buffer[2 + sizeof(dl1b_config_file)];
+  159   1          uint16  time_out_count  = 0;
+  160   1          
+  161   1      #if (DL1B_USE_INTERFACE==SOFT_IIC)        
+  162   1          soft_iic_init(&dl1b_iic_struct, DL1B_DEV_ADDR, DL1B_SOFT_IIC_DELAY, DL1B_SCL_PIN, DL1B_SDA_PIN);
+  163   1      #elif (DL1B_USE_INTERFACE==HARDWARE_IIC)
+                   iic_init(DL1B_IIC, DL1B_DEV_ADDR, DL1B_IIC_SPEED, DL1B_SCL_PIN, DL1B_SDA_PIN);
+               #endif
+  166   1          
+  167   1      #if DL1B_XS_ENABLE
+  168   1          gpio_init(DL1B_XS_PIN, GPO, GPIO_HIGH, GPO_PUSH_PULL);
+  169   1      #endif
+  170   1          
+  171   1          do
+  172   1          {
+  173   2          
+  174   2      #if DL1B_XS_ENABLE
+  175   2              system_delay_ms(50);
+  176   2              gpio_low(DL1B_XS_PIN);
+C251 COMPILER V5.60.0,  zf_device_dl1b                                                     13/06/26  12:52:08  PAGE 4   
+
+  177   2              system_delay_ms(10);
+  178   2              gpio_high(DL1B_XS_PIN);
+  179   2              system_delay_ms(50);
+  180   2      #endif
+  181   2              
+  182   2              data_buffer[0] = DL1B_FIRMWARE__SYSTEM_STATUS >> 8;
+  183   2              data_buffer[1] = DL1B_FIRMWARE__SYSTEM_STATUS & 0xFF;
+  184   2              dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1);
+  185   2              return_state = (0x01 == (data_buffer[2] & 0x01)) ? (0) : (1);
+  186   2              
+  187   2              if(1 == return_state)
+  188   2              {
+  189   3                  break;
+  190   3              }
+  191   2              
+  192   2              data_buffer[0] = DL1B_I2C_SLAVE__DEVICE_ADDRESS >> 8;
+  193   2              data_buffer[1] = DL1B_I2C_SLAVE__DEVICE_ADDRESS & 0xFF;
+  194   2              
+  195   2              memcpy(&data_buffer[2], (uint8 *)dl1b_config_file, sizeof(dl1b_config_file));
+  196   2              dl1b_transfer_8bit_array(data_buffer, 2 + sizeof(dl1b_config_file), data_buffer, 0);
+  197   2              
+  198   2              while(1)
+  199   2              {
+  200   3                  data_buffer[0] = DL1B_GPIO__TIO_HV_STATUS >> 8;
+  201   3                  data_buffer[1] = DL1B_GPIO__TIO_HV_STATUS & 0xFF;
+  202   3                  dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1);
+  203   3                  
+  204   3                  if(0x00 == (data_buffer[2] & 0x01))
+  205   3                  {
+  206   4                      time_out_count = 0;
+  207   4                      break;
+  208   4                  }
+  209   3                  
+  210   3                  if(DL1B_TIMEOUT_COUNT < time_out_count ++)
+  211   3                  {
+  212   4                      return_state = 1;
+  213   4                      break;
+  214   4                  }
+  215   3                  
+  216   3                  system_delay_ms(1);
+  217   3              }
+  218   2              
+  219   2              dl1b_init_flag = 1;
+  220   2              
+  221   2          #if DL1B_INT_ENABLE
+                       exti_init(DL1B_INT_PIN, EXTI_TRIGGER_FALLING);
+                       dl1b_int_handler();
+                       dl1b_finsh_flag = 0;
+                   #endif
+  226   2              set_tof_type(TOF_DL1B, dl1b_int_handler);
+  227   2          }
+  228   1          while(0);
+  229   1         
+  230   1          return return_state;
+  231   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =      1058     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =       158     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+C251 COMPILER V5.60.0,  zf_device_dl1b                                                     13/06/26  12:52:08  PAGE 5   
+
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =        19     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

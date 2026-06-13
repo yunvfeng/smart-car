@@ -1,0 +1,178 @@
+C251 COMPILER V5.60.0,  zf_driver_usb_cdc                                                  13/06/26  12:52:07  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_driver_usb_cdc
+OBJECT MODULE PLACED IN .\out_file\zf_driver_usb_cdc.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\..\libraries\zf_driver\zf_driver_usb_cdc.c LARGE ROM(HUGE) WARNINGL
+                    -EVEL(3) OPTIMIZE(0,SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device
+                    -;..\..\libraries\zf_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\se
+                    -ekfree_assistant) DEBUG PRINT(.\out_file\zf_driver_usb_cdc.lst) TABS(2) OBJECT(.\out_file\zf_driver_usb_cdc.obj) 
+
+stmt  level    source
+
+    1          /********************************************************************************************************
+             -*************
+    2          * STC32G144K Opensourec Library 即（STC32G144K 开源库）是一个基于官方 SDK 接口的第三方开源库
+    3          * Copyright (c) 2025 SEEKFREE 逐飞科技
+    4          *
+    5          * 本文件是STC32G144K开源库的一部分
+    6          *
+    7          * STC32G144K 开源库 是免费软件
+    8          * 您可以根据自由软件基金会发布的 GPL（GNU General Public License，即 GNU通用公共许可证）的条款
+    9          * 即 GPL 的第3版（即 GPL3.0）或（您选择的）任何后来的版本，重新发布和/或修改它
+   10          *
+   11          * 本开源库的发布是希望它能发挥作用，但并未对其作任何的保证
+   12          * 甚至没有隐含的适销性或适合特定用途的保证
+   13          * 更多细节请参见 GPL
+   14          *
+   15          * 您应该在收到本开源库的同时收到一份 GPL 的副本
+   16          * 如果没有，请参阅<https://www.gnu.org/licenses/>
+   17          *
+   18          * 额外注明：
+   19          * 本开源库使用 GPL3.0 开源许可证协议 以上许可申明为译文版本
+   20          * 许可申明英文版在 libraries/doc 文件夹下的 GPL3_permission_statement.txt 文件中
+   21          * 许可证副本在 libraries 文件夹下 即该文件夹下的 LICENSE 文件
+   22          * 欢迎各位使用并传播本程序 但修改内容时必须保留逐飞科技的版权声明（即本声明）
+   23          *
+   24          * 文件名称          
+   25          * 公司名称          成都逐飞科技有限公司
+   26          * 版本信息          查看 libraries/doc 文件夹内 version 文件 版本说明
+   27          * 开发环境          MDK FOR C251
+   28          * 适用平台          STC32G144K
+   29          * 店铺链接          https://seekfree.taobao.com/
+   30          *
+   31          * 修改记录
+   32          * 日期              作者           备注
+   33          * 2025-11-20        大W            first version
+   34          *********************************************************************************************************
+             -***********/
+   35          
+   36          #include "stdlib.h"
+   37          #include "zf_common_clock.h"
+   38          #include "zf_common_debug.h"
+   39          
+   40          #include "zf_driver_usb_cdc.h"
+   41          #include "zf_driver_gpio.h"
+   42          #include "stc.h"
+   43          #include "usb.h"
+   44          
+   45          void usb_cdc_init()
+   46          {
+   47   1          usb_init();
+   48   1      }
+   49          
+   50          
+   51          // 返回剩余字节数
+   52          uint16 usb_cdc_write_buffer(const uint8 *buff, uint16 len)
+   53          {
+   54   1          int32 timeout = USB_TIME_OUT_COUNT;
+C251 COMPILER V5.60.0,  zf_driver_usb_cdc                                                  13/06/26  12:52:07  PAGE 2   
+
+   55   1          vuint8 tmp_len = 0;
+   56   1          vuint8 idx = 0;
+   57   1          
+   58   1          // 设备没有加载成功，直接返回
+   59   1          if (DeviceState != DEVSTATE_CONFIGURED)
+   60   1              return len;
+   61   1          
+   62   1          while(len > 0)
+   63   1          {
+   64   2              timeout = USB_TIME_OUT_COUNT;
+   65   2              tmp_len = (len >= 64) ? 64 : len;
+   66   2              
+   67   2              UsbInBusy = 1;
+   68   2              // 关闭USB中断
+   69   2              EUSB = 0;
+   70   2              // 设置端点索引
+   71   2              usb_write_reg(INDEX, 1);
+   72   2              // 将数据写入FIFO
+   73   2              
+   74   2              for(idx=0; idx < tmp_len; idx ++)
+   75   2              {
+   76   3                  usb_write_reg(FIFO1, *buff++);
+   77   3              }
+   78   2      //        usb_write_fifo(FIFO1, buff, tmp_len);
+   79   2              // IN数据包准备完成
+   80   2              usb_write_reg(INCSR1, INIPRDY);
+   81   2              // 开启USB中断
+   82   2              EUSB = 1;
+   83   2              
+   84   2              // 等待发送完成，或者超时
+   85   2              while(UsbInBusy && timeout--);
+   86   2              
+   87   2              // 超时则发送失败，直接返回剩余字节数
+   88   2              if(timeout <= 0)
+   89   2              {
+   90   3                  return len;
+   91   3              }
+   92   2              else
+   93   2              {
+   94   3                  len = len - tmp_len;
+   95   3              }
+   96   2          }
+   97   1      
+   98   1          return 0;
+   99   1      }
+  100              
+  101          void usb_cdc_write_byte(const uint8 dat)
+  102          {
+  103   1          usb_cdc_write_buffer(&dat, 1);
+  104   1      }
+  105          
+  106          uint16 usb_cdc_write_string(const char *str)
+  107          {
+  108   1          uint16 len = strlen(str);
+  109   1          return usb_cdc_write_buffer(str, len);
+  110   1      }
+  111          
+  112          void (*usb_cdc_read_buffer_handler)(uint8 *buff, uint16 len) = NULL;
+  113          
+  114          
+  115          void usb_cdc_rx_interrupt(void (*handler)(uint8 *buff, uint16 len))
+  116          {
+  117   1          // 设置中断回调函数
+  118   1          usb_cdc_read_buffer_handler = handler;
+  119   1      }
+  120          //            if(UsbInBusy == 0)
+C251 COMPILER V5.60.0,  zf_driver_usb_cdc                                                  13/06/26  12:52:07  PAGE 3   
+
+  121          //            {
+  122          //                UsbInBusy = 1;
+  123          //                
+  124          //                // 关闭USB中断
+  125          //                EUSB = 0;
+  126          //                // 设置端点索引
+  127          //                usb_write_reg(INDEX, 1);
+  128          //                // 将数据写入FIFO
+  129          //                usb_write_fifo(FIFO1, str, 10);
+  130          //                // IN数据包准备完成
+  131          //                usb_write_reg(INCSR1, INIPRDY);
+  132          //                // 开启USB中断
+  133          //                EUSB = 1;
+  134          //            }
+  135          
+  136          
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =       391     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =        27     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =         9     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

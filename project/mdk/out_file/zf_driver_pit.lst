@@ -1,0 +1,436 @@
+C251 COMPILER V5.60.0,  zf_driver_pit                                                      13/06/26  12:52:06  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_driver_pit
+OBJECT MODULE PLACED IN .\out_file\zf_driver_pit.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\..\libraries\zf_driver\zf_driver_pit.c LARGE ROM(HUGE) WARNINGLEVEL
+                    -(3) OPTIMIZE(0,SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\
+                    -..\libraries\zf_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekfr
+                    -ee_assistant) DEBUG PRINT(.\out_file\zf_driver_pit.lst) TABS(2) OBJECT(.\out_file\zf_driver_pit.obj) 
+
+stmt  level    source
+
+    1          /********************************************************************************************************
+             -*************
+    2          * STC32G144K Opensourec Library 即（STC32G144K 开源库）是一个基于官方 SDK 接口的第三方开源库
+    3          * Copyright (c) 2025 SEEKFREE 逐飞科技
+    4          *
+    5          * 本文件是STC32G144K开源库的一部分
+    6          *
+    7          * STC32G144K 开源库 是免费软件
+    8          * 您可以根据自由软件基金会发布的 GPL（GNU General Public License，即 GNU通用公共许可证）的条款
+    9          * 即 GPL 的第3版（即 GPL3.0）或（您选择的）任何后来的版本，重新发布和/或修改它
+   10          *
+   11          * 本开源库的发布是希望它能发挥作用，但并未对其作任何的保证
+   12          * 甚至没有隐含的适销性或适合特定用途的保证
+   13          * 更多细节请参见 GPL
+   14          *
+   15          * 您应该在收到本开源库的同时收到一份 GPL 的副本
+   16          * 如果没有，请参阅<https://www.gnu.org/licenses/>
+   17          *
+   18          * 额外注明：
+   19          * 本开源库使用 GPL3.0 开源许可证协议 以上许可申明为译文版本
+   20          * 许可申明英文版在 libraries/doc 文件夹下的 GPL3_permission_statement.txt 文件中
+   21          * 许可证副本在 libraries 文件夹下 即该文件夹下的 LICENSE 文件
+   22          * 欢迎各位使用并传播本程序 但修改内容时必须保留逐飞科技的版权声明（即本声明）
+   23          *
+   24          * 文件名称          
+   25          * 公司名称          成都逐飞科技有限公司
+   26          * 版本信息          查看 libraries/doc 文件夹内 version 文件 版本说明
+   27          * 开发环境          MDK FOR C251
+   28          * 适用平台          STC32G144K
+   29          * 店铺链接          https://seekfree.taobao.com/
+   30          *
+   31          * 修改记录
+   32          * 日期              作者           备注
+   33          * 2025-11-20        大W            first version
+   34          *********************************************************************************************************
+             -***********/
+   35          
+   36          #include "zf_common_clock.h"
+   37          #include "zf_driver_pit.h"
+   38          #include "zf_driver_timer.h"
+   39          #include "zf_common_debug.h"
+   40          
+   41          #pragma warning disable = 183
+   42          #pragma warning disable = 177
+   43          
+   44          callback_function tim_irq_handlers[TIM_RESERVE] = {0};
+   45          
+   46          //-------------------------------------------------------------------------------------------------------
+             -------------
+   47          //  @brief      定时器周期中断初始化
+   48          //  @param      pit_n      定时器通道号
+   49          //  @param      period     周期值
+   50          //  @return     void
+   51          //  Sample usage:          pit_init(TIM_0, 10, pit_handler)
+   52          //                         禁止使用该函数，请使用pit_ms_init或者pit_us_init
+   53          //-------------------------------------------------------------------------------------------------------
+C251 COMPILER V5.60.0,  zf_driver_pit                                                      13/06/26  12:52:06  PAGE 2   
+
+             -------------
+   54          void pit_init(pit_index_enum pit_n, uint32 period, callback_function pit_handler)
+   55          {
+   56   1          uint8 freq_div = 0;                
+   57   1          uint16 period_temp = 0;               
+   58   1          uint16 temp = 0;
+   59   1      
+   60   1        // 如果程序在输出了断言信息 并且提示出错位置在这里
+   61   1          // 就去查看你在什么地方调用这个函数 检查你的传入参数
+   62   1          // 这里是检查是否有重复使用定时器
+   63   1        // TIM2已经给串口用作波特率发生器了。不能再初始化为其他的。
+   64   1        zf_assert(timer_funciton_check(pit_n, TIMER_FUNCTION_PIT));
+   65   1      
+   66   1          if(period > (255 * 65535))
+   67   1          {
+   68   2              // 设置定时器为12T模式防止溢出
+   69   2              period = period / 12;
+   70   2              
+   71   2              // 根据定时器通道设置12T模式
+   72   2              switch(pit_n)
+   73   2              {
+   74   3                  case TIM0_PIT:
+   75   3                  {
+   76   4                      AUXR &= ~0x80;
+   77   4                      break;
+   78   4                  }
+   79   3                  case TIM1_PIT:
+   80   3                  {
+   81   4                      AUXR &= ~0x40;
+   82   4                      break;
+   83   4                  }
+   84   3                  case TIM2_PIT:
+   85   3                  {
+   86   4                      AUXR &= ~0x04;
+   87   4                      break;
+   88   4                  }
+   89   3                  case TIM3_PIT:
+   90   3                  {
+   91   4                      T4T3M &= ~0x02;
+   92   4                      break;
+   93   4                  }
+   94   3                  case TIM4_PIT:
+   95   3                  {
+   96   4                      T4T3M &= ~0x20;
+   97   4                      break;
+   98   4                  }
+   99   3                  case TIM5_PIT:
+  100   3                  {
+  101   4                      T6T5M &= ~0x02;
+  102   4                      break;
+  103   4                  }
+  104   3                  case TIM6_PIT:
+  105   3                  {
+  106   4                      T6T5M &= ~0x20;
+  107   4                      break;
+  108   4                  }
+  109   3                  case TIM7_PIT:
+  110   3                  {
+  111   4                      T8T7M &= ~0x02;
+  112   4                      break;
+  113   4                  }
+  114   3                  case TIM8_PIT:
+  115   3                  {
+  116   4                      T8T7M &= ~0x20;
+  117   4                      break;
+  118   4                  }
+C251 COMPILER V5.60.0,  zf_driver_pit                                                      13/06/26  12:52:06  PAGE 3   
+
+  119   3                  case TIM9_PIT:
+  120   3                  {
+  121   4                      T10T9M &= ~0x02;
+  122   4                      break;
+  123   4                  }
+  124   3                  case TIM10_PIT:
+  125   3                  {
+  126   4                      T10T9M &= ~0x20;
+  127   4                      break;
+  128   4                  }
+  129   3                  case TIM11_PIT:
+  130   3                  {
+  131   4                      T11CR &= ~0x10;
+  132   4                      break;
+  133   4                  }
+  134   3                  
+  135   3                  case TIM17_PIT:
+  136   3                  {
+  137   4                      T18T17M &= ~0x02;
+  138   4                      break;
+  139   4                  }
+  140   3                  case TIM18_PIT:
+  141   3                  {
+  142   4                      T18T17M &= ~0x20;
+  143   4                      break;
+  144   4                  }
+  145   3            
+  146   3                  // 可根据需要添加默认处理
+  147   3                  default:
+  148   3                  {
+  149   4                      break;
+  150   4                  }
+  151   3              }
+  152   2          }
+  153   1          else
+  154   1          {
+  155   2              // 设置为1T模式
+  156   2              switch(pit_n)
+  157   2              {
+  158   3                  case TIM0_PIT:
+  159   3                  {
+  160   4                      AUXR |= 0x80;
+  161   4                      break;
+  162   4                  }
+  163   3                  case TIM1_PIT:
+  164   3                  {
+  165   4                      AUXR |= 0x40;
+  166   4                      break;
+  167   4                  }
+  168   3                  case TIM2_PIT:
+  169   3                  {
+  170   4                      AUXR |= 0x04;
+  171   4                      break;
+  172   4                  }
+  173   3                  case TIM3_PIT:
+  174   3                  {
+  175   4                      T4T3M |= 0x02;
+  176   4                      break;
+  177   4                  }
+  178   3                  case TIM4_PIT:
+  179   3                  {
+  180   4                      T4T3M |= 0x20;
+  181   4                      break;
+  182   4                  }
+  183   3                  case TIM5_PIT:
+  184   3                  {
+C251 COMPILER V5.60.0,  zf_driver_pit                                                      13/06/26  12:52:06  PAGE 4   
+
+  185   4                      T6T5M |= 0x02;
+  186   4                      break;
+  187   4                  }
+  188   3                  case TIM6_PIT:
+  189   3                  {
+  190   4                      T6T5M |= 0x20;
+  191   4                      break;
+  192   4                  }
+  193   3                  case TIM7_PIT:
+  194   3                  {
+  195   4                      T8T7M |= 0x02;
+  196   4                      break;
+  197   4                  }
+  198   3                  case TIM8_PIT:
+  199   3                  {
+  200   4                      T8T7M |= 0x20;
+  201   4                      break;
+  202   4                  }
+  203   3                  case TIM9_PIT:
+  204   3                  {
+  205   4                      T10T9M |= 0x02;
+  206   4                      break;
+  207   4                  }
+  208   3                  case TIM10_PIT:
+  209   3                  {
+  210   4                      T10T9M |= 0x20;
+  211   4                      break;
+  212   4                  }
+  213   3                  case TIM11_PIT:
+  214   3                  {
+  215   4                      T11CR |= 0x10;
+  216   4                      break;
+  217   4                  }
+  218   3                  
+  219   3                  case TIM17_PIT:
+  220   3                  {
+  221   4                      T18T17M |= 0x02;
+  222   4                      break;
+  223   4                  }
+  224   3                  case TIM18_PIT:
+  225   3                  {
+  226   4                      T18T17M |= 0x20;
+  227   4                      break;
+  228   4                  }
+  229   3      
+  230   3                  
+  231   3                  // 可根据需要添加默认处理
+  232   3                  default:
+  233   3                  {
+  234   4                      break;
+  235   4                  }
+  236   3              }
+  237   2          }
+  238   1          
+  239   1          
+  240   1          freq_div = ((period) >> 16);                   // 计算预分频
+  241   1          period_temp = ((period) / (freq_div + 1));     // 计算自动重装载值
+  242   1          temp = (uint16)65536 - period_temp;
+  243   1      
+  244   1          // 定时器具体配置
+  245   1          switch(pit_n)
+  246   1          {
+  247   2              case TIM0_PIT:
+  248   2              {
+  249   3                  TM0PS = freq_div; // 设置分频值
+  250   3                  TMOD &= 0xF0;     // 模式 0
+C251 COMPILER V5.60.0,  zf_driver_pit                                                      13/06/26  12:52:06  PAGE 5   
+
+  251   3                  TL0 = temp;
+  252   3                  TH0 = temp >> 8;
+  253   3                  TR0 = 1;      // 启动定时器
+  254   3                  ET0 = 1;      // 使能定时器中断
+  255   3                  break;
+  256   3              }
+  257   2              case TIM1_PIT:
+  258   2              {
+  259   3                  TM1PS = freq_div; // 设置分频值
+  260   3                  TMOD &= 0x0F;     // 模式 0
+  261   3                  TL1 = temp;
+  262   3                  TH1 = temp >> 8;
+  263   3                  TR1 = 1;      // 启动定时器
+  264   3                  ET1 = 1;      // 使能定时器中断
+  265   3                  break;
+  266   3              }
+  267   2              case TIM2_PIT:
+  268   2              {
+  269   3                  TM2PS = freq_div; // 设置分频值
+  270   3                  T2L = temp;
+  271   3                  T2H = temp >> 8;
+  272   3                  AUXR |= 0x10;     // 启动定时器
+  273   3                  IE2 |= 0x04;    // 使能定时器中断
+  274   3                  break;
+  275   3              }
+  276   2              case TIM3_PIT:
+  277   2              {
+  278   3                  TM3PS = freq_div; // 设置分频值
+  279   3                  T3L = temp;
+  280   3                  T3H = temp >> 8;
+  281   3                  T4T3M |= 0x08;    // 启动定时器
+  282   3                  IE2 |= 0x20;    // 使能定时器中断
+  283   3                  break;
+  284   3              }
+  285   2              case TIM4_PIT:
+  286   2              {
+  287   3                  TM4PS = freq_div; // 设置分频值
+  288   3                  T4L = temp;
+  289   3                  T4H = temp >> 8;
+  290   3                  T4T3M |= 0x90;    // 启动定时器
+  291   3                  T4T3M &= ~(0x04);
+  292   3                  IE2 |= 0x40;    // 使能定时器中断
+  293   3                  break;
+  294   3              }
+  295   2              case TIM5_PIT:
+  296   2              {
+  297   3                  TM5PS = freq_div; // 设置分频值
+  298   3                  T5L = temp;
+  299   3                  T5H = temp >> 8;
+  300   3                  T6T5M |= 0x08;    // 启动定时器
+  301   3                  T6T5CFG |= 0x01;    // 使能定时器中断
+  302   3                  break;
+  303   3              }
+  304   2              case TIM6_PIT:
+  305   2              {
+  306   3                  TM6PS = freq_div; // 设置分频值
+  307   3                  T6L = temp;
+  308   3                  T6H = temp >> 8;
+  309   3                  T6T5M |= 0x80;    // 启动定时器
+  310   3                  T6T5CFG |= 0x01 << 4;    // 使能定时器中断
+  311   3                  break;
+  312   3              }
+  313   2              case TIM7_PIT:
+  314   2              {
+  315   3                  TM7PS = freq_div; // 设置分频值
+  316   3                  T7L = temp;
+C251 COMPILER V5.60.0,  zf_driver_pit                                                      13/06/26  12:52:06  PAGE 6   
+
+  317   3                  T7H = temp >> 8;
+  318   3                  T8T7M |= 0x08;    // 启动定时器
+  319   3                  T8T7CFG |= 0x01;    // 使能定时器中断
+  320   3                  break;
+  321   3              }
+  322   2              case TIM8_PIT:
+  323   2              {
+  324   3                  TM8PS = freq_div; // 设置分频值
+  325   3                  T8L = temp;
+  326   3                  T8H = temp >> 8;
+  327   3                  T8T7M |= 0x80;    // 启动定时器
+  328   3                  T8T7CFG |= 0x01 << 4;    // 使能定时器中断
+  329   3                  break;
+  330   3              }
+  331   2              case TIM9_PIT:
+  332   2              {
+  333   3                  TM9PS = freq_div; // 设置分频值
+  334   3                  T9L = temp;
+  335   3                  T9H = temp >> 8;
+  336   3                  T10T9M |= 0x08;     // 启动定时器
+  337   3                  T10T9CFG |= 0x01;    // 使能定时器中断
+  338   3                  break;
+  339   3              }
+  340   2              case TIM10_PIT:
+  341   2              {
+  342   3                  TM10PS = freq_div;  // 设置分频值
+  343   3                  T10L = temp;
+  344   3                  T10H = temp >> 8;
+  345   3                  T10T9M |= 0x80;     // 启动定时器
+  346   3                  T10T9CFG |= 0x01 << 4;    // 使能定时器中断
+  347   3                  break;
+  348   3              }
+  349   2              case TIM11_PIT:
+  350   2              {
+  351   3                  T11PS = freq_div; // 设置分频值
+  352   3                  T11L = temp;
+  353   3                  T11H = temp >> 8;
+  354   3                  T11CR |= 0x82;  // 启动定时器，使能定时器中断
+  355   3                  break;
+  356   3              }
+  357   2              case TIM17_PIT:
+  358   2              {
+  359   3                  TM17PS = freq_div;  // 设置分频值
+  360   3                  T17L = temp;
+  361   3                  T17H = temp >> 8;
+  362   3                  T18T17M |= 0x08;    // 启动定时器
+  363   3                  T18T17CFG |= 0x01;    // 使能定时器中断
+  364   3                  break;
+  365   3              }
+  366   2              case TIM18_PIT:
+  367   2              {
+  368   3                  TM18PS = freq_div;  // 设置分频值
+  369   3                  T18L = temp;
+  370   3                  T18H = temp >> 8;
+  371   3                  T18T17M |= 0x80;    // 启动定时器
+  372   3                  T18T17CFG |= 0x01 << 4;    // 使能定时器中断
+  373   3                  break;
+  374   3              }
+  375   2              
+  376   2              // 可根据需要添加默认处理
+  377   2              default:
+  378   2              {
+  379   3                  break;
+  380   3              }
+  381   2          }
+  382   1          
+C251 COMPILER V5.60.0,  zf_driver_pit                                                      13/06/26  12:52:06  PAGE 7   
+
+  383   1         tim_irq_handlers[pit_n] = pit_handler;
+  384   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =      1884     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =        71     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =       103     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

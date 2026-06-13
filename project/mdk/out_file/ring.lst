@@ -1,0 +1,589 @@
+C251 COMPILER V5.60.0,  ring                                                               13/06/26  12:52:10  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE ring
+OBJECT MODULE PLACED IN .\out_file\ring.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\code\ring.c LARGE ROM(HUGE) WARNINGLEVEL(3) OPTIMIZE(0,SIZE) BROWSE
+                    - INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\u
+                    -ser;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekfree_assistant) DEBUG PRINT(.
+                    -\out_file\ring.lst) TABS(2) OBJECT(.\out_file\ring.obj) 
+
+stmt  level    source
+
+    1          #include "ring.h"
+    2          #include "servo.h"
+    3          #include <stdlib.h>
+    4          
+    5          #define FIRST_TO_NORMAL_CONFIRM_FRAMES 3u
+    6          #define ENTER_TO_FIRST_CONFIRM_FRAMES  3u
+    7          #define IN_TO_OUT_MIN_FRAMES           20u
+    8          #define IN_TO_OUT_CONFIRM_FRAMES       3u
+    9          
+   10          uint8 left_control_line[SEARCH_IMAGE_H];
+   11          uint8 right_control_line[SEARCH_IMAGE_H];
+   12          
+   13          uint8 current_step = 0;
+   14          uint8 key_anlysis1 = 0;
+   15          uint8 key_anlysis2 = 0;
+   16          uint8 key_anlysis3 = 0;
+   17          
+   18          uint8 ring_preMeet_flag = 0;
+   19          uint8 ring_l = 0;
+   20          uint8 ring_r = 0;
+   21          uint8 first_meeting_flag = 0;
+   22          uint8 ring_enter_flag = 0;
+   23          uint8 ring_turn_flag = 0;
+   24          uint8 Out_flag = 0;
+   25          uint8 Straighten_flag = 0;
+   26          uint8 ring_over_flag = 0;
+   27          
+   28          static uint8 mid_under_flag = 0;
+   29          static uint8 first_to_normal_cnt = 0;
+   30          static uint8 enter_to_first_cnt = 0;
+   31          static uint8 in_to_out_cnt = 0;
+   32          static uint16 cnt_over = 0;
+   33          
+   34          /* 计算两个无符号 8 位数的差值绝对值。 */
+   35          static uint8 abs_diff_u8(uint8 a, uint8 b)
+   36          {
+   37   1          return (a > b) ? (a - b) : (b - a);
+   38   1      }
+   39          
+   40          /* 把列坐标限制在图像宽度范围内。 */
+   41          uint8 clamp_col_int16(int16 val)
+   42          {
+   43   1          if (val < 0) return 0;
+   44   1          if (val >= SEARCH_IMAGE_W) return (SEARCH_IMAGE_W - 1);
+   45   1          return (uint8)val;
+   46   1      }
+   47          
+   48          /* 圆环状态机入口，每帧根据当前阶段调用对应处理函数。 */
+   49          void Ring(void)
+   50          {
+   51   1          switch (current_step) {
+   52   2          case 0:
+   53   2              Ring_Pre_Meet();
+   54   2              if (ring_preMeet_flag) {
+   55   3                  first_meeting_flag = 0;
+   56   3                  mid_under_flag = 0;
+C251 COMPILER V5.60.0,  ring                                                               13/06/26  12:52:10  PAGE 2   
+
+   57   3                  first_to_normal_cnt = 0;
+   58   3                  current_step = 1;
+   59   3              }
+   60   2              break;
+   61   2      
+   62   2          case 1:
+   63   2              Ring_First_meeting();
+   64   2              if (first_meeting_flag) {
+   65   3                  ring_enter_flag = 0;
+   66   3                  mid_under_flag = 0;
+   67   3                  enter_to_first_cnt = 0;
+   68   3                  current_step = 2;
+   69   3              }
+   70   2              break;
+   71   2      
+   72   2          case 2:
+   73   2              Ring_Enter();
+   74   2              if (ring_enter_flag) {
+   75   3                  ring_turn_flag = 0;
+   76   3                  enter_to_first_cnt = 0;
+   77   3                  current_step = 3;
+   78   3              }
+   79   2              break;
+   80   2      
+   81   2          case 3:
+   82   2              Ring_Turing();
+   83   2              if (ring_turn_flag) {
+   84   3                  Out_flag = 0;
+   85   3                  cnt_over = 0;
+   86   3                  in_to_out_cnt = 0;
+   87   3                  current_step = 4;
+   88   3              }
+   89   2              break;
+   90   2      
+   91   2          case 4:
+   92   2              Ring_Ring_Ring();
+   93   2              if (Out_flag) {
+   94   3                  Straighten_flag = 0;
+   95   3                  in_to_out_cnt = 0;
+   96   3                  current_step = 5;
+   97   3              }
+   98   2              break;
+   99   2      
+  100   2          case 5:
+  101   2              Ring_Out();
+  102   2              if (Straighten_flag) {
+  103   3                  ring_over_flag = 0;
+  104   3                  current_step = 6;
+  105   3              }
+  106   2              break;
+  107   2      
+  108   2          case 6:
+  109   2              Ring_Straighten();
+  110   2              if (ring_over_flag) {
+  111   3                  current_step = 7;
+  112   3              }
+  113   2              break;
+  114   2      
+  115   2          case 7:
+  116   2              Ring_Over();
+  117   2              break;
+  118   2      
+  119   2          default:
+  120   2              Ring_Over();
+  121   2              break;
+  122   2          }
+C251 COMPILER V5.60.0,  ring                                                               13/06/26  12:52:10  PAGE 3   
+
+  123   1      }
+  124          
+  125          /* 在左右控制线之间补一条斜线，用于圆环阶段修正缺失边线。 */
+  126          void draw_line(uint8 left_point, uint8 right_point, uint8 to_flag)
+  127          {
+  128   1          uint8 i;
+  129   1          uint8 start_row;
+  130   1          uint8 end_row;
+  131   1          int16 start_col;
+  132   1          int16 end_col;
+  133   1          int16 den;
+  134   1          int32 num;
+  135   1          int16 val;
+  136   1      
+  137   1          if (left_point >= SEARCH_IMAGE_H) left_point = SEARCH_IMAGE_H - 1;
+  138   1          if (right_point >= SEARCH_IMAGE_H) right_point = SEARCH_IMAGE_H - 1;
+  139   1      
+  140   1          if (left_point > right_point) {
+  141   2              start_row = right_point;
+  142   2              end_row = left_point;
+  143   2              start_col = right_control_line[right_point];
+  144   2              end_col = left_control_line[left_point];
+  145   2          } else {
+  146   2              start_row = left_point;
+  147   2              end_row = right_point;
+  148   2              start_col = left_control_line[left_point];
+  149   2              end_col = right_control_line[right_point];
+  150   2          }
+  151   1      
+  152   1          if (end_row == start_row) {
+  153   2              return;
+  154   2          }
+  155   1      
+  156   1          den = (int16)(end_row - start_row);
+  157   1      
+  158   1          if (!to_flag) {
+  159   2              for (i = start_row + 1; i < end_row; i++) {
+  160   3                  num = (int32)(end_col - start_col) * (int32)(i - start_row);
+  161   3                  if (num >= 0) val = (int16)(start_col + (num + (den >> 1)) / den);
+  162   3                  else          val = (int16)(start_col + (num - (den >> 1)) / den);
+  163   3                  left_control_line[i] = clamp_col_int16(val);
+  164   3              }
+  165   2          } else {
+  166   2              for (i = start_row + 1; i < end_row; i++) {
+  167   3                  num = (int32)(end_col - start_col) * (int32)(i - start_row);
+  168   3                  if (num >= 0) val = (int16)(start_col + (num + (den >> 1)) / den);
+  169   3                  else          val = (int16)(start_col + (num - (den >> 1)) / den);
+  170   3                  right_control_line[i] = clamp_col_int16(val);
+  171   3              }
+  172   2          }
+  173   1      }
+  174          
+  175          /* 连接同一侧控制线上的上下两个点，补齐中间缺失行。 */
+  176          void connect_point(uint8 under, uint8 top, uint8 l_r)
+  177          {
+  178   1          uint8 i;
+  179   1          int16 start_col;
+  180   1          int16 end_col;
+  181   1          int16 den;
+  182   1          int32 num;
+  183   1          int16 val;
+  184   1      
+  185   1          if (under >= SEARCH_IMAGE_H) under = SEARCH_IMAGE_H - 1;
+  186   1          if (top >= SEARCH_IMAGE_H) top = SEARCH_IMAGE_H - 1;
+  187   1          if (under <= top) return;
+  188   1      
+C251 COMPILER V5.60.0,  ring                                                               13/06/26  12:52:10  PAGE 4   
+
+  189   1          den = (int16)(under - top);
+  190   1      
+  191   1          if (!l_r) {
+  192   2              start_col = left_control_line[top];
+  193   2              end_col = left_control_line[under];
+  194   2              for (i = top + 1; i < under; i++) {
+  195   3                  num = (int32)(end_col - start_col) * (int32)(i - top);
+  196   3                  if (num >= 0) val = (int16)(start_col + (num + (den >> 1)) / den);
+  197   3                  else          val = (int16)(start_col + (num - (den >> 1)) / den);
+  198   3                  left_control_line[i] = clamp_col_int16(val);
+  199   3              }
+  200   2          } else {
+  201   2              start_col = right_control_line[top];
+  202   2              end_col = right_control_line[under];
+  203   2              for (i = top + 1; i < under; i++) {
+  204   3                  num = (int32)(end_col - start_col) * (int32)(i - top);
+  205   3                  if (num >= 0) val = (int16)(start_col + (num + (den >> 1)) / den);
+  206   3                  else          val = (int16)(start_col + (num - (den >> 1)) / den);
+  207   3                  right_control_line[i] = clamp_col_int16(val);
+  208   3              }
+  209   2          }
+  210   1      }
+  211          
+  212          /* 判断一条边线是否连续，突变过大则认为当前边线不稳定。 */
+  213          uint8 isContinueLine(uint8 *arr)
+  214          {
+  215   1          int16 i;
+  216   1          uint8 curr;
+  217   1          uint8 prev;
+  218   1      
+  219   1          for (i = SEARCH_IMAGE_H - 1 - PIXEL_OFFSET; i > 7 * PIXEL_OFFSET; i -= PIXEL_OFFSET) {
+  220   2              curr = arr[i];
+  221   2              prev = arr[i - PIXEL_OFFSET];
+  222   2      
+  223   2              if (abs_diff_u8(curr, prev) > 30) {
+  224   3                  return 0;
+  225   3              }
+  226   2          }
+  227   1      
+  228   1          return 1;
+  229   1      }
+  230          
+  231          /* 圆环预判：左右边线一侧连续、一侧不连续时认为可能进入圆环。 */
+  232          uint8 Ring_Pre_Meet(void)
+  233          {
+  234   1          uint8 r_con;
+  235   1          uint8 l_con;
+  236   1       
+  237   1          r_con = isContinueLine(right_edge_line);
+  238   1          l_con = isContinueLine(left_edge_line);
+  239   1      
+  240   1          if (r_con != l_con) {
+  241   2              ring_preMeet_flag = 1;
+  242   2              return 1;
+  243   2          }
+  244   1      
+  245   1          ring_preMeet_flag = 0;
+  246   1          return 0;
+  247   1      }
+  248          
+  249          /* 只返回圆环预判结果，不直接修改主状态标志。 */
+  250          uint8 Ring_Pre_Meet_use(void)
+  251          {
+  252   1          uint8 r_con;
+  253   1          uint8 l_con;
+  254   1      
+C251 COMPILER V5.60.0,  ring                                                               13/06/26  12:52:10  PAGE 5   
+
+  255   1          r_con = isContinueLine(right_edge_line);
+  256   1          l_con = isContinueLine(left_edge_line);
+  257   1      
+  258   1          return (r_con != l_con) ? 1 : 0;
+  259   1      }
+  260          
+  261          static void Ring_First_To_Normal_Check(void)
+  262          {
+  263   1          if (!Ring_Pre_Meet_use()) {
+  264   2              if (++first_to_normal_cnt >= FIRST_TO_NORMAL_CONFIRM_FRAMES) {
+  265   3                  current_step = 0;
+  266   3                  ring_preMeet_flag = 0;
+  267   3                  first_meeting_flag = 0;
+  268   3                  first_to_normal_cnt = 0;
+  269   3              }
+  270   2          } else {
+  271   2              first_to_normal_cnt = 0;
+  272   2          }
+  273   1      }
+  274          
+  275          /* 第一次遇到圆环边线变化时，寻找拐点并尝试补左边线。 */
+  276          void Ring_First_meeting(void)
+  277          {
+  278   1          uint8 i;
+  279   1          uint8 under;
+  280   1          uint8 top;
+  281   1          uint8 mid;
+  282   1          uint8 turnPoint = 0;
+  283   1          uint8 midPoint = 0;
+  284   1      
+  285   1          
+  286   1      
+  287   1          for (i = SEARCH_IMAGE_H - 1 - PIXEL_OFFSET; i > 30; i -= PIXEL_OFFSET) {
+  288   2              under = left_edge_line[i];
+  289   2              top = left_edge_line[i - PIXEL_OFFSET];
+  290   2      
+  291   2              if ((int16)under - (int16)top >= 15) {
+  292   3                  turnPoint = i;
+  293   3                  break;
+  294   3              }
+  295   2          }
+  296   1      
+  297   1          if (turnPoint == 0) {
+  298   2              Ring_First_To_Normal_Check();
+  299   2              return;
+  300   2          }
+  301   1      
+  302   1          for (i = turnPoint - 4; i > 4; i -= 4) {
+  303   2              under = left_edge_line[i + 4];
+  304   2              mid = left_edge_line[i];
+  305   2              top = left_edge_line[i - 4];
+  306   2      
+  307   2              if (mid >= under && mid >= top && mid > 30) {
+  308   3                  midPoint = i;
+  309   3              }
+  310   2          }
+  311   1      
+  312   1          if (midPoint) {
+  313   2              connect_point(turnPoint, midPoint, 0);
+  314   2          }
+  315   1      
+  316   1          if (midPoint &&
+  317   1              left_edge_line[100] <= 2 &&
+  318   1              left_edge_line[85] <= 2 &&
+  319   1              (
+  320   1              left_edge_line[55] <= 20 ||
+C251 COMPILER V5.60.0,  ring                                                               13/06/26  12:52:10  PAGE 6   
+
+  321   1              left_edge_line[30] <= 20 ||
+  322   1              left_edge_line[35] <= 20 ||
+  323   1              left_edge_line[40] <= 20 
+  324   1          
+  325   1              )
+  326   1              ) {
+  327   2              first_meeting_flag = 1;
+  328   2              first_to_normal_cnt = 0;
+  329   2              return;
+  330   2          }
+  331   1      
+  332   1          Ring_First_To_Normal_Check();
+  333   1      }
+  334          
+  335          /* 进入圆环阶段，持续补左边线，直到拐点移动到远端。 */
+  336          void Ring_Enter(void)
+  337          {
+  338   1          uint8 i;
+  339   1          uint8 under;
+  340   1          uint8 mid;
+  341   1          uint8 top;
+  342   1          uint8 ttop;
+  343   1          uint8 uunder;
+  344   1          uint8 midPoint = 0;
+  345   1          uint8 turn_flag = 0;
+  346   1      
+  347   1          for (i = SEARCH_IMAGE_H - 1 - 2 * 2; i > 20; i -= 2) {
+  348   2              uunder = left_edge_line[i + 4 ];
+  349   2              under  = left_edge_line[i + 2];
+  350   2              mid    = left_edge_line[i];
+  351   2              top    = left_edge_line[i - 2];
+  352   2              ttop   = left_edge_line[i - 4];
+  353   2      
+  354   2              if (mid < 8) {
+  355   3                  continue;
+  356   3              }
+  357   2      
+  358   2              if (mid >= under && (mid - under) < 20 &&
+  359   2                  under >= uunder && (under - uunder) < 20 &&
+  360   2                  mid >= top && (mid - top) < 20 &&
+  361   2                  top >= ttop && (top - ttop) < 20 &&
+  362   2                  mid > 20) {
+  363   3                  midPoint = i;
+  364   3                  break;
+  365   3              }
+  366   2          }
+  367   1      
+  368   1          if (midPoint) {
+  369   2              enter_to_first_cnt = 0;
+  370   2              connect_point(SEARCH_IMAGE_H - 1, midPoint, 0);
+  371   2          } else {
+  372   2              if (++enter_to_first_cnt >= ENTER_TO_FIRST_CONFIRM_FRAMES) {
+  373   3                  first_meeting_flag = 0;
+  374   3                  ring_enter_flag = 0;
+  375   3                  mid_under_flag = 0;
+  376   3                  enter_to_first_cnt = 0;
+  377   3                  current_step = 1;
+  378   3              }
+  379   2              return;
+  380   2          }
+  381   1      
+  382   1          if (midPoint >= 60) {
+  383   2              mid_under_flag = 1;
+  384   2          }
+  385   1          for (i = 81; i > 10; i -= 2) {
+  386   2              under = left_edge_line[i];
+C251 COMPILER V5.60.0,  ring                                                               13/06/26  12:52:10  PAGE 7   
+
+  387   2              top = left_edge_line[i - 2];
+  388   2              
+  389   2              if (top - under >= 15 && left_edge_line[110] >= 10 && left_edge_line[i - 4] > 8 &&left_edge_line[
+             -i-6] > 8) {
+  390   3                  turn_flag = 1;
+  391   3                break;
+  392   3              }
+  393   2          }
+  394   1          if (mid_under_flag && (turn_flag || midPoint < 45)) {
+  395   2              ring_enter_flag = 1;
+  396   2              enter_to_first_cnt = 0;
+  397   2          }
+  398   1      }
+  399          
+  400          /* 圆环转向阶段，找到左上拐点后用右控制线辅助车辆转入。 */
+  401          void Ring_Turing(void)
+  402          {
+  403   1          uint8 i;
+  404   1          uint8 under;
+  405   1          uint8 top;
+  406   1          uint8 leftTopPoint = 0;
+  407   1      
+  408   1          for (i = SEARCH_IMAGE_H - 1; i > 10; i -= 2) {
+  409   2              top = left_edge_line[i - 2];
+  410   2              under = left_edge_line[i];
+  411   2      
+  412   2              if (top- under >= 20) {
+  413   3                  leftTopPoint = i - 2;
+  414   3                  break;
+  415   3              }
+  416   2          }
+  417   1      
+  418   1          if (leftTopPoint == 0) {
+  419   2              return;
+  420   2          }
+  421   1      
+  422   1          draw_line(leftTopPoint, SEARCH_IMAGE_H - 1, 1);
+  423   1      
+  424   1          if (leftTopPoint >= controlReferenceLine) {
+  425   2              ring_turn_flag = 1;
+  426   2          }
+  427   1      }
+  428          
+  429          /* 车身处在圆环内部时，修正右控制线并判断是否接近出口。 */
+  430          void Ring_Ring_Ring(void)
+  431          {
+  432   1          uint8 i;
+  433   1          uint8 minPoint = SEARCH_IMAGE_H - 1;
+  434   1          uint8 index;
+  435   1          uint8 minn = SEARCH_IMAGE_W - 1;
+  436   1      
+  437   1          if (cnt_over < IN_TO_OUT_MIN_FRAMES) {
+  438   2              cnt_over++;
+  439   2          }
+  440   1      
+  441   1          if (left_control_line[controlReferenceLine] > Mid_Col) {
+  442   2              left_control_line[controlReferenceLine] = 0;
+  443   2          }
+  444   1      
+  445   1          for (i = SEARCH_IMAGE_H - 1; i > PIXEL_OFFSET * 3; i -= PIXEL_OFFSET) {
+  446   2              index = right_edge_line[i];
+  447   2              if (index < minn) {
+  448   3                  minn = index;
+  449   3                  minPoint = i;
+  450   3              }
+  451   2          }
+C251 COMPILER V5.60.0,  ring                                                               13/06/26  12:52:10  PAGE 8   
+
+  452   1      
+  453   1          if (minPoint > PIXEL_OFFSET &&
+  454   1              minPoint < SEARCH_IMAGE_H - PIXEL_OFFSET &&
+  455   1              (((int16)right_edge_line[minPoint - PIXEL_OFFSET] - (int16)right_edge_line[minPoint] < 30 &&
+  456   1                (int16)right_edge_line[minPoint + PIXEL_OFFSET] - (int16)right_edge_line[minPoint] < 30) ||
+  457   1               minPoint < 40)) {
+  458   2              draw_line(0, SEARCH_IMAGE_H - 1, 1);
+  459   2          }
+  460   1      
+  461   1          if (cnt_over >= IN_TO_OUT_MIN_FRAMES &&
+  462   1              right_edge_line[50] > 180 &&
+  463   1              right_edge_line[60] > 180 &&
+  464   1              right_edge_line[70] > 180 &&
+  465   1              right_edge_line[80] > 180 &&
+  466   1              left_edge_line[50] < 2) {
+  467   2              if (++in_to_out_cnt >= IN_TO_OUT_CONFIRM_FRAMES) {
+  468   3                  Out_flag = 1;
+  469   3                  in_to_out_cnt = 0;
+  470   3              }
+  471   2          } else {
+  472   2              in_to_out_cnt = 0;
+  473   2          }
+  474   1      }
+  475          
+  476          /* 出圆环阶段，继续补右控制线并判断是否可以开始回正。 */
+  477          void Ring_Out(void)
+  478          {
+  479   1          draw_line(0, SEARCH_IMAGE_H - 1, 1);
+  480   1      
+  481   1          if ((left_edge_line[30] > 16 ||
+  482   1               left_edge_line[40] > 16 ||
+  483   1               left_edge_line[50] > 16) &&
+  484   1              right_edge_line[40] < 170 &&
+  485   1              right_edge_line[50] < 170 &&
+  486   1              right_edge_line[60] < 170) {
+  487   2              Straighten_flag = 1;
+  488   2          }
+  489   1      }
+  490          
+  491          /* 回正阶段，重新补左线，等左右边线恢复连续后结束圆环。 */
+  492          void Ring_Straighten(void)
+  493          {
+  494   1          uint8 i;
+  495   1          uint8 under;
+  496   1          uint8 mid;
+  497   1          uint8 top;
+  498   1          uint8 midPoint = 0;
+  499   1      
+  500   1          for (i = SEARCH_IMAGE_H - 1 - PIXEL_OFFSET; i > PIXEL_OFFSET; i -= PIXEL_OFFSET) {
+  501   2              under = left_edge_line[i + PIXEL_OFFSET];
+  502   2              mid = left_edge_line[i];
+  503   2              top = left_edge_line[i - PIXEL_OFFSET];
+  504   2      
+  505   2              if (mid >= under && mid >= top && mid > 30) {
+  506   3                  midPoint = i;
+  507   3              }
+  508   2          }
+  509   1      
+  510   1          if (midPoint) {
+  511   2              connect_point(SEARCH_IMAGE_H - 1, midPoint, 0);
+  512   2          }
+  513   1      
+  514   1          if (isContinueLine(left_edge_line) && isContinueLine(right_edge_line)) {
+  515   2              ring_over_flag = 1;
+  516   2          }
+  517   1      } 
+C251 COMPILER V5.60.0,  ring                                                               13/06/26  12:52:10  PAGE 9   
+
+  518          
+  519          /* 圆环结束或异常复位时，清空所有圆环状态标志。 */
+  520          void Ring_Over(void)
+  521          {
+  522   1          first_meeting_flag = 0;
+  523   1          ring_l = 0;
+  524   1          ring_r = 0;
+  525   1          ring_enter_flag = 0;
+  526   1          ring_turn_flag = 0;
+  527   1          Out_flag = 0;
+  528   1          Straighten_flag = 0;
+  529   1          ring_over_flag = 0;
+  530   1          mid_under_flag = 0;
+  531   1          first_to_normal_cnt = 0;
+  532   1          enter_to_first_cnt = 0;
+  533   1          in_to_out_cnt = 0;
+  534   1          current_step = 0;
+  535   1          cnt_over = 0;
+  536   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =      4262     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =       336     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =       109     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,602 @@
+C251 COMPILER V5.60.0,  usb                                                                13/06/26  12:52:08  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE usb
+OBJECT MODULE PLACED IN .\out_file\usb.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\..\libraries\zf_components\stc32g_usb_lib\usb.c LARGE ROM(HUGE) WAR
+                    -NINGLEVEL(3) OPTIMIZE(0,SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_d
+                    -evice;..\..\libraries\zf_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_componen
+                    -ts\seekfree_assistant) DEBUG PRINT(.\out_file\usb.lst) TABS(2) OBJECT(.\out_file\usb.obj) 
+
+stmt  level    source
+
+    1          /*---------------------------------------------------------------------*/
+    2          /* --- STC MCU Limited ------------------------------------------------*/
+    3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+    4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+    5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+    6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+    7          /* --- Web: www.STCAI.com ---------------------------------------------*/
+    8          /* --- BBS: www.STCAIMCU.com  -----------------------------------------*/
+    9          /* --- QQ:  800003751 -------------------------------------------------*/
+   10          /* 如果要在程序中使用此代码,请在程序中注明使用了STC的资料及程序        */
+   11          /*---------------------------------------------------------------------*/
+   12          
+   13          #include "stc.h"
+   14          #include "usb.h"
+   15          #include "usb_req_std.h"
+   16          #include "usb_req_class.h"
+   17          #include "usb_req_vendor.h"
+   18          #include "util.h"
+   19          
+   20          BYTE DeviceState;
+   21          SETUP Setup;
+   22          EPSTATE Ep0State;
+   23          BYTE InEpState;
+   24          BYTE OutEpState;
+   25          
+   26          BOOL UsbInBusy;
+   27          BOOL UsbOutBusy;
+   28          
+   29          //BYTE RxRptr;
+   30          //BYTE RxWptr;
+   31          //BYTE TxRptr;
+   32          //BYTE TxWptr;
+   33          //BYTE xdata RxBuffer[64];
+   34          
+   35          
+   36          void usb_init()
+   37          {
+   38   1      //    P3M0 &= ~0x03;
+   39   1      //    P3M1 |= 0x03;
+   40   1      //    
+   41   1      //    IRC48MCR = 0x80;
+   42   1      //    while (!(IRC48MCR & 0x01));
+   43   1      
+   44   1          USBCLK = 0x00;
+   45   1          USBCON = 0x90;
+   46   1      
+   47   1          usb_write_reg(FADDR, 0x00);
+   48   1          usb_write_reg(POWER, 0x08);
+   49   1          usb_write_reg(INTRIN1E, 0x3f);
+   50   1          usb_write_reg(INTROUT1E, 0x3f);
+   51   1          usb_write_reg(INTRUSBE, 0x07);
+   52   1          usb_write_reg(POWER, 0x00);
+   53   1      
+   54   1          DeviceState = DEVSTATE_DEFAULT;
+   55   1          Ep0State.bState = EPSTATE_IDLE;
+   56   1          InEpState = 0x00;
+C251 COMPILER V5.60.0,  usb                                                                13/06/26  12:52:08  PAGE 2   
+
+   57   1          OutEpState = 0x00;
+   58   1      
+   59   1          UsbInBusy = 0;
+   60   1          UsbOutBusy = 0;
+   61   1      //    RxRptr = 0;
+   62   1      //    RxWptr = 0;
+   63   1      //    TxRptr = 0;
+   64   1      //    TxWptr = 0;
+   65   1          IP2  |= 0x80;
+   66   1          IP2H |= 0x80;
+   67   1          
+   68   1          EUSB = 1;
+   69   1      }
+   70          
+   71          BYTE usb_read_reg(BYTE addr)
+   72          {
+   73   1        BYTE dat;
+   74   1      
+   75   1        while (USBADR & 0x80);
+   76   1        USBADR = addr | 0x80;
+   77   1        while (USBADR & 0x80);
+   78   1        dat = USBDAT;
+   79   1      
+   80   1        return dat;
+   81   1      }
+   82          
+   83          void usb_write_reg(BYTE addr, BYTE dat)
+   84          {
+   85   1        while (USBADR & 0x80);
+   86   1        USBADR = addr & 0x7f;
+   87   1        USBDAT = dat;
+   88   1      }
+   89          
+   90          BYTE usb_read_fifo(BYTE fifo, BYTE *pdat)
+   91          {
+   92   1          BYTE cnt;
+   93   1          BYTE ret;
+   94   1      
+   95   1          ret = cnt = usb_read_reg(COUNT0);
+   96   1          while (cnt--)
+   97   1          {
+   98   2            *pdat++ = usb_read_reg(fifo);
+   99   2          }
+  100   1      
+  101   1          return ret;
+  102   1      }
+  103          
+  104          void usb_write_fifo(BYTE fifo, BYTE *pdat, BYTE cnt)
+  105          {
+  106   1        while (cnt--)
+  107   1        {
+  108   2              usb_write_reg(fifo, *pdat++);
+  109   2          }
+  110   1      }
+  111          
+  112          void usb_isr() interrupt 25
+  113          {
+  114   1          BYTE intrusb;
+  115   1          BYTE intrin;
+  116   1          BYTE introut;
+  117   1          BYTE adrTemp;
+  118   1      
+  119   1          adrTemp = USBADR;     //USBADR 现场保存，避免主循环里写完 USBADR 后产生中断，在中断里修改了 USBADR 内
+             -容
+  120   1      
+  121   1          intrusb = usb_read_reg(INTRUSB);
+C251 COMPILER V5.60.0,  usb                                                                13/06/26  12:52:08  PAGE 3   
+
+  122   1          intrin = usb_read_reg(INTRIN1);
+  123   1          introut = usb_read_reg(INTROUT1);
+  124   1      
+  125   1          if (intrusb & RSUIF) usb_resume();
+  126   1          if (intrusb & RSTIF) usb_reset();
+  127   1      
+  128   1          if (intrin & EP0IF) usb_setup();
+  129   1      
+  130   1      #ifdef EN_EP1IN
+  131   1          if (intrin & EP1INIF) usb_in_ep1();
+  132   1      #endif
+  133   1      #ifdef EN_EP2IN
+  134   1          if (intrin & EP2INIF) usb_in_ep2();
+  135   1      #endif
+  136   1      #ifdef EN_EP3IN
+                   if (intrin & EP3INIF) usb_in_ep3();
+               #endif
+  139   1      #ifdef EN_EP4IN
+                   if (intrin & EP4INIF) usb_in_ep4();
+               #endif
+  142   1      #ifdef EN_EP5IN
+                   if (intrin & EP5INIF) usb_in_ep5();
+               #endif
+  145   1      
+  146   1      #ifdef EN_EP1OUT
+  147   1          if (introut & EP1OUTIF) usb_out_ep1();
+  148   1      #endif
+  149   1      #ifdef EN_EP2OUT
+                   if (introut & EP2OUTIF) usb_out_ep2();
+               #endif
+  152   1      #ifdef EN_EP3OUT
+                   if (introut & EP3OUTIF) usb_out_ep3();
+               #endif
+  155   1      #ifdef EN_EP4OUT
+                   if (introut & EP4OUTIF) usb_out_ep4();
+               #endif
+  158   1      #ifdef EN_EP5OUT
+                   if (introut & EP5OUTIF) usb_out_ep5();
+               #endif
+  161   1      
+  162   1          if (intrusb & SUSIF) usb_suspend();
+  163   1      
+  164   1          USBADR = adrTemp;    //USBADR 现场恢复
+  165   1      }
+  166          
+  167          void usb_resume()
+  168          {
+  169   1      }
+  170          
+  171          void usb_reset()
+  172          {
+  173   1          usb_write_reg(FADDR, 0x00);
+  174   1          DeviceState = DEVSTATE_DEFAULT;
+  175   1          Ep0State.bState = EPSTATE_IDLE;
+  176   1      
+  177   1      #ifdef EN_EP1IN
+  178   1          usb_write_reg(INDEX, 1);
+  179   1          usb_write_reg(INCSR1, INCLRDT | INFLUSH);
+  180   1      #endif
+  181   1      #ifdef EN_EP2IN
+  182   1          usb_write_reg(INDEX, 2);
+  183   1          usb_write_reg(INCSR1, INCLRDT | INFLUSH);
+  184   1      #endif
+  185   1      #ifdef EN_EP3IN
+                   usb_write_reg(INDEX, 3);
+                   usb_write_reg(INCSR1, INCLRDT | INFLUSH);
+C251 COMPILER V5.60.0,  usb                                                                13/06/26  12:52:08  PAGE 4   
+
+               #endif
+  189   1      #ifdef EN_EP4IN
+                   usb_write_reg(INDEX, 4);
+                   usb_write_reg(INCSR1, INCLRDT | INFLUSH);
+               #endif
+  193   1      #ifdef EN_EP5IN
+                   usb_write_reg(INDEX, 5);
+                   usb_write_reg(INCSR1, INCLRDT | INFLUSH);
+               #endif
+  197   1      #ifdef EN_EP1OUT
+  198   1          usb_write_reg(INDEX, 1);
+  199   1          usb_write_reg(OUTCSR1, OUTCLRDT | OUTFLUSH);
+  200   1      #endif
+  201   1      #ifdef EN_EP2OUT
+                   usb_write_reg(INDEX, 2);
+                   usb_write_reg(OUTCSR1, OUTCLRDT | OUTFLUSH);
+               #endif
+  205   1      #ifdef EN_EP3OUT
+                   usb_write_reg(INDEX, 3);
+                   usb_write_reg(OUTCSR1, OUTCLRDT | OUTFLUSH);
+               #endif
+  209   1      #ifdef EN_EP4OUT
+                   usb_write_reg(INDEX, 4);
+                   usb_write_reg(OUTCSR1, OUTCLRDT | OUTFLUSH);
+               #endif
+  213   1      #ifdef EN_EP5OUT
+                   usb_write_reg(INDEX, 5);
+                   usb_write_reg(OUTCSR1, OUTCLRDT | OUTFLUSH);
+               #endif
+  217   1          usb_write_reg(INDEX, 0);
+  218   1      }
+  219          
+  220          void usb_suspend()
+  221          {
+  222   1      }
+  223          
+  224          void usb_setup()
+  225          {
+  226   1          BYTE csr;
+  227   1      
+  228   1          usb_write_reg(INDEX, 0);
+  229   1          csr = usb_read_reg(CSR0);
+  230   1      
+  231   1          if (csr & STSTL)
+  232   1          {
+  233   2              usb_write_reg(CSR0, csr & ~STSTL);  //对自己写 0 清除标志位
+  234   2              Ep0State.bState = EPSTATE_IDLE;
+  235   2          }
+  236   1          if (csr & SUEND)
+  237   1          {
+  238   2              usb_write_reg(CSR0, csr | SSUEND);  //对 SSUEND 写 1 清除 SUEND 标志位
+  239   2          }
+  240   1      
+  241   1          switch (Ep0State.bState)
+  242   1          {
+  243   2          case EPSTATE_IDLE:
+  244   2              if (csr & OPRDY)
+  245   2              {
+  246   3                  usb_read_fifo(FIFO0, (BYTE *)&Setup);
+  247   3                  Setup.wLength = reverse2(Setup.wLength);
+  248   3                  switch (Setup.bmRequestType & REQUEST_MASK)
+  249   3                  {
+  250   4                  case STANDARD_REQUEST:
+  251   4                      usb_req_std();
+  252   4                      break;
+  253   4                  case CLASS_REQUEST:
+C251 COMPILER V5.60.0,  usb                                                                13/06/26  12:52:08  PAGE 5   
+
+  254   4                      usb_req_class();
+  255   4                      break;
+  256   4                  case VENDOR_REQUEST:
+  257   4                      usb_req_vendor();
+  258   4                      break;
+  259   4                  default:
+  260   4                      usb_setup_stall();
+  261   4                      return;
+  262   4                  }
+  263   3              }
+  264   2              break;
+  265   2          case EPSTATE_DATAIN:
+  266   2              usb_ctrl_in();
+  267   2              break;
+  268   2          case EPSTATE_DATAOUT:
+  269   2              usb_ctrl_out();
+  270   2              break;
+  271   2          }
+  272   1      }
+  273          
+  274          void usb_setup_stall()
+  275          {
+  276   1          Ep0State.bState = EPSTATE_STALL;
+  277   1          usb_write_reg(CSR0, SOPRDY | SDSTL);
+  278   1      }
+  279          
+  280          void usb_setup_in()
+  281          {
+  282   1          Ep0State.bState = EPSTATE_DATAIN;
+  283   1          usb_write_reg(CSR0, SOPRDY);
+  284   1          usb_ctrl_in();
+  285   1      }
+  286          
+  287          void usb_setup_out()
+  288          {
+  289   1          Ep0State.bState = EPSTATE_DATAOUT;
+  290   1          usb_write_reg(CSR0, SOPRDY);
+  291   1      }
+  292          
+  293          void usb_setup_status()
+  294          {
+  295   1          Ep0State.bState = EPSTATE_IDLE;
+  296   1          usb_write_reg(CSR0, SOPRDY | DATEND);
+  297   1      }
+  298          
+  299          void usb_ctrl_in()
+  300          {
+  301   1          BYTE csr;
+  302   1          BYTE cnt;
+  303   1      
+  304   1          usb_write_reg(INDEX, 0);
+  305   1          csr = usb_read_reg(CSR0);
+  306   1          if (csr & IPRDY) return;
+  307   1      
+  308   1          cnt = Ep0State.wSize > EP0_SIZE ? EP0_SIZE : Ep0State.wSize;
+  309   1          usb_write_fifo(FIFO0, Ep0State.pData, cnt);
+  310   1          Ep0State.wSize -= cnt;
+  311   1          Ep0State.pData += cnt;
+  312   1          if (Ep0State.wSize == 0)
+  313   1          {
+  314   2              usb_write_reg(CSR0, IPRDY | DATEND);
+  315   2              Ep0State.bState = EPSTATE_IDLE;
+  316   2          }
+  317   1          else
+  318   1          {
+  319   2              usb_write_reg(CSR0, IPRDY);
+C251 COMPILER V5.60.0,  usb                                                                13/06/26  12:52:08  PAGE 6   
+
+  320   2          }
+  321   1      }
+  322          
+  323          void usb_ctrl_out()
+  324          {
+  325   1          BYTE csr;
+  326   1          BYTE cnt;
+  327   1      
+  328   1          usb_write_reg(INDEX, 0);
+  329   1          csr = usb_read_reg(CSR0);
+  330   1          if (!(csr & OPRDY)) return;
+  331   1      
+  332   1          cnt = usb_read_fifo(FIFO0, Ep0State.pData);
+  333   1          Ep0State.wSize -= cnt;
+  334   1          Ep0State.pData += cnt;
+  335   1          if (Ep0State.wSize == 0)
+  336   1          {
+  337   2              usb_write_reg(CSR0, SOPRDY | DATEND);
+  338   2              Ep0State.bState = EPSTATE_IDLE;
+  339   2          }
+  340   1          else
+  341   1          {
+  342   2              usb_write_reg(CSR0, SOPRDY);
+  343   2          }
+  344   1      
+  345   1          usb_uart_settings();
+  346   1      }
+  347          
+  348          #ifdef EN_EP1IN
+  349          void usb_in_ep1()
+  350          {
+  351   1          BYTE csr;
+  352   1      
+  353   1          usb_write_reg(INDEX, 1);
+  354   1          csr = usb_read_reg(INCSR1);
+  355   1          if (csr & INSTSTL)
+  356   1          {
+  357   2              usb_write_reg(INCSR1, INCLRDT);
+  358   2          }
+  359   1          if (csr & INUNDRUN)
+  360   1          {
+  361   2              usb_write_reg(INCSR1, 0);
+  362   2          }
+  363   1      
+  364   1          UsbInBusy = 0;
+  365   1      }
+  366          #endif
+  367          
+  368          #ifdef EN_EP2IN
+  369          void usb_in_ep2()
+  370          {
+  371   1          BYTE csr;
+  372   1      
+  373   1          usb_write_reg(INDEX, 2);
+  374   1          csr = usb_read_reg(INCSR1);
+  375   1          if (csr & INSTSTL)
+  376   1          {
+  377   2              usb_write_reg(INCSR1, INCLRDT);
+  378   2          }
+  379   1          if (csr & INUNDRUN)
+  380   1          {
+  381   2              usb_write_reg(INCSR1, 0);
+  382   2          }
+  383   1      }
+  384          #endif
+  385          
+C251 COMPILER V5.60.0,  usb                                                                13/06/26  12:52:08  PAGE 7   
+
+  386          #ifdef EN_EP3IN
+               void usb_in_ep3()
+               {
+                   BYTE csr;
+               
+                   usb_write_reg(INDEX, 3);
+                   csr = usb_read_reg(INCSR1);
+                   if (csr & INSTSTL)
+                   {
+                       usb_write_reg(INCSR1, INCLRDT);
+                   }
+                   if (csr & INUNDRUN)
+                   {
+                       usb_write_reg(INCSR1, 0);
+                   }
+               }
+               #endif
+  403          
+  404          #ifdef EN_EP4IN
+               void usb_in_ep4()
+               {
+                   BYTE csr;
+               
+                   usb_write_reg(INDEX, 4);
+                   csr = usb_read_reg(INCSR1);
+                   if (csr & INSTSTL)
+                   {
+                       usb_write_reg(INCSR1, INCLRDT);
+                   }
+                   if (csr & INUNDRUN)
+                   {
+                       usb_write_reg(INCSR1, 0);
+                   }
+               }
+               #endif
+  421          
+  422          #ifdef EN_EP5IN
+               void usb_in_ep5()
+               {
+                   BYTE csr;
+               
+                   usb_write_reg(INDEX, 5);
+                   csr = usb_read_reg(INCSR1);
+                   if (csr & INSTSTL)
+                   {
+                       usb_write_reg(INCSR1, INCLRDT);
+                   }
+                   if (csr & INUNDRUN)
+                   {
+                       usb_write_reg(INCSR1, 0);
+                   }
+               }
+               #endif
+  439          
+  440          #ifdef EN_EP1OUT
+  441          
+  442          extern void (*usb_cdc_read_buffer_handler)(BYTE *buff, WORD len);
+  443          
+  444          void usb_out_ep1()
+  445          {
+  446   1          BYTE csr;
+  447   1          BYTE cnt;
+  448   1          BYTE idx;
+  449   1          BYTE xdata rx_buff[64];
+  450   1          
+  451   1          usb_write_reg(INDEX, 1);
+C251 COMPILER V5.60.0,  usb                                                                13/06/26  12:52:08  PAGE 8   
+
+  452   1          csr = usb_read_reg(OUTCSR1);
+  453   1          
+  454   1          // STALL信号完成标志位
+  455   1          if (csr & OUTSTSTL)
+  456   1          {
+  457   2              usb_write_reg(OUTCSR1, OUTCLRDT);
+  458   2          }
+  459   1          // OUT数据包接收完成标志位
+  460   1          if (csr & OUTOPRDY)
+  461   1          {
+  462   2              cnt = usb_read_reg(OUTCOUNT1);
+  463   2              for(idx = 0; idx <cnt; idx++)
+  464   2              {
+  465   3                  rx_buff[idx] = usb_read_reg(FIFO1);
+  466   3              }
+  467   2              
+  468   2              // 这里暂时不做USB OUT FULL或者FIFO FULL判断。
+  469   2              if(usb_cdc_read_buffer_handler)
+  470   2              {
+  471   3                  usb_cdc_read_buffer_handler(rx_buff, cnt);
+  472   3              }
+  473   2              // OUT数据包接收完成标志位，设置为0，即可接收下一包数据。
+  474   2              usb_write_reg(OUTCSR1, 0);
+  475   2          }
+  476   1      }
+  477          #endif
+  478          
+  479          #ifdef EN_EP2OUT
+               void usb_out_ep2()
+               {
+                   BYTE csr;
+               
+                   usb_write_reg(INDEX, 2);
+                   csr = usb_read_reg(OUTCSR1);
+                   if (csr & OUTSTSTL)
+                   {
+                       usb_write_reg(OUTCSR1, OUTCLRDT);
+                   }
+                   if (csr & OUTOPRDY)
+                   {
+                       usb_bulk_intr_out(Ep2OutBuffer, 2);
+                   }
+               }
+               #endif
+  496          
+  497          #ifdef EN_EP3OUT
+               void usb_out_ep3()
+               {
+                   BYTE csr;
+               
+                   usb_write_reg(INDEX, 3);
+                   csr = usb_read_reg(OUTCSR1);
+                   if (csr & OUTSTSTL)
+                   {
+                       usb_write_reg(OUTCSR1, OUTCLRDT);
+                   }
+                   if (csr & OUTOPRDY)
+                   {
+                       usb_bulk_intr_out(Ep3OutBuffer, 3);
+                   }
+               }
+               #endif
+  514          
+  515          #ifdef EN_EP4OUT
+               void usb_out_ep4()
+               {
+C251 COMPILER V5.60.0,  usb                                                                13/06/26  12:52:08  PAGE 9   
+
+                   BYTE csr;
+               
+                   usb_write_reg(INDEX, 4);
+                   csr = usb_read_reg(OUTCSR1);
+                   if (csr & OUTSTSTL)
+                   {
+                       usb_write_reg(OUTCSR1, OUTCLRDT);
+                   }
+                   if (csr & OUTOPRDY)
+                   {
+                       usb_bulk_intr_out(Ep4OutBuffer, 4);
+                   }
+               }
+               #endif
+  532          
+  533          #ifdef EN_EP5OUT
+               void usb_out_ep5()
+               {
+                   BYTE csr;
+               
+                   usb_write_reg(INDEX, 5);
+                   csr = usb_read_reg(OUTCSR1);
+                   if (csr & OUTSTSTL)
+                   {
+                       usb_write_reg(OUTCSR1, OUTCLRDT);
+                   }
+                   if (csr & OUTOPRDY)
+                   {
+                       usb_bulk_intr_out(Ep5OutBuffer, 5);
+                   }
+               }
+               #endif
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =         4     ------
+  ecode size           =      1380     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =       113     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =         2     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =    ------     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

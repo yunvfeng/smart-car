@@ -1,0 +1,187 @@
+C251 COMPILER V5.60.0,  zf_common_interrupt                                                13/06/26  12:52:05  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_common_interrupt
+OBJECT MODULE PLACED IN .\out_file\zf_common_interrupt.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\..\libraries\zf_common\zf_common_interrupt.c LARGE ROM(HUGE) WARNIN
+                    -GLEVEL(3) OPTIMIZE(0,SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_devi
+                    -ce;..\..\libraries\zf_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\
+                    -seekfree_assistant) DEBUG PRINT(.\out_file\zf_common_interrupt.lst) TABS(2) OBJECT(.\out_file\zf_common_interrupt.obj) 
+
+stmt  level    source
+
+    1          /********************************************************************************************************
+             -*************
+    2          * STC32G144K Opensourec Library 即（STC32G144K 开源库）是一个基于官方 SDK 接口的第三方开源库
+    3          * Copyright (c) 2025 SEEKFREE 逐飞科技
+    4          *
+    5          * 本文件是STC32G144K开源库的一部分
+    6          *
+    7          * STC32G144K 开源库 是免费软件
+    8          * 您可以根据自由软件基金会发布的 GPL（GNU General Public License，即 GNU通用公共许可证）的条款
+    9          * 即 GPL 的第3版（即 GPL3.0）或（您选择的）任何后来的版本，重新发布和/或修改它
+   10          *
+   11          * 本开源库的发布是希望它能发挥作用，但并未对其作任何的保证
+   12          * 甚至没有隐含的适销性或适合特定用途的保证
+   13          * 更多细节请参见 GPL
+   14          *
+   15          * 您应该在收到本开源库的同时收到一份 GPL 的副本
+   16          * 如果没有，请参阅<https://www.gnu.org/licenses/>
+   17          *
+   18          * 额外注明：
+   19          * 本开源库使用 GPL3.0 开源许可证协议 以上许可申明为译文版本
+   20          * 许可申明英文版在 libraries/doc 文件夹下的 GPL3_permission_statement.txt 文件中
+   21          * 许可证副本在 libraries 文件夹下 即该文件夹下的 LICENSE 文件
+   22          * 欢迎各位使用并传播本程序 但修改内容时必须保留逐飞科技的版权声明（即本声明）
+   23          *
+   24          * 文件名称          
+   25          * 公司名称          成都逐飞科技有限公司
+   26          * 版本信息          查看 libraries/doc 文件夹内 version 文件 版本说明
+   27          * 开发环境          MDK FOR C251
+   28          * 适用平台          STC32G144K
+   29          * 店铺链接          https://seekfree.taobao.com/
+   30          *
+   31          * 修改记录
+   32          * 日期              作者           备注
+   33          * 2025-11-20        大W            first version
+   34          *********************************************************************************************************
+             -***********/
+   35          
+   36          #include "zf_common_interrupt.h"
+   37          
+   38          //-------------------------------------------------------------------------------------------------------
+             -------------
+   39          // 函数简介     指定中断设置优先级
+   40          // 参数说明     irqn            
+   41          // 参数说明     priority        抢占式优先级 0到3，0为最低优先级，3为最高优先级
+   42          // 返回参数     void
+   43          // 使用示例     interrupt_set_priority( TIM5_IRQn, 3);
+   44          //                       设置周期中断定时器0的优先级为3
+   45          // 备注信息        其余不能设置的，中断优先级全部为最低优先级0
+   46          //-------------------------------------------------------------------------------------------------------
+             -------------
+   47          void interrupt_set_priority (irqn_type_enum irqn, uint8 priority)
+   48          {
+   49   1        if((irqn >> 4) == 0)
+   50   1        {
+   51   2          IP  |= (priority & 0x01) << (irqn & 0x0F);
+   52   2          IPH |= ((priority >> 1) & 0x01) << (irqn & 0x0F);
+C251 COMPILER V5.60.0,  zf_common_interrupt                                                13/06/26  12:52:05  PAGE 2   
+
+   53   2        }
+   54   1        else if((irqn >> 4) == 1)
+   55   1        {
+   56   2          IP2  |= (priority & 0x01) << (irqn & 0x0F);
+   57   2          IP2H |= ((priority >> 1) & 0x01) << (irqn & 0x0F);
+   58   2        }
+   59   1        else if((irqn >> 4) == 2)
+   60   1        {
+   61   2      //    IP3  |= (priority & 0x01) << (irqn & 0x0F);
+   62   2      //    IP3H |= ((priority >> 1) & 0x01) << (irqn & 0x0F);
+   63   2        }
+   64   1        else 
+   65   1        {
+   66   2          switch (irqn)
+   67   2          {
+   68   3            case TIM5_IRQn: T6T5CFG &= ~(3<<1);   T6T5CFG |= priority << 1; break;
+   69   3            case TIM6_IRQn: T6T5CFG &= ~(3<<6);   T6T5CFG |= priority << 6;break;
+   70   3            case TIM7_IRQn: T8T7CFG &= ~(3<<1);   T8T7CFG |= priority << 1;break;
+   71   3            case TIM8_IRQn: T8T7CFG &= ~(3<<6);   T8T7CFG |= priority << 6;break;
+   72   3            case TIM9_IRQn: T10T9CFG &= ~(3<<1);  T10T9CFG |= priority << 1;break;
+   73   3            case TIM10_IRQn:T10T9CFG &= ~(3<<6);  T10T9CFG |= priority << 6;break;
+   74   3            case TIM17_IRQn:T18T17CFG &= ~(3<<1); T18T17CFG |= priority << 1;break;
+   75   3            case TIM18_IRQn:T18T17CFG &= ~(3<<6); T18T17CFG |= priority << 6;break;
+   76   3      
+   77   3            case UART1_DMA_IRQn: DMA_UR1R_CFG &= ~(3<<2); DMA_UR1R_CFG |= priority << 2;break;
+   78   3            case UART2_DMA_IRQn: DMA_UR2R_CFG &= ~(3<<2); DMA_UR2R_CFG |= priority << 2;break;
+   79   3            case UART3_DMA_IRQn: DMA_UR3R_CFG &= ~(3<<2); DMA_UR3R_CFG |= priority << 2;break;
+   80   3            case UART4_DMA_IRQn: DMA_UR4R_CFG &= ~(3<<2); DMA_UR4R_CFG |= priority << 2;break;
+   81   3            case UART5_DMA_IRQn: DMA_UR5R_CFG &= ~(3<<2); DMA_UR5R_CFG |= priority << 2;break;
+   82   3            case UART6_DMA_IRQn: DMA_UR6R_CFG &= ~(3<<2); DMA_UR6R_CFG |= priority << 2;break;
+   83   3            case UART7_DMA_IRQn: DMA_UR7R_CFG &= ~(3<<2); DMA_UR7R_CFG |= priority << 2;break;
+   84   3            case UART8_DMA_IRQn: DMA_UR8R_CFG &= ~(3<<2); DMA_UR8R_CFG |= priority << 2;break;
+   85   3      
+   86   3            case LCM_DMA_IRQn:DMA_LCM_CFG &= ~(3<<2); DMA_LCM_CFG |= priority << 2;break;
+   87   3            
+   88   3            case P0_INI_IRQ: //P0到P7共用2个字节控制中断优先级
+   89   3            case P1_INI_IRQ:
+   90   3            case P2_INI_IRQ: 
+   91   3            case P3_INI_IRQ: 
+   92   3            case P4_INI_IRQ: 
+   93   3            case P5_INI_IRQ: 
+   94   3            case P6_INI_IRQ: 
+   95   3            case P7_INI_IRQ: 
+   96   3              if(priority / 2){PINIPH |= (0x01 << (irqn & 0x0f));}
+   97   3              else{PINIPH &= ~(0x01 << (irqn & 0x0f));}
+   98   3              if(priority % 2){PINIPL |= (0x01 << (irqn & 0x0f));}
+   99   3              else{PINIPL |= (0x01 << (irqn & 0x0f));}
+  100   3              break;
+  101   3            case P8_INI_IRQ: //P8到PB共用2个字节控制中断优先级
+  102   3            case P9_INI_IRQ: 
+  103   3            case PA_INI_IRQ: 
+  104   3            case PB_INI_IRQ: 
+  105   3              if(priority / 2){PIN2IPH |= (0x01 << (irqn & 0x0f));}
+  106   3              else{PIN2IPH &= ~(0x01 << (irqn & 0x0f));}
+  107   3              if(priority % 2){PIN2IPL |= (0x01 << (irqn & 0x0f));}
+  108   3              else{PIN2IPL |= (0x01 << (irqn & 0x0f));}
+  109   3              break;
+  110   3          }
+  111   2        }
+  112   1      }
+  113          
+  114          //-------------------------------------------------------------------------------------------------------
+             -------------
+  115          // 函数简介     关闭全局中断
+  116          // 参数说明     void            
+  117          // 返回参数     void
+C251 COMPILER V5.60.0,  zf_common_interrupt                                                13/06/26  12:52:05  PAGE 3   
+
+  118          // 使用示例     
+  119          //             
+  120          // 备注信息        
+  121          //-------------------------------------------------------------------------------------------------------
+             -------------
+  122          void interrupt_global_disable(void)
+  123          {
+  124   1          EA = 0;
+  125   1      }
+  126          
+  127          //-------------------------------------------------------------------------------------------------------
+             -------------
+  128          // 函数简介     开启全局中断
+  129          // 参数说明     void            
+  130          // 返回参数     void
+  131          // 使用示例     
+  132          //             
+  133          // 备注信息        
+  134          //-------------------------------------------------------------------------------------------------------
+             -------------
+  135          void interrupt_global_enable(void)
+  136          {
+  137   1          EA = 1;
+  138   1      }
+  139          
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =      1592     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =         3     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =    ------     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

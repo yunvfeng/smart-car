@@ -1,0 +1,112 @@
+C251 COMPILER V5.60.0,  param                                                              09/05/26  22:49:17  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE param
+OBJECT MODULE PLACED IN .\out_file\param.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE param.c LARGE ROM(HUGE) WARNINGLEVEL(3) OPTIMIZE(0,SIZE) BROWSE INCDIR
+                    -(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\user;..\
+                    -code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekfree_assistant) DEBUG PRINT(.\out_fi
+                    -le\param.lst) TABS(2) OBJECT(.\out_file\param.obj) 
+
+stmt  level    source
+
+    1          #include "param.h"
+    2          #include <string.h> // 提供 memset 支持
+    3          #include "zf_driver_eeprom.h"
+    4          #include <stdio.h>
+    5          
+    6          // 定义存储地址（从 0 地址开始存储）
+    7          #define SAVE_ADDR       0x0000  
+    8          // 定义校验魔数，用于判断 EEPROM 是否曾经写入过数据
+    9          #define PARAMS_MAGIC    0x5A
+   10          
+   11          // 全局结构体实例化
+   12          SystemParams_t xdata g_Params;
+   13          SystemState_t  xdata g_State;
+   14          CarState_e     xdata g_CarState = FSM_STANDBY;
+   15          
+   16          // ---------------------------------------------------------
+   17          // 函数功能：出厂默认参数装载
+   18          // ---------------------------------------------------------
+   19          void Params_Init(void) {
+   20   1          // 动力学域
+   21   1          g_Params.base_speed        = 500;  
+   22   1          g_Params.target_speed      = 50;   
+   23   1          g_Params.max_speed_limit   = 2000;  // 对应 MOTOR_MAX_LIMIT
+   24   1          g_Params.stall_protect_err = 1000;  // 速度偏差大于 4000 视为可能堵转
+   25   1      
+   26   1          // 转向域 (定点数 Q10 格式: 1.0 -> 1024)
+   27   1          g_Params.Kp_Steer          = 4500;  // float 1.8
+   28   1          g_Params.Kd_Steer          = 2000;  // float 6.0 
+   29   1          g_Params.Kf_Curve          = 1000;   // float 0.5 (前馈系数，根据曲率提前动作)
+   30   1          g_Params.servo_center      = 700;   // 引用自 servo.h 的默认中值
+   31   1      
+   32   1          // 电机域
+   33   1          g_Params.Kp_Motor          = 1024;  // float 1.0
+   34   1          g_Params.Ki_Motor          = 150;   // float 0.15
+   35   1      
+   36   1          // 视觉域
+   37   1          g_Params.target_lost_tolerance = 5; 
+   38   1          g_Params.laser_shoot_delay     = 200; 
+   39   1          g_Params.aim_offset_x          = 0;   // 发车前根据实际激光落点在此调参校准
+   40   1          g_Params.aim_offset_y          = -20; // 假设激光器装在摄像头下方，存在 Y 轴偏差
+   41   1      }
+   42          void Params_Load(void) {
+   43   1          uint8 magic;
+   44   1          iap_init(); 
+   45   1          
+   46   1          magic = iap_read_byte(SAVE_ADDR);
+   47   1          
+   48   1          if (magic == PARAMS_MAGIC) {
+   49   2              // 使用正确的结构体名字 SystemParams_t 
+   50   2              iap_read_buff(SAVE_ADDR + 1, (uint8 *)&g_Params, sizeof(SystemParams_t));
+   51   2              printf("EEPROM: Load Success!\r\n");
+   52   2          } else {
+   53   2              printf("EEPROM: First Boot, Using Defaults...\r\n");
+   54   2              // 这里直接调用 Params_Init，保证名字和大小绝对统一
+   55   2              Params_Init();
+   56   2              Params_Save();
+C251 COMPILER V5.60.0,  param                                                              09/05/26  22:49:17  PAGE 2   
+
+   57   2          }
+   58   1      }
+   59          
+   60          // ---------------------------------------------------------
+   61          // 函数功能：保存到 EEPROM
+   62          // ---------------------------------------------------------
+   63          void Params_Save(void) {
+   64   1          uint8 magic = PARAMS_MAGIC;
+   65   1          iap_write_byte(SAVE_ADDR, magic);
+   66   1          
+   67   1          // 同样对齐结构体名字
+   68   1          extern_iap_write_buff(SAVE_ADDR + 1, (uint8 *)&g_Params, sizeof(SystemParams_t));
+   69   1          printf("EEPROM: All Parameters Saved!\r\n");
+   70   1      }
+   71          
+   72          void State_Clear(void) {
+   73   1          memset(&g_State, 0, sizeof(SystemState_t));
+   74   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =       306     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =        67     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =       103     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

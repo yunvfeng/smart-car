@@ -1,0 +1,133 @@
+C251 COMPILER V5.60.0,  zf_driver_delay                                                    13/06/26  12:52:06  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_driver_delay
+OBJECT MODULE PLACED IN .\out_file\zf_driver_delay.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\..\libraries\zf_driver\zf_driver_delay.c LARGE ROM(HUGE) WARNINGLEV
+                    -EL(3) OPTIMIZE(0,SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;.
+                    -.\..\libraries\zf_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seek
+                    -free_assistant) DEBUG PRINT(.\out_file\zf_driver_delay.lst) TABS(2) OBJECT(.\out_file\zf_driver_delay.obj) 
+
+stmt  level    source
+
+    1          /********************************************************************************************************
+             -*************
+    2          * STC32G144K Opensourec Library 即（STC32G144K 开源库）是一个基于官方 SDK 接口的第三方开源库
+    3          * Copyright (c) 2025 SEEKFREE 逐飞科技
+    4          *
+    5          * 本文件是STC32G144K开源库的一部分
+    6          *
+    7          * STC32G144K 开源库 是免费软件
+    8          * 您可以根据自由软件基金会发布的 GPL（GNU General Public License，即 GNU通用公共许可证）的条款
+    9          * 即 GPL 的第3版（即 GPL3.0）或（您选择的）任何后来的版本，重新发布和/或修改它
+   10          *
+   11          * 本开源库的发布是希望它能发挥作用，但并未对其作任何的保证
+   12          * 甚至没有隐含的适销性或适合特定用途的保证
+   13          * 更多细节请参见 GPL
+   14          *
+   15          * 您应该在收到本开源库的同时收到一份 GPL 的副本
+   16          * 如果没有，请参阅<https://www.gnu.org/licenses/>
+   17          *
+   18          * 额外注明：
+   19          * 本开源库使用 GPL3.0 开源许可证协议 以上许可申明为译文版本
+   20          * 许可申明英文版在 libraries/doc 文件夹下的 GPL3_permission_statement.txt 文件中
+   21          * 许可证副本在 libraries 文件夹下 即该文件夹下的 LICENSE 文件
+   22          * 欢迎各位使用并传播本程序 但修改内容时必须保留逐飞科技的版权声明（即本声明）
+   23          *
+   24          * 文件名称          
+   25          * 公司名称          成都逐飞科技有限公司
+   26          * 版本信息          查看 libraries/doc 文件夹内 version 文件 版本说明
+   27          * 开发环境          MDK FOR C251
+   28          * 适用平台          STC32G144K
+   29          * 店铺链接          https://seekfree.taobao.com/
+   30          *
+   31          * 修改记录
+   32          * 日期              作者           备注
+   33          * 2025-11-20        大W            first version
+   34          *********************************************************************************************************
+             -***********/
+   35          
+   36          #include "zf_driver_delay.h"
+   37          
+   38          //-------------------------------------------------------------------------------------------------------
+             -------------
+   39          // 函数简介     软件延时
+   40          // 参数说明     period              设置的值
+   41          // 返回参数     void
+   42          // 使用示例     内部使用，用户无需关心
+   43          //-------------------------------------------------------------------------------------------------------
+             -------------
+   44          void soft_delay(uint32 count)
+   45          {
+   46   1          uint32 edata i = 0;
+   47   1      
+   48   1        i = count;
+   49   1        while (i) i--;
+   50   1      }
+   51          
+   52          
+C251 COMPILER V5.60.0,  zf_driver_delay                                                    13/06/26  12:52:06  PAGE 2   
+
+   53          //-------------------------------------------------------------------------------------------------------
+             -------------
+   54          // 函数简介     系统延时，使用定时器11
+   55          // 参数说明     period              设置的值
+   56          // 返回参数     void
+   57          // 使用示例     内部使用，用户无需关心
+   58          //-------------------------------------------------------------------------------------------------------
+             -------------
+   59          void system_delay(uint32 period)
+   60          {
+   61   1          uint8 freq_div;                
+   62   1          uint16 period_temp;               
+   63   1          uint16 temp;
+   64   1      
+   65   1          T11CR = 0;
+   66   1          if(period > (255 * 65535))
+   67   1          {
+   68   2              // 设置定时器为12T模式防止溢出
+   69   2              period = (period + 5) / 12;  // 四舍五入，降低整数除法误差
+   70   2              T11CR &= ~0x10;
+   71   2          }
+   72   1          else
+   73   1          {
+   74   2              // 设置为1T模式
+   75   2              T11CR |= 0x10;
+   76   2          }
+   77   1          
+   78   1          freq_div = ((period) >> 16);                    // 计算预分频
+   79   1          period_temp = ((period) / (freq_div + 1));      // 计算自动重装载值
+   80   1          temp = (uint16)65535 - period_temp;
+   81   1      
+   82   1          T11PS = freq_div;                             // 设置分频值
+   83   1          T11L = temp;
+   84   1          T11H = temp >> 8;
+   85   1          T11CR |= 0x80;                                  // 启动定时器
+   86   1          
+   87   1          while(!(T11CR & 0x01));                         // 等待硬件定时器溢出
+   88   1      
+   89   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =       325     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =        13     ------
+  xdata-const size     =    ------     ------
+  edata size           =         4     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =    ------     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

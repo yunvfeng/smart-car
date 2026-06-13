@@ -1,0 +1,270 @@
+C251 COMPILER V5.60.0,  laser                                                              13/06/26  12:52:10  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE laser
+OBJECT MODULE PLACED IN .\out_file\laser.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\code\laser.c LARGE ROM(HUGE) WARNINGLEVEL(3) OPTIMIZE(0,SIZE) BROWS
+                    -E INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\
+                    -user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekfree_assistant) DEBUG PRINT(
+                    -.\out_file\laser.lst) TABS(2) OBJECT(.\out_file\laser.obj) 
+
+stmt  level    source
+
+    1          #include "laser.h"
+    2          #include "image.h"
+    3          
+    4          uint16 tar_i = 0;
+    5          uint8 tar_flag = 0;
+    6          uint8 tar_x = 0;
+    7          uint8 tar_y = 0;
+    8          uint8 tar_th = 120;
+    9          int16 center_offset = 0;
+   10          uint8 aim_ready_flag = 0;
+   11          
+   12          uint8 top_d = 0;
+   13          uint8 under_d = 0;
+   14          uint8 l_d = 0;
+   15          uint8 r_d = 0;
+   16          uint8 debug_stage = 0;
+   17          uint8 pre_find_flag = 0;
+   18          int8 pre_find_offset = 0;
+   19          
+   20          #define LASER_PIN      IO_P67
+   21          #define Pre_Line       100
+   22          #define TopFind        25
+   23          #define BottomFind     110
+   24          #define MinTargetH     10
+   25          #define MinTargetW     10
+   26          #define MaxTargetH     44
+   27          #define MaxTargetW     44
+   28          #define FindOffset     4
+   29          #define AimTolerance   5
+   30          #define ShootTicks     2
+   31          #define CooldownTicks  34
+   32          
+   33          static int16 abs_i16(int16 x)
+   34          {
+   35   1          return (x < 0) ? (int16)(-x) : x;
+   36   1      }
+   37          
+   38          /* 将数值限制在指定范围内，避免目标搜索越界。 */
+   39          static int16 clamp_i16(int16 x, int16 min_v, int16 max_v)
+   40          {
+   41   1          if (x < min_v) return min_v;
+   42   1          if (x > max_v) return max_v;
+   43   1          return x;
+   44   1      }
+   45          
+   46          /* 初始化激光 GPIO，默认关闭。 */
+   47          void laser_init(void)
+   48          {
+   49   1          gpio_init(LASER_PIN, GPO, 0, GPO_PUSH_PULL);
+   50   1      }
+   51          
+   52          /* 打开激光输出。 */
+   53          void laser_on(void)
+   54          {
+   55   1          gpio_set_level(LASER_PIN, 1);
+   56   1      }
+C251 COMPILER V5.60.0,  laser                                                              13/06/26  12:52:10  PAGE 2   
+
+   57          
+   58          /* 关闭激光输出。 */
+   59          void laser_off(void)
+   60          {
+   61   1          gpio_set_level(LASER_PIN, 0);
+   62   1      }
+   63          
+   64          void Laser_Task(void)
+   65          {
+   66   1          static uint8 shoot_cnt = 0;
+   67   1          static uint8 cooldown_cnt = 0;
+   68   1      
+   69   1          if (cooldown_cnt) {
+   70   2              cooldown_cnt--;
+   71   2              shoot_cnt = 0;
+   72   2              laser_off();
+   73   2              return;
+   74   2          }
+   75   1      
+   76   1          if (!shoot_cnt && aim_ready_flag) {
+   77   2              shoot_cnt = ShootTicks;
+   78   2          }
+   79   1      
+   80   1          if (shoot_cnt && aim_ready_flag) {
+   81   2              laser_on();
+   82   2              shoot_cnt--;
+   83   2              if (!shoot_cnt) {
+   84   3                  cooldown_cnt = CooldownTicks;
+   85   3              }
+   86   2          } else {
+   87   2              laser_off();
+   88   2              if (shoot_cnt) {
+   89   3                  shoot_cnt = 0;
+   90   3                  cooldown_cnt = CooldownTicks;
+   91   3              }
+   92   2          }
+   93   1      }
+   94          
+   95          /* 在预扫描行上粗略寻找目标横向位置，给后续精找提供偏移量。 */
+   96          void Pre_Scan(void)
+   97          {
+   98   1          int16 i;
+   99   1          uint8 x;
+  100   1          uint8 pre_l = 0;
+  101   1          uint8 pre_r = 0;
+  102   1          int16 l_edge;
+  103   1          int16 r_edge;
+  104   1      
+  105   1          pre_find_flag = 0;
+  106   1      
+  107   1          l_edge = left_edge_line[Pre_Line] + 4;
+  108   1          r_edge = right_edge_line[Pre_Line] - 4;
+  109   1      
+  110   1          l_edge = clamp_i16(l_edge, 0, SEARCH_IMAGE_W - 1);
+  111   1          r_edge = clamp_i16(r_edge, 0, SEARCH_IMAGE_W - 1);
+  112   1      
+  113   1          if (r_edge <= l_edge + 8) {
+  114   2              pre_find_offset = 0;
+  115   2              return;
+  116   2          }
+  117   1      
+  118   1          for (i = l_edge; i < r_edge; i += 2) {
+  119   2              x = mt9v03x_image[Pre_Line][i];
+  120   2              if (x < tar_th) {
+  121   3                  pre_l = (uint8)i;
+  122   3                  break;
+C251 COMPILER V5.60.0,  laser                                                              13/06/26  12:52:10  PAGE 3   
+
+  123   3              }
+  124   2          }
+  125   1      
+  126   1          for (i = r_edge; i > l_edge; i -= 2) {
+  127   2              x = mt9v03x_image[Pre_Line][i];
+  128   2              if (x < tar_th) {
+  129   3                  pre_r = (uint8)i;
+  130   3                  break;
+  131   3              }
+  132   2          }
+  133   1      
+  134   1          if (pre_r <= pre_l || pre_l == 0 || pre_r == 0 || pre_r - pre_l < 8) {
+  135   2              pre_find_offset = 0;
+  136   2              return;
+  137   2          }
+  138   1      
+  139   1          pre_find_offset = (int8)(((int16)pre_l + (int16)pre_r) / 2 - (SEARCH_IMAGE_W / 2));
+  140   1          pre_find_flag = 1;
+  141   1      }
+  142          
+  143          /* 沿预扫描得到的偏移位置查找目标区域，并更新目标坐标和标志位。 */
+  144          void Target_find(int8 midOffset)
+  145          {
+  146   1          int16 i;
+  147   1          int16 j;
+  148   1          int16 center_x;
+  149   1          uint8 target_w;
+  150   1          uint8 target_h;
+  151   1          uint8 tar_y_local;
+  152   1          uint8 far *row_ptr;
+  153   1      
+  154   1          tar_flag = 0;
+  155   1          center_offset = 0;
+  156   1          aim_ready_flag = 0;
+  157   1          debug_stage = 0;
+  158   1      
+  159   1          top_d = 0;
+  160   1          under_d = 0;
+  161   1          l_d = 0;
+  162   1          r_d = 0;
+  163   1      
+  164   1          center_x = (SEARCH_IMAGE_W >> 1) + midOffset;
+  165   1          center_x = clamp_i16(center_x, 2, SEARCH_IMAGE_W - 3);
+  166   1      
+  167   1          for (i = TopFind; i < BottomFind; i += FindOffset) {
+  168   2              if (mt9v03x_image[i][center_x] < tar_th) {
+  169   3                  top_d = (uint8)i;
+  170   3                  debug_stage = 1;
+  171   3                  break;
+  172   3              }
+  173   2          }
+  174   1          if (top_d == 0) return;
+  175   1      
+  176   1          for (i = BottomFind; i > TopFind; i -= FindOffset) {
+  177   2              if (mt9v03x_image[i][center_x] < tar_th) {
+  178   3                  under_d = (uint8)i;
+  179   3                  debug_stage = 2;
+  180   3                  break;
+  181   3              }
+  182   2          }
+  183   1          if (under_d == 0) return;
+  184   1      
+  185   1          if (under_d <= top_d) return;
+  186   1          if ((under_d - top_d) < MinTargetH) return;
+  187   1      
+  188   1          tar_y_local = (top_d + under_d) >> 1;
+C251 COMPILER V5.60.0,  laser                                                              13/06/26  12:52:10  PAGE 4   
+
+  189   1          debug_stage = 3;
+  190   1      
+  191   1          row_ptr = mt9v03x_image[tar_y_local];
+  192   1      
+  193   1          for (j = center_x; j >= FindOffset; j -= FindOffset) {
+  194   2              if (row_ptr[j] < tar_th) {
+  195   3                  l_d = (uint8)j;
+  196   3                  debug_stage = 4;
+  197   3                  break;
+  198   3              }
+  199   2          }
+  200   1          if (l_d == 0) return;
+  201   1      
+  202   1          for (j = center_x; j < SEARCH_IMAGE_W - FindOffset; j += FindOffset) {
+  203   2              if (row_ptr[j] < tar_th) {
+  204   3                  r_d = (uint8)j;
+  205   3                  debug_stage = 5;
+  206   3                  break;
+  207   3              }
+  208   2          }
+  209   1          if (r_d == 0) return;
+  210   1      
+  211   1          if (r_d <= l_d) return;
+  212   1          target_w = r_d - l_d;
+  213   1          target_h = under_d - top_d;
+  214   1          if (target_w < MinTargetW || target_w > MaxTargetW) return;
+  215   1          if (target_h < MinTargetH || target_h > MaxTargetH) return;
+  216   1          if (target_w > (uint8)(target_h * 3u)) return;
+  217   1          if (target_h > (uint8)(target_w * 3u)) return;
+  218   1      
+  219   1          if (l_d <= 1) return;
+  220   1          if (r_d >= SEARCH_IMAGE_W - 2) return;
+  221   1      
+  222   1          tar_x = (l_d + r_d) >> 1;
+  223   1          tar_y = tar_y_local;
+  224   1          center_offset = (int16)tar_x - (int16)Mid_Col;
+  225   1          aim_ready_flag = (abs_i16(center_offset) < AimTolerance) ? 1 : 0;
+  226   1          tar_flag = 1;
+  227   1          debug_stage = 6;
+  228   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =      1581     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =        49     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =        98     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

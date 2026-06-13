@@ -1,0 +1,123 @@
+C251 COMPILER V5.60.0,  strategy                                                           02/05/26  17:12:21  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE strategy
+OBJECT MODULE PLACED IN .\out_file\strategy.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE strategy.c LARGE ROM(HUGE) WARNINGLEVEL(3) OPTIMIZE(0,SIZE) BROWSE INC
+                    -DIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\user;
+                    -..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekfree_assistant) DEBUG PRINT(.\out
+                    -_file\strategy.lst) TABS(2) OBJECT(.\out_file\strategy.obj) 
+
+stmt  level    source
+
+    1          #include "strategy.h"
+    2          #include "pid.h"
+    3          #include "motor.h"
+    4          #include "servo.h"
+    5          #include "encoder.h"
+    6          
+    7          int16 Cur_PWM_L = 0;
+    8          int16 Cur_PWM_R = 0;
+    9          // --- 舵机控制任务：参数全开放 ---
+   10          int16 Servo_Control_Task(int16 current_error, int16 curvature, int16 current_speed, 
+   11                                   int32 kp, int32 kd, int32 kff1, int32 kff2) {
+   12   1          int32 pd_feedback;
+   13   1          int32 feedforward;
+   14   1          int32 v_square;
+   15   1          int16 final_offset;
+   16   1          int16 final_duty;
+   17   1      
+   18   1          // 实时更新 PID 结构体参数 (来自 WiFi 调参变量)
+   19   1          Steer_PID.p = kp;
+   20   1          Steer_PID.d = kd;
+   21   1      
+   22   1          // 1. 反馈计算
+   23   1          pd_feedback = PID_Compute_Pos(&Steer_PID, current_error);
+   24   1      
+   25   1          // 2. 前馈计算 (使用传入的 kff1, kff2)
+   26   1          v_square = (int32)current_speed * current_speed;
+   27   1          feedforward = (kff1 * curvature) + ((kff2 * v_square * curvature) >> 15);
+   28   1          feedforward = feedforward >> 10; 
+   29   1      
+   30   1          final_offset = (int16)(feedforward + pd_feedback);
+   31   1          final_duty = STEER_CENTER + final_offset;
+   32   1      
+   33   1          if (final_duty > STEER_MAX_LIMIT) final_duty = STEER_MAX_LIMIT;
+   34   1          if (final_duty < STEER_MIN_LIMIT) final_duty = STEER_MIN_LIMIT;
+   35   1      
+   36   1          Set_Servo_Duty(final_duty);
+   37   1          return (final_duty - STEER_CENTER); 
+   38   1      }
+   39          
+   40          // --- 电机控制任务：参数全开放 ---
+   41          void Motor_Control_Task(int16 base_speed, int16 curvature, int16 steering_offset, 
+   42                                  int32 kp, int32 ki, int32 kd, int32 ack_k) {
+   43   1          int32 delta_v;
+   44   1          int16 target_L, target_R;
+   45   1          int16 speed_now_L, speed_now_R;
+   46   1          int16 pwm_out_L, pwm_out_R;
+   47   1          int16 planned_speed; // 规划后的目标速度
+   48   1      
+   49   1          if (base_speed <= 0) {
+   50   2              Motor_L_PID.target = 0;
+   51   2              Motor_R_PID.target = 0;
+   52   2              Motor_L_PID.out_accum = 0; // 清空 PID 累加
+   53   2              Motor_R_PID.out_accum = 0;
+   54   2              Set_Motor_PWM(0, 0); 
+   55   2              return; 
+   56   2          }
+C251 COMPILER V5.60.0,  strategy                                                           02/05/26  17:12:21  PAGE 2   
+
+   57   1          // ==========================================================
+   58   1          // 1. 动态速度规划 (Dynamic Speed Planning)
+   59   1          // 逻辑：根据当前赛道曲率绝对值进行非线性减速，防止急弯冲出
+   60   1          // ==========================================================
+   61   1          // 这里的 12 为减速系数（Q0），可根据实际路况在参数管理中增加该变量
+   62   1          planned_speed = base_speed - (abs(curvature) * 12); 
+   63   1          if (planned_speed < 100) planned_speed = 100; // 强制保底速度，防止由于计算偏差导致停车
+   64   1      
+   65   1          // 2. 实时更新 PID 参数[cite: 1]
+   66   1          Motor_L_PID.p = Motor_R_PID.p = kp;
+   67   1          Motor_L_PID.i = Motor_R_PID.i = ki;
+   68   1          Motor_L_PID.d = Motor_R_PID.d = kd;
+   69   1      
+   70   1          // 3. 阿克曼差速计算 (基于规划后的速度)[cite: 1]
+   71   1          delta_v = ((int32)planned_speed * ack_k * steering_offset) >> 14; 
+   72   1          target_L = planned_speed + (int16)delta_v;
+   73   1          target_R = planned_speed - (int16)delta_v;
+   74   1      
+   75   1          Motor_L_PID.target = target_L;
+   76   1          Motor_R_PID.target = target_R;
+   77   1      
+   78   1          // 4. 执行速度环 PID 并输出[cite: 1]
+   79   1          Get_Speed(&speed_now_L, &speed_now_R);
+   80   1          Cur_PWM_L = PID_Compute_Inc(&Motor_L_PID, speed_now_L);
+   81   1          Cur_PWM_R = PID_Compute_Inc(&Motor_R_PID, speed_now_R);
+   82   1          pwm_out_L = Cur_PWM_L;
+   83   1          pwm_out_R = Cur_PWM_R;
+   84   1          Set_Motor_PWM(pwm_out_L, pwm_out_R); 
+   85   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =       839     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =        82     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =        14     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,130 @@
+C251 COMPILER V5.60.0,  usb_req_class                                                      13/06/26  12:52:09  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE usb_req_class
+OBJECT MODULE PLACED IN .\out_file\usb_req_class.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\..\libraries\zf_components\stc32g_usb_lib\usb_req_class.c LARGE ROM
+                    -(HUGE) WARNINGLEVEL(3) OPTIMIZE(0,SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libr
+                    -aries\zf_device;..\..\libraries\zf_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\z
+                    -f_components\seekfree_assistant) DEBUG PRINT(.\out_file\usb_req_class.lst) TABS(2) OBJECT(.\out_file\usb_req_class.obj) 
+
+stmt  level    source
+
+    1          /*---------------------------------------------------------------------*/
+    2          /* --- STC MCU Limited ------------------------------------------------*/
+    3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+    4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+    5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+    6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+    7          /* --- Web: www.STCAI.com ---------------------------------------------*/
+    8          /* --- BBS: www.STCAIMCU.com  -----------------------------------------*/
+    9          /* --- QQ:  800003751 -------------------------------------------------*/
+   10          /* 如果要在程序中使用此代码,请在程序中注明使用了STC的资料及程序        */
+   11          /*---------------------------------------------------------------------*/
+   12          
+   13          #include "stc.h"
+   14          #include "usb.h"
+   15          #include "usb_req_class.h"
+   16          #include "util.h"
+   17          
+   18          
+   19          LINECODING LineCoding;
+   20          
+   21          void usb_req_class()
+   22          {
+   23   1          switch (Setup.bRequest)
+   24   1          {
+   25   2          case SET_LINE_CODING:
+   26   2              usb_set_line_coding();
+   27   2              break;
+   28   2          case GET_LINE_CODING:
+   29   2              usb_get_line_coding();
+   30   2              break;
+   31   2          case SET_CONTROL_LINE_STATE:
+   32   2              usb_set_ctrl_line_state();
+   33   2              break;
+   34   2          default:
+   35   2              usb_setup_stall();
+   36   2              return;
+   37   2          }
+   38   1      }
+   39          
+   40          void usb_set_line_coding()
+   41          {
+   42   1          if ((DeviceState != DEVSTATE_CONFIGURED) ||
+   43   1              (Setup.bmRequestType != (OUT_DIRECT | CLASS_REQUEST | INTERFACE_RECIPIENT)))
+   44   1          {
+   45   2              usb_setup_stall();
+   46   2              return;
+   47   2          }
+   48   1      
+   49   1          Ep0State.pData = (BYTE *)&LineCoding;
+   50   1          Ep0State.wSize = Setup.wLength;
+   51   1      
+   52   1          usb_setup_out();
+   53   1      }
+   54          
+   55          void usb_get_line_coding()
+   56          {
+C251 COMPILER V5.60.0,  usb_req_class                                                      13/06/26  12:52:09  PAGE 2   
+
+   57   1          if ((DeviceState != DEVSTATE_CONFIGURED) ||
+   58   1              (Setup.bmRequestType != (IN_DIRECT | CLASS_REQUEST | INTERFACE_RECIPIENT)))
+   59   1          {
+   60   2              usb_setup_stall();
+   61   2              return;
+   62   2          }
+   63   1      
+   64   1          Ep0State.pData = (BYTE *)&LineCoding;
+   65   1          Ep0State.wSize = Setup.wLength;
+   66   1      
+   67   1          usb_setup_in();
+   68   1      }
+   69          
+   70          void usb_set_ctrl_line_state()
+   71          {
+   72   1          if ((DeviceState != DEVSTATE_CONFIGURED) ||
+   73   1              (Setup.bmRequestType != (OUT_DIRECT | CLASS_REQUEST | INTERFACE_RECIPIENT)))
+   74   1          {
+   75   2              usb_setup_stall();
+   76   2              return;
+   77   2          }
+   78   1      
+   79   1          usb_setup_status();
+   80   1      }
+   81          
+   82          void usb_uart_settings()
+   83          {
+   84   1          if (Setup.bRequest == SET_LINE_CODING)
+   85   1          {
+   86   2              LineCoding.bCharFormat = 0;
+   87   2              LineCoding.bDataBits = 8;
+   88   2              
+   89   2      //        uart_set_parity(LineCoding.bParityType);
+   90   2      //        uart_set_baud(reverse4(LineCoding.dwDTERate));
+   91   2          }
+   92   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =       206     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =         7     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =    ------     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
