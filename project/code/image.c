@@ -21,7 +21,19 @@
 #define REFLECT_WHITE_OFFSET           48u
 #define WHITE_MAX_OFFSET               24u
 #define REFERENCE_COL_MIN              0u
-#define REFERENCE_COL_MAX              160u
+#define REFERENCE_COL_MAX              (SEARCH_IMAGE_W - 1u)
+#define ZEBRA_ROW_TOP                  50u
+#define ZEBRA_ROW_BOTTOM               100u
+#define ZEBRA_ROW_STEP                 4u
+#define ZEBRA_COL_STEP                 4u
+#define ZEBRA_MARGIN                   8u
+#define ZEBRA_ROW_TRANSITIONS          6u
+#define ZEBRA_ROW_HITS                 3u
+#define ZEBRA_COL_TRANSITIONS          4u
+#define ZEBRA_COL_HITS                 3u
+#define ZEBRA_DETECT_ENABLE            0u
+#define IMAGE_COPY_ENABLE              0u
+#define TARGET_DETECT_ENABLE           1u
 
 /* 当前帧备份，调试显示或后续处理可以直接看这份图。 */
 uint8 far image_copy[MT9V03X_H][MT9V03X_W];
@@ -31,7 +43,7 @@ uint8 white_max_point;
 uint8 white_min_point;
 
 uint8 refenence_col_line[SEARCH_IMAGE_H];
-uint8 reference_contrast_ratio = 32;
+uint8 reference_contrast_ratio = 120;
 uint8 reference_col;
 
 uint8 left_edge_line[SEARCH_IMAGE_H];
@@ -42,11 +54,12 @@ uint8 lost_left;
 uint8 lost_right;
 
 uint8 cross_flag = 0;
+uint8 zebra_flag = 0;
 uint16 encoder_enter = 0;
 uint8 th = 0;
 int32 err_sum = 0;
 
-uint16 camera_exposure_time = MT9V03X_EXP_TIME_DEF;
+uint16 camera_exposure_time = 35;
 uint8 camera_init_brightness = 0;
 static uint8 reflect_point = REFLECT_BASE_POINT;
 
@@ -87,7 +100,134 @@ static void update_reflect_point(void)
     reflect_point = (uint8)point;
 }
 
+/* 根据当前阈值判断像素黑白，灰区不参与斑马线跳变统计。 */
+#if ZEBRA_DETECT_ENABLE
+static int8 zebra_pixel_state(uint8 pix)
+{
+    if (pix < white_min_point) return 0;
+    if (pix > white_max_point) return 1;
+    return -1;
+}
+
+static uint8 Zebra_Row_Transitions(const uint8 *image, uint8 row)
+{
+    uint8 col;
+    uint8 transitions = 0;
+    int16 left;
+    int16 right;
+    int8 prev_state = -1;
+    int8 state;
+    const uint8 *row_ptr;
+
+    left = (int16)left_edge_line[row] + ZEBRA_MARGIN;
+    right = (int16)right_edge_line[row] - ZEBRA_MARGIN;
+
+    if (left < 0) left = 0;
+    if (right >= SEARCH_IMAGE_W) right = SEARCH_IMAGE_W - 1;
+    if (right <= left + ZEBRA_MARGIN) return 0;
+
+    row_ptr = image + (uint16)row * SEARCH_IMAGE_W;
+
+    for (col = (uint8)left; col < (uint8)right; col += ZEBRA_COL_STEP) {
+        state = zebra_pixel_state(row_ptr[col]);
+        if (state < 0) {
+            continue;
+        }
+
+        if (prev_state >= 0 && state != prev_state) {
+            transitions++;
+        }
+        prev_state = state;
+    }
+
+    return transitions;
+}
+
+static uint8 Zebra_Col_Transitions(const uint8 *image, uint8 col)
+{
+    uint8 row;
+    uint8 transitions = 0;
+    int8 prev_state = -1;
+    int8 state;
+    const uint8 *row_ptr;
+    uint16 row_step;
+
+    row_ptr = image + (uint16)ZEBRA_ROW_BOTTOM * SEARCH_IMAGE_W;
+    row_step = (uint16)PIXEL_OFFSET * SEARCH_IMAGE_W;
+
+    for (row = ZEBRA_ROW_BOTTOM; row > ZEBRA_ROW_TOP; row -= PIXEL_OFFSET) {
+        if (!((int16)col > (int16)left_edge_line[row] + ZEBRA_MARGIN &&
+              (int16)col < (int16)right_edge_line[row] - ZEBRA_MARGIN)) {
+            row_ptr -= row_step;
+            continue;
+        }
+
+        state = zebra_pixel_state(row_ptr[col]);
+        if (state < 0) {
+            row_ptr -= row_step;
+            continue;
+        }
+
+        if (prev_state >= 0 && state != prev_state) {
+            transitions++;
+        }
+        prev_state = state;
+        row_ptr -= row_step;
+    }
+
+    return transitions;
+}
+
+static uint8 Zebra_Detect(const uint8 *image)
+{
+    uint8 row;
+    uint8 col;
+    uint8 row_hits = 0;
+    uint8 col_hits = 0;
+    uint8 left;
+    uint8 right;
+    uint8 step;
+
+    for (row = ZEBRA_ROW_TOP; row <= ZEBRA_ROW_BOTTOM; row += ZEBRA_ROW_STEP) {
+        if (Zebra_Row_Transitions(image, row) >= ZEBRA_ROW_TRANSITIONS) {
+            row_hits++;
+            if (row_hits >= ZEBRA_ROW_HITS) {
+                break;
+            }
+        }
+    }
+
+    left = (uint8)limit_i16((int16)left_edge_line[controlReferenceLine] + ZEBRA_MARGIN,
+                            0, SEARCH_IMAGE_W - 1);
+    right = (uint8)limit_i16((int16)right_edge_line[controlReferenceLine] - ZEBRA_MARGIN,
+                             0, SEARCH_IMAGE_W - 1);
+    if (right <= left + ZEBRA_MARGIN) {
+        return 0;
+    }
+
+    step = (uint8)((right - left) / 4u);
+    if (step < 8u) {
+        step = 8u;
+    }
+
+    for (col = (uint8)(left + step); col < right; col += step) {
+        if (Zebra_Col_Transitions(image, col) >= ZEBRA_COL_TRANSITIONS) {
+            col_hits++;
+            if (col_hits >= ZEBRA_COL_HITS) {
+                return 1;
+            }
+        }
+    }
+
+    if (row_hits >= ZEBRA_ROW_HITS && col_hits > 0) {
+        return 1;
+    }
+
+    return 0;
+}
+
 /* 等待摄像头完成一帧图像，超时后返回失败。 */
+#endif
 static uint8 camera_wait_finish_frame(uint16 timeout_ms)
 {
     while (timeout_ms) {
@@ -197,6 +337,18 @@ uint16 get_contrast(uint8 temp1, uint8 temp2)
     return (uint16)((uint32)diff * 200u / ((uint16)temp1 + (uint16)temp2 + 1u));
 }
 
+static uint8 contrast_over_threshold(uint8 temp1, uint8 temp2, uint8 threshold)
+{
+    uint16 diff;
+    uint16 sum;
+
+    diff = (temp1 >= temp2) ? ((uint16)temp1 - (uint16)temp2) :
+                              ((uint16)temp2 - (uint16)temp1);
+    sum = (uint16)temp1 + (uint16)temp2 + 1u;
+
+    return ((uint32)diff * 200u >= (uint32)((uint16)threshold + 1u) * sum) ? 1u : 0u;
+}
+
 /* 根据图像底部参考区域估算黑白阈值和反光过滤阈值。 */
 void get_reference_point(const uint8 *image)
 {
@@ -256,23 +408,28 @@ void Search_reference_col(const uint8 *image)
     uint8 i;
     uint8 globe_remote;
     uint8 globe_remote_min;
-    uint16 contrast;
+    uint16 row_step;
+    const uint8 *row_ptr;
 
     globe_remote_min = SEARCH_IMAGE_H;
     reference_col = SEARCH_IMAGE_W / 2;
+    row_step = (uint16)PIXEL_OFFSET * SEARCH_IMAGE_W;
 
     for (col = REFERENCE_COL_MIN; col <= REFERENCE_COL_MAX; col += PIXEL_OFFSET) {
         globe_remote = SEARCH_IMAGE_H;
+        row_ptr = image + (uint16)(SEARCH_IMAGE_H - 1u) * SEARCH_IMAGE_W + col;
 
         for (row = SEARCH_IMAGE_H - 1; row > PIXEL_OFFSET; row -= PIXEL_OFFSET) {
-            temp1 = *(image + (uint16)row * SEARCH_IMAGE_W + col);
-            temp2 = *(image + (uint16)(row - PIXEL_OFFSET) * SEARCH_IMAGE_W + col);
+            temp1 = *row_ptr;
+            temp2 = *(row_ptr - row_step);
 
             if (is_reflect_pixel(temp1) || is_reflect_pixel(temp2)) {
+                row_ptr -= row_step;
                 continue;
             }
 
             if (temp2 > white_max_point) {
+                row_ptr -= row_step;
                 continue;
             } else if (temp1 < white_min_point) {
                 if (globe_remote > row) {
@@ -281,11 +438,13 @@ void Search_reference_col(const uint8 *image)
                 break;
             }
 
-            contrast = get_contrast(temp1, temp2);
-            if (contrast > reference_contrast_ratio || row == STOP_ROW) {
+            if (row == STOP_ROW ||
+                contrast_over_threshold(temp1, temp2, reference_contrast_ratio)) {
                 globe_remote = row;
                 break;
             }
+
+            row_ptr -= row_step;
         }
 
         if (globe_remote < globe_remote_min) {
@@ -316,8 +475,6 @@ void Search_line(const uint8 *image)
     uint8 search_time;
     uint8 temp1;
     uint8 temp2;
-    int16 contrast;
-
     uint8 left_stop;
     uint8 right_stop;
     uint8 stop_point;
@@ -390,8 +547,8 @@ void Search_line(const uint8 *image)
                         continue;
                     }
 
-                    contrast = (int16)get_contrast(temp1, temp2);
-                    if (contrast > reference_contrast_ratio || col == col_min) {
+                    if (col == col_min ||
+                        contrast_over_threshold(temp1, temp2, reference_contrast_ratio)) {
                         left_edge_line[row] = col;
                         left_start_col = (uint8)limit_i16((int16)col + SEARCH_RANGE, col, col_max);
                         left_end_col   = (uint8)limit_i16((int16)col - SEARCH_RANGE, col_min, col);
@@ -441,8 +598,8 @@ void Search_line(const uint8 *image)
                         continue;
                     }
 
-                    contrast = (int16)get_contrast(temp1, temp2);
-                    if (contrast > reference_contrast_ratio || col >= col_max - PIXEL_OFFSET) {
+                    if (col >= col_max - PIXEL_OFFSET ||
+                        contrast_over_threshold(temp1, temp2, reference_contrast_ratio)) {
                         right_edge_line[row] = col;
                         right_start_col = (uint8)limit_i16((int16)col - SEARCH_RANGE, col_min, col);
                         right_end_col   = (uint8)limit_i16((int16)col + SEARCH_RANGE, col, col_max);
@@ -572,7 +729,9 @@ void Image_OldStyle_Process(void)
 {
     const uint8 *img;
 
+#if IMAGE_COPY_ENABLE
     memcpy(image_copy, mt9v03x_image, sizeof(image_copy));
+#endif
 
     img = &mt9v03x_image[0][0];
 
@@ -582,12 +741,28 @@ void Image_OldStyle_Process(void)
     Search_line(img);
 
     /* 圆环路段边线会断开或跳变，这里统一交给 Ring() 补线。 */
+    zebra_flag = 0;
     Ring();
 
     Fitted_Midline();
 
     /* 识别到目标后，tar_flag 会在 15 ms 中断里控制激光开关。 */
     tar_th = white_min_point;
-    Pre_Scan();
-    Target_find(pre_find_offset);
+    pre_find_flag = 0;
+    pre_find_offset = 0;
+    tar_flag = 0;
+    aim_ready_flag = 0;
+    center_offset = 0;
+    top_d = 0;
+    under_d = 0;
+    l_d = 0;
+    r_d = 0;
+    debug_stage = 0;
+
+#if TARGET_DETECT_ENABLE
+    if (current_step >= 2) {
+        return;
+    }
+    Target_find();
+#endif
 }

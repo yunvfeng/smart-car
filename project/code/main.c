@@ -54,6 +54,7 @@ void main(void)
     Key_Init();
 
     mt9v03x_init();
+    mt9v03x_set_exposure_time(camera_exposure_time);
     /* ips200_init(); */
     assistant_debug_ready = 0;
     wifi_assistant_started = 0;

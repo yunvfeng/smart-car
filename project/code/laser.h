@@ -30,6 +30,6 @@ void Laser_Task(void);
 /* 预扫描目标位置，得到横向偏移。 */
 void Pre_Scan(void);
 /* 根据预扫描偏移精找目标区域。 */
-void Target_find(int8 midOffset);
+void Target_find(void);
 
 #endif

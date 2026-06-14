@@ -34,24 +34,6 @@ static const char *Assistant_Ring_State_Name(void)
     }
 }
 
-static const char *Assistant_Target_State_Name(void)
-{
-    if (tar_flag) {
-        return "OK";
-    }
-
-    switch (debug_stage) {
-    case 0: return pre_find_flag ? "PRE" : "IDLE";
-    case 1: return "TOP";
-    case 2: return "BOT";
-    case 3: return "MID";
-    case 4: return "LEFT";
-    case 5: return "RIGHT";
-    case 6: return "OK";
-    default: return "ERR";
-    }
-}
-
 static void Assistant_Draw_Image_Point(uint8 x, uint8 y, uint8 gray)
 {
     if (x < MT9V03X_W && y < MT9V03X_H) {
@@ -113,9 +95,7 @@ static void Assistant_Draw_Status_Overlay(void)
 
     x = 2;
     x = Assistant_Draw_Image_String(x, 2, "R:");
-    x = Assistant_Draw_Image_String(x, 2, Assistant_Ring_State_Name());
-    x = Assistant_Draw_Image_String(x, 2, " T:");
-    Assistant_Draw_Image_String(x, 2, Assistant_Target_State_Name());
+    Assistant_Draw_Image_String(x, 2, Assistant_Ring_State_Name());
 
     Assistant_Draw_Target_Cross();
 }

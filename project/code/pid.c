@@ -1,6 +1,5 @@
 #include "pid.h"
 #include "image.h"
-#include "laser.h"
 
 volatile uint16 Out_servo = SERVO_DUTY_MID;
 volatile int16 g_gyro_z_for_servo = 0;
@@ -74,13 +73,8 @@ void PID_servof(volatile PID_t *pid)
         near_ref = SEARCH_IMAGE_H - 1;
     }
 
-    if (tar_flag) {
-        err = center_offset;
-        curve = 0;
-    } else {
-        err = (int16)mid_line[ref] - (int16)Mid_Col;
-        curve = (int16)mid_line[ref] - (int16)mid_line[near_ref];
-    }
+    err = (int16)mid_line[ref] - (int16)Mid_Col;
+    curve = (int16)mid_line[ref] - (int16)mid_line[near_ref];
     d_err = err - pid->err1;
     abs_err = abs16_local(err);
 

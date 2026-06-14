@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  main                                                               13/06/26  12:52:10  PAGE 1   
+C251 COMPILER V5.60.0,  main                                                               14/06/26  16:58:24  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE main
@@ -66,77 +66,78 @@ stmt  level    source
    53   1          laser_init();
    54   1          Key_Init();
    55   1      
-C251 COMPILER V5.60.0,  main                                                               13/06/26  12:52:10  PAGE 2   
+C251 COMPILER V5.60.0,  main                                                               14/06/26  16:58:24  PAGE 2   
 
    56   1          mt9v03x_init();
-   57   1          /* ips200_init(); */
-   58   1          assistant_debug_ready = 0;
-   59   1          wifi_assistant_started = 0;
-   60   1          car_started = 0;
-   61   1      
-   62   1          /* Control timer starts after KEY1/PB2 is pressed. */
-   63   1          
-   64   1      
-   65   1          while (1) {
-   66   2              if (!car_started && !gpio_get_level(KEY1_PIN)) {
-   67   3                  system_delay_ms(20);
-   68   3                  if (!gpio_get_level(KEY1_PIN)) {
-   69   4                      pit_ms_init(TIM0_PIT, CONTROL_PERIOD_MS, Timer0_Callback);
-   70   4                      car_started = 1;
-   71   4                  }
-   72   3              }
-   73   2      
-   74   2              wifi_ready = 0;
-   75   2              if (!gpio_get_level(SWITCH2_PIN)) {
-   76   3                  if (!wifi_assistant_started) {
-   77   4                      Wifi_Assistant_Init();
-   78   4                      assistant_debug_ready = 0;
-   79   4                      wifi_assistant_started = 1;
-   80   4                  }
-   81   3      
-   82   3                  wifi_ready = Wifi_Assistant_Ready();
-   83   3                  if (wifi_ready) {
-   84   4                      if (!assistant_debug_ready) {
-   85   5                          Assistant_Debug_Init();
-   86   5                          assistant_debug_ready = 1;
-   87   5                      }
-   88   4                      Assistant_Debug_Task();
-   89   4                  }
-   90   3              } else {
-   91   3                  assistant_debug_ready = 0;
-   92   3                  wifi_assistant_started = 0;
-   93   3              }
-   94   2      
-   95   2              /* 摄像头完成一帧后再处理图像，处理完再等下一帧。 */
-   96   2              if (mt9v03x_finish_flag) {
-   97   3                  mt9v03x_finish_flag = 0;
-   98   3      
-   99   3                  Image_OldStyle_Process();
-  100   3      
-  101   3                  if (wifi_ready) {
-  102   4                      Assistant_Debug_On_Frame();
-  103   4                  }
-  104   3      
-  105   3                  /* 按下 SWITCH2 时显示调试画面。 */
-  106   3                  /*
-  107   3                  if (!gpio_get_level(SWITCH2_PIN)) {
-  108   3                      IPS_Show_Image_And_Line(0, 0);
-  109   3                  }
-  110   3                  */
-  111   3              }
-  112   2          }
-  113   1      }
+   57   1          mt9v03x_set_exposure_time(camera_exposure_time);
+   58   1          /* ips200_init(); */
+   59   1          assistant_debug_ready = 0;
+   60   1          wifi_assistant_started = 0;
+   61   1          car_started = 0;
+   62   1      
+   63   1          /* Control timer starts after KEY1/PB2 is pressed. */
+   64   1          
+   65   1      
+   66   1          while (1) {
+   67   2              if (!car_started && !gpio_get_level(KEY1_PIN)) {
+   68   3                  system_delay_ms(20);
+   69   3                  if (!gpio_get_level(KEY1_PIN)) {
+   70   4                      pit_ms_init(TIM0_PIT, CONTROL_PERIOD_MS, Timer0_Callback);
+   71   4                      car_started = 1;
+   72   4                  }
+   73   3              }
+   74   2      
+   75   2              wifi_ready = 0;
+   76   2              if (!gpio_get_level(SWITCH2_PIN)) {
+   77   3                  if (!wifi_assistant_started) {
+   78   4                      Wifi_Assistant_Init();
+   79   4                      assistant_debug_ready = 0;
+   80   4                      wifi_assistant_started = 1;
+   81   4                  }
+   82   3      
+   83   3                  wifi_ready = Wifi_Assistant_Ready();
+   84   3                  if (wifi_ready) {
+   85   4                      if (!assistant_debug_ready) {
+   86   5                          Assistant_Debug_Init();
+   87   5                          assistant_debug_ready = 1;
+   88   5                      }
+   89   4                      Assistant_Debug_Task();
+   90   4                  }
+   91   3              } else {
+   92   3                  assistant_debug_ready = 0;
+   93   3                  wifi_assistant_started = 0;
+   94   3              }
+   95   2      
+   96   2              /* 摄像头完成一帧后再处理图像，处理完再等下一帧。 */
+   97   2              if (mt9v03x_finish_flag) {
+   98   3                  mt9v03x_finish_flag = 0;
+   99   3      
+  100   3                  Image_OldStyle_Process();
+  101   3      
+  102   3                  if (wifi_ready) {
+  103   4                      Assistant_Debug_On_Frame();
+  104   4                  }
+  105   3      
+  106   3                  /* 按下 SWITCH2 时显示调试画面。 */
+  107   3                  /*
+  108   3                  if (!gpio_get_level(SWITCH2_PIN)) {
+  109   3                      IPS_Show_Image_And_Line(0, 0);
+  110   3                  }
+  111   3                  */
+  112   3              }
+  113   2          }
+  114   1      }
 
 
 Module Information          Static   Overlayable
 ------------------------------------------------
   code size            =    ------     ------
-  ecode size           =       380     ------
+  ecode size           =       390     ------
   data size            =    ------     ------
   idata size           =    ------     ------
-  pdata size           =    ------     ------
-C251 COMPILER V5.60.0,  main                                                               13/06/26  12:52:10  PAGE 3   
+C251 COMPILER V5.60.0,  main                                                               14/06/26  16:58:24  PAGE 3   
 
+  pdata size           =    ------     ------
   xdata size           =         4     ------
   xdata-const size     =    ------     ------
   edata size           =    ------     ------

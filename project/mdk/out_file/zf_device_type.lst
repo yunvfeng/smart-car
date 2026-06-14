@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  zf_device_type                                                     13/06/26  12:52:07  PAGE 1   
+C251 COMPILER V5.60.0,  zf_device_type                                                     14/06/26  16:58:18  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_device_type
@@ -66,7 +66,7 @@ stmt  level    source
              -¯ÊýÖ¸Õë£¬¸ù¾Ý³õÊ¼»¯Ê±ÉèÖÃµÄº¯Êý½øÐÐÌø×ª
    48          
    49          tof_type_enum       tof_type                        = NO_TOF;
-C251 COMPILER V5.60.0,  zf_device_type                                                     13/06/26  12:52:07  PAGE 2   
+C251 COMPILER V5.60.0,  zf_device_type                                                     14/06/26  16:58:18  PAGE 2   
 
    50          callback_function   tof_module_exti_handler         = type_default_callback;        // ToF Ä£¿é INT ¸üÐÂÖ
              -Ð¶Ï
@@ -134,7 +134,7 @@ stmt  level    source
   103          //-------------------------------------------------------------------------------------------------------
              -------------
   104          // º¯Êý¼ò½é     ÉèÖÃ ToF Ä£¿éÀàÐÍ
-C251 COMPILER V5.60.0,  zf_device_type                                                     13/06/26  12:52:07  PAGE 3   
+C251 COMPILER V5.60.0,  zf_device_type                                                     14/06/26  16:58:18  PAGE 3   
 
   105          // ²ÎÊýËµÃ÷     type_set        Ñ¡¶¨µÄ ToF Ä£¿éÀàÐÍ
   106          // ²ÎÊýËµÃ÷     exti_callback   Éè±¸µÄÍâ²¿ÖÐ¶Ï»Øµ÷º¯Êý

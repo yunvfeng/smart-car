@@ -50,8 +50,8 @@
 ".\out_file\servo.obj",
 ".\out_file\assistant_debug.obj",
 ".\out_file\wifi_assistant.obj",
-".\out_file\main.obj",
-".\out_file\isr.obj" 
+".\out_file\isr.obj",
+".\out_file\main.obj" 
 TO ".\out_file\SEEKFREE" 
 PRINT(".\out_file\SEEKFREE.map") CASE DISABLEWARNING (57,16,7,25) 
 REMOVEUNUSED,NOOVERLAY 

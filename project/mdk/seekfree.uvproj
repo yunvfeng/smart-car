@@ -820,14 +820,14 @@
               <FilePath>..\code\key.h</FilePath>
             </File>
             <File>
-              <FileName>laser.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\code\laser.c</FilePath>
-            </File>
-            <File>
               <FileName>laser.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\code\laser.h</FilePath>
+            </File>
+            <File>
+              <FileName>laser.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\laser.c</FilePath>
             </File>
             <File>
               <FileName>motor.c</FileName>
@@ -895,14 +895,14 @@
           <GroupName>user</GroupName>
           <Files>
             <File>
-              <FileName>main.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\code\main.c</FilePath>
-            </File>
-            <File>
               <FileName>isr.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\user\isr.c</FilePath>
+            </File>
+            <File>
+              <FileName>main.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\main.c</FilePath>
             </File>
             <File>
               <FileName>isr.h</FileName>

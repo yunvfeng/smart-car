@@ -42,6 +42,7 @@ extern uint8 lost_left;
 extern uint8 lost_right;
 
 extern uint8 cross_flag;
+extern uint8 zebra_flag;
 extern uint16 encoder_enter;
 
 extern uint8 far image_copy[MT9V03X_H][MT9V03X_W];
