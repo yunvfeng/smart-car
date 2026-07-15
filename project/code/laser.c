@@ -1,5 +1,6 @@
 #include "laser.h"
 #include "image.h"
+#include <string.h>
 
 uint16 tar_i = 0;
 uint8 tar_flag = 0;
@@ -57,6 +58,8 @@ static void Target_Build_Bottom_Map(uint8 scan_min, uint8 scan_max)
     uint8 row_start;
     uint8 col;
     uint8 try_col;
+    uint8 row_scan_min;
+    uint8 row_scan_max;
     uint8 count = 0;
     uint8 white_count = 0;
     uint8 found_count = 0;
@@ -66,9 +69,7 @@ static void Target_Build_Bottom_Map(uint8 scan_min, uint8 scan_max)
     uint8 far *row_up;
     uint8 far *row_down;
 
-    for (col = scan_min; col <= scan_max; col++) {
-        target_bottom_y[col] = 0;
-    }
+    memset(&target_bottom_y[scan_min], 0, scan_max - scan_min + 1u);
 
 #define TARGET_TRY_COL(col_value)                                                   \
     do {                                                                            \
@@ -104,18 +105,30 @@ static void Target_Build_Bottom_Map(uint8 scan_min, uint8 scan_max)
             continue;
         }
 
+        row_scan_min = scan_min;
+        if (l_edge >= (int16)row_scan_min) {
+            row_scan_min = (uint8)(l_edge + 1);
+        }
+        row_scan_max = scan_max;
+        if (r_edge <= (int16)row_scan_max) {
+            row_scan_max = (uint8)(r_edge - 1);
+        }
+        if (row_scan_min > row_scan_max) {
+            continue;
+        }
+
         row_ptr = mt9v03x_image[row];
         row_up = mt9v03x_image[row - 1];
         row_down = mt9v03x_image[row + PIXEL_OFFSET];
 
-        for (col = scan_min; col + 3 <= scan_max; col += 4) {
+        for (col = row_scan_min; col + 3 <= row_scan_max; col += 4) {
             TARGET_TRY_COL(col);
             TARGET_TRY_COL(col + 1);
             TARGET_TRY_COL(col + 2);
             TARGET_TRY_COL(col + 3);
         }
 
-        for (; col <= scan_max; col++) {
+        for (; col <= row_scan_max; col++) {
             TARGET_TRY_COL(col);
         }
 

@@ -341,12 +341,17 @@ static uint8 contrast_over_threshold(uint8 temp1, uint8 temp2, uint8 threshold)
 {
     uint16 diff;
     uint16 sum;
+    uint16 scaled_diff;
+    uint16 scaled_threshold;
 
     diff = (temp1 >= temp2) ? ((uint16)temp1 - (uint16)temp2) :
                               ((uint16)temp2 - (uint16)temp1);
     sum = (uint16)temp1 + (uint16)temp2 + 1u;
 
-    return ((uint32)diff * 200u >= (uint32)((uint16)threshold + 1u) * sum) ? 1u : 0u;
+    /* threshold 最大为 120，两侧最大值 51000/61831，uint16 足够。 */
+    scaled_diff = (uint16)(diff * 200u);
+    scaled_threshold = (uint16)(((uint16)threshold + 1u) * sum);
+    return (scaled_diff >= scaled_threshold) ? 1u : 0u;
 }
 
 /* 根据图像底部参考区域估算黑白阈值和反光过滤阈值。 */
@@ -471,13 +476,13 @@ void Search_line(const uint8 *image)
     uint8 right_start_col;
     uint8 left_end_col;
     uint8 right_end_col;
+    uint8 right_min_col;
 
     uint8 search_time;
     uint8 temp1;
     uint8 temp2;
     uint8 left_stop;
     uint8 right_stop;
-    uint8 stop_point;
     uint8 col;
     uint8 row;
 
@@ -494,16 +499,11 @@ void Search_line(const uint8 *image)
 
     left_stop = 0;
     right_stop = 0;
-    stop_point = 0;
-
     lost_left = STOP_ROW;
     lost_right = STOP_ROW;
 
-    for (row = row_max; row >= row_min; row--) {
-        left_edge_line[row] = 0;
-        right_edge_line[row] = SEARCH_IMAGE_W - 1;
-        if (row == row_min) break;
-    }
+    memset(&left_edge_line[row_min], 0, row_max - row_min + 1u);
+    memset(&right_edge_line[row_min], SEARCH_IMAGE_W - 1, row_max - row_min + 1u);
 
     for (row = row_max; row >= row_min; row -= PIXEL_OFFSET) {
         p = image + (uint16)row * SEARCH_IMAGE_W;
@@ -531,9 +531,7 @@ void Search_line(const uint8 *image)
                         left_stop = 1;
                         search_time = 0;
 
-                        for (stop_point = row; stop_point > 1; stop_point--) {
-                            left_edge_line[stop_point] = col_min;
-                        }
+                        memset(&left_edge_line[2], col_min, row - 1u);
                         lost_left = row;
                         break;
                     }
@@ -560,10 +558,21 @@ void Search_line(const uint8 *image)
         }
 
         if (!right_stop) {
+            /*
+             * 右线始终从参考列右侧搜索，并且不得落到当前左线左侧。
+             * 上一行的局部搜索窗可以跟随弯道，但不允许窗口越过这条下界。
+             */
+            right_min_col = (uint8)limit_i16((int16)left_edge_line[row] + PIXEL_OFFSET,
+                                              reference_col,
+                                              col_max);
+            if (right_start_col < right_min_col) {
+                right_start_col = right_min_col;
+            }
+
             search_time = 2;
             do {
                 if (search_time == 1) {
-                    right_start_col = reference_col;
+                    right_start_col = right_min_col;
                     right_end_col = col_max;
                 }
                 search_time--;
@@ -582,15 +591,21 @@ void Search_line(const uint8 *image)
                         right_stop = 1;
                         search_time = 0;
 
-                        for (stop_point = row; stop_point > row_min; stop_point--) {
-                            right_edge_line[stop_point] = SEARCH_IMAGE_W - 1;
-                        }
+                        memset(&right_edge_line[row_min + 1u],
+                               SEARCH_IMAGE_W - 1,
+                               row - row_min);
                         lost_right = row;
                         break;
                     }
 
                     if (temp1 < white_min_point) {
-                        right_edge_line[row] = col;
+                        /*
+                         * 局部窗口内的黑点先触发从 right_min_col 的复搜。
+                         * 只有复搜仍找到时才落点，避免保留局部误点。
+                         */
+                        if (search_time == 0) {
+                            right_edge_line[row] = col;
+                        }
                         break;
                     }
 
@@ -601,7 +616,9 @@ void Search_line(const uint8 *image)
                     if (col >= col_max - PIXEL_OFFSET ||
                         contrast_over_threshold(temp1, temp2, reference_contrast_ratio)) {
                         right_edge_line[row] = col;
-                        right_start_col = (uint8)limit_i16((int16)col - SEARCH_RANGE, col_min, col);
+                        right_start_col = (uint8)limit_i16((int16)col - SEARCH_RANGE,
+                                                           right_min_col,
+                                                           col);
                         right_end_col   = (uint8)limit_i16((int16)col + SEARCH_RANGE, col, col_max);
                         search_time = 0;
                         break;
@@ -616,6 +633,16 @@ void Search_line(const uint8 *image)
     }
 
     insert_val();
+
+    /* 插值后再做一次几何保护，右线不允许与左线交叉。 */
+    for (row = row_max; row >= row_min; row--) {
+        if (right_edge_line[row] <= left_edge_line[row]) {
+            right_edge_line[row] = col_max;
+        }
+        if (row == row_min) {
+            break;
+        }
+    }
 
     memcpy(left_control_line, left_edge_line, sizeof(left_edge_line));
     memcpy(right_control_line, right_edge_line, sizeof(right_edge_line));
@@ -728,6 +755,7 @@ void straightAccelerate(void)
 void Image_OldStyle_Process(void)
 {
     const uint8 *img;
+    static uint8 otsu_frame_count = 0;
 
 #if IMAGE_COPY_ENABLE
     memcpy(image_copy, mt9v03x_image, sizeof(image_copy));
@@ -735,7 +763,14 @@ void Image_OldStyle_Process(void)
 
     img = &mt9v03x_image[0][0];
 
-    th = otsuThreshold((uint8 *)img);
+    /* 光照阈值变化远慢于边线，每隔几帧更新可减少直方图和除法开销。 */
+    if (!otsu_frame_count) {
+        th = otsuThreshold((uint8 *)img);
+    }
+    otsu_frame_count++;
+    if (otsu_frame_count >= OTSU_FRAME_DIV) {
+        otsu_frame_count = 0;
+    }
     get_reference_point(img);
     Search_reference_col(img);
     Search_line(img);

@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  motor                                                              14/06/26  16:58:22  PAGE 1   
+C251 COMPILER V5.60.0,  motor                                                              14/07/26  10:26:00  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE motor
@@ -66,7 +66,7 @@ stmt  level    source
    54          
    55          /* 控制指定电机输出，speed 正负决定方向，绝对值决定 PWM 占空比。 */
    56          void Motor_control(pwm_channel_enum wheel, int16 speed)
-C251 COMPILER V5.60.0,  motor                                                              14/06/26  16:58:22  PAGE 2   
+C251 COMPILER V5.60.0,  motor                                                              14/07/26  10:26:00  PAGE 2   
 
    57          {
    58   1          speed = clamp_motor(speed);
@@ -134,7 +134,7 @@ stmt  level    source
   120          /* 电机速度闭环：计算目标速度，更新左右 PI，再输出 PWM。 */
   121          void Motor_Loop(void)
   122          {
-C251 COMPILER V5.60.0,  motor                                                              14/06/26  16:58:22  PAGE 3   
+C251 COMPILER V5.60.0,  motor                                                              14/07/26  10:26:00  PAGE 3   
 
   123   1          Dream_speed();
   124   1      

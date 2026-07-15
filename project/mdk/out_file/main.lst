@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  main                                                               14/06/26  16:58:24  PAGE 1   
+C251 COMPILER V5.60.0,  main                                                               14/07/26  11:08:01  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE main
@@ -66,7 +66,7 @@ stmt  level    source
    53   1          laser_init();
    54   1          Key_Init();
    55   1      
-C251 COMPILER V5.60.0,  main                                                               14/06/26  16:58:24  PAGE 2   
+C251 COMPILER V5.60.0,  main                                                               14/07/26  11:08:01  PAGE 2   
 
    56   1          mt9v03x_init();
    57   1          mt9v03x_set_exposure_time(camera_exposure_time);
@@ -101,43 +101,42 @@ stmt  level    source
    86   5                          Assistant_Debug_Init();
    87   5                          assistant_debug_ready = 1;
    88   5                      }
-   89   4                      Assistant_Debug_Task();
-   90   4                  }
-   91   3              } else {
-   92   3                  assistant_debug_ready = 0;
-   93   3                  wifi_assistant_started = 0;
-   94   3              }
-   95   2      
-   96   2              /* 摄像头完成一帧后再处理图像，处理完再等下一帧。 */
-   97   2              if (mt9v03x_finish_flag) {
-   98   3                  mt9v03x_finish_flag = 0;
-   99   3      
-  100   3                  Image_OldStyle_Process();
-  101   3      
-  102   3                  if (wifi_ready) {
-  103   4                      Assistant_Debug_On_Frame();
-  104   4                  }
-  105   3      
-  106   3                  /* 按下 SWITCH2 时显示调试画面。 */
-  107   3                  /*
-  108   3                  if (!gpio_get_level(SWITCH2_PIN)) {
-  109   3                      IPS_Show_Image_And_Line(0, 0);
-  110   3                  }
-  111   3                  */
-  112   3              }
-  113   2          }
-  114   1      }
+   89   4                  }
+   90   3              } else {
+   91   3                  assistant_debug_ready = 0;
+   92   3                  wifi_assistant_started = 0;
+   93   3              }
+   94   2      
+   95   2              /* 摄像头完成一帧后再处理图像，处理完再等下一帧。 */
+   96   2              if (mt9v03x_finish_flag) {
+   97   3                  mt9v03x_finish_flag = 0;
+   98   3      
+   99   3                  Image_OldStyle_Process();
+  100   3      
+  101   3                  if (wifi_ready) {
+  102   4                      Assistant_Debug_On_Frame();
+  103   4                  }
+  104   3      
+  105   3                  /* 按下 SWITCH2 时显示调试画面。 */
+  106   3                  /*
+  107   3                  if (!gpio_get_level(SWITCH2_PIN)) {
+  108   3                      IPS_Show_Image_And_Line(0, 0);
+  109   3                  }
+  110   3                  */
+  111   3              }
+  112   2          }
+  113   1      }
 
 
 Module Information          Static   Overlayable
 ------------------------------------------------
   code size            =    ------     ------
-  ecode size           =       390     ------
+  ecode size           =       386     ------
   data size            =    ------     ------
   idata size           =    ------     ------
-C251 COMPILER V5.60.0,  main                                                               14/06/26  16:58:24  PAGE 3   
-
   pdata size           =    ------     ------
+C251 COMPILER V5.60.0,  main                                                               14/07/26  11:08:01  PAGE 3   
+
   xdata size           =         4     ------
   xdata-const size     =    ------     ------
   edata size           =    ------     ------

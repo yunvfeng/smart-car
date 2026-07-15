@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  zf_driver_eeprom                                                   14/06/26  16:58:15  PAGE 1   
+C251 COMPILER V5.60.0,  zf_driver_eeprom                                                   14/07/26  10:25:57  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_driver_eeprom
@@ -66,7 +66,7 @@ stmt  level    source
    50   1      
    51   1          IAP_TRIG = 0x5A;
    52   1          IAP_TRIG = 0xA5;                    //先送5AH，再送A5H到IAP触发寄存器，每次都需要如此
-C251 COMPILER V5.60.0,  zf_driver_eeprom                                                   14/06/26  16:58:15  PAGE 2   
+C251 COMPILER V5.60.0,  zf_driver_eeprom                                                   14/07/26  10:25:57  PAGE 2   
 
    53   1          //送完A5H后，IAP命令立即被触发启动
    54   1          //CPU等待IAP完成后，才会继续执行程序。
@@ -134,7 +134,7 @@ stmt  level    source
   108   1          uint8 write_time;
   109   1          write_time = (system_clock / 1000000) ;
   110   1          IAP_TPS = write_time + 1;
-C251 COMPILER V5.60.0,  zf_driver_eeprom                                                   14/06/26  16:58:15  PAGE 3   
+C251 COMPILER V5.60.0,  zf_driver_eeprom                                                   14/07/26  10:25:57  PAGE 3   
 
   111   1      }
   112          
@@ -202,7 +202,7 @@ stmt  level    source
   169          // 返回参数     void
   170          // 备注信息
   171          // 使用示例     iap_read_buff(0x00, buff, 10);  // 向0地址读取一个数组，数组长度为10
-C251 COMPILER V5.60.0,  zf_driver_eeprom                                                   14/06/26  16:58:15  PAGE 4   
+C251 COMPILER V5.60.0,  zf_driver_eeprom                                                   14/07/26  10:25:57  PAGE 4   
 
   172          //-------------------------------------------------------------------------------------------------------
              -------------
@@ -270,7 +270,7 @@ stmt  level    source
   229          // 返回参数     void
   230          // 备注信息
   231          // 使用示例             extern_iap_write_bytes(0x0000,(uint8 *)"0123456789",10);
-C251 COMPILER V5.60.0,  zf_driver_eeprom                                                   14/06/26  16:58:15  PAGE 5   
+C251 COMPILER V5.60.0,  zf_driver_eeprom                                                   14/07/26  10:25:57  PAGE 5   
 
   232          //                将"0123456789"写入0x00-0x0A地址中;
   233          // 注意事项           不要跨扇区使用。

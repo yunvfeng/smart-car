@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  image2                                                             14/06/26  16:58:21  PAGE 1   
+C251 COMPILER V5.60.0,  image2                                                             14/07/26  10:25:59  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE image2
@@ -66,7 +66,7 @@ stmt  level    source
    54   2              for (j = 0; j < width; j += OTSU_COL_STEP) {
    55   3                  pix = *(img_ptr + j);
    56   3                  if (pix >= OTSU_REFLECT_POINT) {
-C251 COMPILER V5.60.0,  image2                                                             14/06/26  16:58:21  PAGE 2   
+C251 COMPILER V5.60.0,  image2                                                             14/07/26  10:25:59  PAGE 2   
 
    57   4                      continue;
    58   4                  }
@@ -134,7 +134,7 @@ stmt  level    source
   120   4      
   121   4                      if (weight_bg == 0) {
   122   5                          continue;
-C251 COMPILER V5.60.0,  image2                                                             14/06/26  16:58:21  PAGE 3   
+C251 COMPILER V5.60.0,  image2                                                             14/07/26  10:25:59  PAGE 3   
 
   123   5                      }
   124   4      
@@ -202,7 +202,7 @@ stmt  level    source
   186   2          }
   187   1      }
 
-C251 COMPILER V5.60.0,  image2                                                             14/06/26  16:58:21  PAGE 4   
+C251 COMPILER V5.60.0,  image2                                                             14/07/26  10:25:59  PAGE 4   
 
 
 Module Information          Static   Overlayable

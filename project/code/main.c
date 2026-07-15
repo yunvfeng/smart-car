@@ -86,7 +86,6 @@ void main(void)
                     Assistant_Debug_Init();
                     assistant_debug_ready = 1;
                 }
-                Assistant_Debug_Task();
             }
         } else {
             assistant_debug_ready = 0;

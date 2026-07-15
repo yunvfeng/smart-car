@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  ring                                                               14/06/26  16:58:23  PAGE 1   
+C251 COMPILER V5.60.0,  ring                                                               14/07/26  21:18:11  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE ring
@@ -66,7 +66,7 @@ stmt  level    source
    54          static void Ring_Out_Right(void);
    55          static void Ring_Straighten_Right(void);
    56          static void Ring_Change_Step(uint8 next_step);
-C251 COMPILER V5.60.0,  ring                                                               14/06/26  16:58:23  PAGE 2   
+C251 COMPILER V5.60.0,  ring                                                               14/07/26  21:18:11  PAGE 2   
 
    57          void Ring_Over(void);
    58          
@@ -134,7 +134,7 @@ stmt  level    source
   120   1          return (a > b) ? (a - b) : (b - a);
   121   1      }
   122          
-C251 COMPILER V5.60.0,  ring                                                               14/06/26  16:58:23  PAGE 3   
+C251 COMPILER V5.60.0,  ring                                                               14/07/26  21:18:11  PAGE 3   
 
   123          static uint8 Ring_Row_Width_Over(uint8 row, uint8 width)
   124          {
@@ -202,7 +202,7 @@ stmt  level    source
   186   3              }
   187   2      
   188   2              if (!to_flag) {
-C251 COMPILER V5.60.0,  ring                                                               14/06/26  16:58:23  PAGE 4   
+C251 COMPILER V5.60.0,  ring                                                               14/07/26  21:18:11  PAGE 4   
 
   189   3                  left_control_line[i] = clamp_col_int16(col);
   190   3              } else {
@@ -270,7 +270,7 @@ stmt  level    source
   251   4                  }
   252   3                  ring_turn_flag = 0;
   253   3              } else {
-C251 COMPILER V5.60.0,  ring                                                               14/06/26  16:58:23  PAGE 5   
+C251 COMPILER V5.60.0,  ring                                                               14/07/26  21:18:11  PAGE 5   
 
   254   3                  turn_to_in_cnt = 0;
   255   3              }
@@ -338,7 +338,7 @@ stmt  level    source
   317   2              end_col = left_control_line[left_point];
   318   2          } else {
   319   2              start_row = left_point;
-C251 COMPILER V5.60.0,  ring                                                               14/06/26  16:58:23  PAGE 6   
+C251 COMPILER V5.60.0,  ring                                                               14/07/26  21:18:11  PAGE 6   
 
   320   2              end_row = right_point;
   321   2              start_col = left_control_line[left_point];
@@ -406,7 +406,7 @@ stmt  level    source
   383   1          l_con = isContinueLine(left_edge_line);
   384   1      
   385   1          if (!l_con && r_con && Ring_Left_Side_Ready()) {
-C251 COMPILER V5.60.0,  ring                                                               14/06/26  16:58:23  PAGE 7   
+C251 COMPILER V5.60.0,  ring                                                               14/07/26  21:18:11  PAGE 7   
 
   386   2              ring_preMeet_flag = 1;
   387   2              ring_l = 1;
@@ -474,7 +474,7 @@ stmt  level    source
   449   1      
   450   1          
   451   1      
-C251 COMPILER V5.60.0,  ring                                                               14/06/26  16:58:23  PAGE 8   
+C251 COMPILER V5.60.0,  ring                                                               14/07/26  21:18:11  PAGE 8   
 
   452   1          for (i = SEARCH_IMAGE_H - 1 - PIXEL_OFFSET; i > 30; i -= PIXEL_OFFSET) {
   453   2              under = left_edge_line[i];
@@ -542,7 +542,7 @@ stmt  level    source
   515   2      
   516   2              if (mid < 8) {
   517   3                  continue;
-C251 COMPILER V5.60.0,  ring                                                               14/06/26  16:58:23  PAGE 9   
+C251 COMPILER V5.60.0,  ring                                                               14/07/26  21:18:11  PAGE 9   
 
   518   3              }
   519   2      
@@ -610,7 +610,7 @@ stmt  level    source
   580   1          draw_line(leftTopPoint, SEARCH_IMAGE_H - 1, 1);
   581   1      
   582   1          if (leftTopPoint >= controlReferenceLine - 30) {
-C251 COMPILER V5.60.0,  ring                                                               14/06/26  16:58:23  PAGE 10  
+C251 COMPILER V5.60.0,  ring                                                               14/07/26  21:18:11  PAGE 10  
 
   583   2              ring_turn_flag = 1;
   584   2          }
@@ -678,7 +678,7 @@ stmt  level    source
   646   1              right_edge_line[40] < right_edge_line[45] &&
   647   1              right_edge_line[50] < right_edge_line[55]
   648   1          )
-C251 COMPILER V5.60.0,  ring                                                               14/06/26  16:58:23  PAGE 11  
+C251 COMPILER V5.60.0,  ring                                                               14/07/26  21:18:11  PAGE 11  
 
   649   1              Straighten_flag = 1;
   650   1      }
@@ -746,7 +746,7 @@ stmt  level    source
   712   3              }
   713   2          }
   714   1      
-C251 COMPILER V5.60.0,  ring                                                               14/06/26  16:58:23  PAGE 12  
+C251 COMPILER V5.60.0,  ring                                                               14/07/26  21:18:11  PAGE 12  
 
   715   1          if (midPoint) {
   716   2              connect_point(turnPoint, midPoint, 1);
@@ -814,7 +814,7 @@ stmt  level    source
   778   2              mid_under_flag = 1;
   779   2          }
   780   1      
-C251 COMPILER V5.60.0,  ring                                                               14/06/26  16:58:23  PAGE 13  
+C251 COMPILER V5.60.0,  ring                                                               14/07/26  21:18:11  PAGE 13  
 
   781   1          for (i = 81; i > 10; i -= 2) {
   782   2              under = right_edge_line[i];
@@ -882,7 +882,7 @@ stmt  level    source
   844   1      }
   845          
   846          static void Ring_Out_Right(void)
-C251 COMPILER V5.60.0,  ring                                                               14/06/26  16:58:23  PAGE 14  
+C251 COMPILER V5.60.0,  ring                                                               14/07/26  21:18:11  PAGE 14  
 
   847          {
   848   1          left_control_line[SEARCH_IMAGE_H - 1] = 0;
@@ -950,7 +950,7 @@ stmt  level    source
   910   1          current_step = 0;
   911   1          cnt_over = 0;
   912   1      }
-C251 COMPILER V5.60.0,  ring                                                               14/06/26  16:58:23  PAGE 15  
+C251 COMPILER V5.60.0,  ring                                                               14/07/26  21:18:11  PAGE 15  
 
 
 

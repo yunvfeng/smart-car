@@ -10,6 +10,7 @@
 #define OTSU_START_ROW    16
 #define OTSU_ROW_STEP     2
 #define OTSU_COL_STEP     2
+#define OTSU_FRAME_DIV    2
 #define OTSU_CLIP_PERCENT 2
 #define OTSU_MIN_RANGE    24
 #define OTSU_MAX_STEP     16
