@@ -6,7 +6,10 @@
 extern int16 encoder_data_r;
 extern int16 encoder_data_l;
 extern int16 tar_speed;
-extern int16 diff_kp_q10;
+extern volatile int16 target_speed_l;
+extern volatile int16 target_speed_r;
+extern volatile int16 motor_pwm_l;
+extern volatile int16 motor_pwm_r;
 
 /* 左右电机接线。 */
 #define DIR_L              IO_P52
@@ -17,6 +20,9 @@ extern int16 diff_kp_q10;
 
 #define MOTOR_FREQ         17000
 #define MOTOR_MAX_LIMIT    7500
+#define MOTOR_MIN_EFFECTIVE_PWM  1500
+#define MOTOR_PWM_RISE_STEP      250
+#define MOTOR_PWM_FALL_STEP      400
 
 #define ENCODER_DIR_1          PWMA_ENCODER
 #define ENCODER_DIR_PULSE_1    PWMA_ENCODER_CH1P_P60
@@ -28,8 +34,15 @@ extern int16 diff_kp_q10;
 
 /* 这里的速度单位是 15 ms 内读到的编码器脉冲数。 */
 #define MAX_SPEED          180
-#define MIN_SPEED          165
-#define BASE_TARGET_SPEED  170
+#define MAX_SPEED_TUNE_MAX 220
+#define MIN_SPEED          172
+#define BASE_TARGET_SPEED  175
+#define WHEEL_TARGET_MIN   165
+#define TURN_DIFF_MAX      8
+
+/* 运行时最低目标速度，可通过 WiFi 调参修改。 */
+extern volatile int16 min_speed;
+extern volatile int16 max_speed;
 
 /* 初始化电机 PWM 和方向引脚。 */
 void Motor_Init(void);

@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  pid                                                                14/07/26  10:26:00  PAGE 1   
+C251 COMPILER V5.60.0,  pid                                                                15/07/26  18:51:59  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE pid
@@ -66,7 +66,7 @@ stmt  level    source
    54          /* 舵机 PID：根据中线偏差、偏差变化和曲率前馈计算舵机占空比。 */
    55          void PID_servof(volatile PID_t *pid)
    56          {
-C251 COMPILER V5.60.0,  pid                                                                14/07/26  10:26:00  PAGE 2   
+C251 COMPILER V5.60.0,  pid                                                                15/07/26  18:51:59  PAGE 2   
 
    57   1          uint8 ref;
    58   1          uint8 near_ref;

@@ -12,6 +12,7 @@
 #define ASSISTANT_PARAM_MAX_CHANNEL     SEEKFREE_ASSISTANT_SET_PARAMETR_COUNT
 #define ASSISTANT_EXPOSURE_MIN          1.0f
 #define ASSISTANT_EXPOSURE_MAX          4095.0f
+#define ASSISTANT_SPEED_MIN              165.0f
 
 static uint8 assistant_image_cnt = 0;
 static uint8 assistant_scope_cnt = 0;
@@ -152,10 +153,10 @@ static void Assistant_Load_Default_Params(void)
         (float)pid_lf.kp;
     seekfree_assistant_parameter[ASSISTANT_PARAM_MOTOR_KI - 1] =
         (float)pid_lf.ki;
-    seekfree_assistant_parameter[ASSISTANT_PARAM_MOTOR_KD - 1] =
-        (float)pid_lf.kd;
-    seekfree_assistant_parameter[ASSISTANT_PARAM_LINE_CONTRAST - 1] =
-        (float)reference_contrast_ratio;
+    seekfree_assistant_parameter[ASSISTANT_PARAM_MIN_SPEED - 1] =
+        (float)min_speed;
+    seekfree_assistant_parameter[ASSISTANT_PARAM_MAX_SPEED - 1] =
+        (float)max_speed;
     seekfree_assistant_parameter[ASSISTANT_PARAM_CAMERA_EXPOSURE - 1] =
         (float)camera_exposure_time;
 }
@@ -190,15 +191,20 @@ static void Assistant_Apply_Param(uint8 channel, float value)
         pid_rf.ki = fixed_value;
         break;
 
-    case ASSISTANT_PARAM_MOTOR_KD:
-        fixed_value = Assistant_Float_To_Int32(value);
-        pid_lf.kd = fixed_value;
-        pid_rf.kd = fixed_value;
+    case ASSISTANT_PARAM_MIN_SPEED:
+        value = Assistant_Clamp_Float(value, ASSISTANT_SPEED_MIN, (float)MAX_SPEED_TUNE_MAX);
+        min_speed = (int16)(value + 0.5f);
+        if (max_speed < min_speed) {
+            max_speed = min_speed;
+        }
         break;
 
-    case ASSISTANT_PARAM_LINE_CONTRAST:
-        value = Assistant_Clamp_Float(value, 1.0f, 120.0f);
-        reference_contrast_ratio = (uint8)(value + 0.5f);
+    case ASSISTANT_PARAM_MAX_SPEED:
+        value = Assistant_Clamp_Float(value, ASSISTANT_SPEED_MIN, (float)MAX_SPEED_TUNE_MAX);
+        max_speed = (int16)(value + 0.5f);
+        if (min_speed > max_speed) {
+            min_speed = max_speed;
+        }
         break;
 
     case ASSISTANT_PARAM_CAMERA_EXPOSURE:
@@ -240,10 +246,10 @@ static void Assistant_Send_Scope(void)
     seekfree_assistant_oscilloscope_data.dat[1] = (float)servo_error;
     seekfree_assistant_oscilloscope_data.dat[2] = (float)encoder_data_l;
     seekfree_assistant_oscilloscope_data.dat[3] = (float)encoder_data_r;
-    seekfree_assistant_oscilloscope_data.dat[4] = (float)right_edge_line[50];
-    seekfree_assistant_oscilloscope_data.dat[5] = (float)right_edge_line[60];
-    seekfree_assistant_oscilloscope_data.dat[6] = (float)right_edge_line[70];
-    seekfree_assistant_oscilloscope_data.dat[7] = (float)right_edge_line[80];
+    seekfree_assistant_oscilloscope_data.dat[4] = (float)target_speed_l;
+    seekfree_assistant_oscilloscope_data.dat[5] = (float)target_speed_r;
+    seekfree_assistant_oscilloscope_data.dat[6] = (float)motor_pwm_l;
+    seekfree_assistant_oscilloscope_data.dat[7] = (float)motor_pwm_r;
 
     seekfree_assistant_oscilloscope_send(&seekfree_assistant_oscilloscope_data);
 }

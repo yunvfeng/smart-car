@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  zf_common_debug                                                    14/07/26  10:25:57  PAGE 1   
+C251 COMPILER V5.60.0,  zf_common_debug                                                    15/07/26  18:51:55  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_common_debug
@@ -66,7 +66,7 @@ stmt  level    source
              -收中断
    52              uint8                       debug_uart_buffer[DEBUG_RING_BUFFER_LEN];           // 数据存放数组
    53          #endif
-C251 COMPILER V5.60.0,  zf_common_debug                                                    14/07/26  10:25:57  PAGE 2   
+C251 COMPILER V5.60.0,  zf_common_debug                                                    15/07/26  18:51:55  PAGE 2   
 
    54          
    55          fifo_struct                 debug_uart_fifo;
@@ -134,7 +134,7 @@ stmt  level    source
              -------------
   113          // 函数简介     debug 串口中断处理函数 isr.c 中对应串口中断服务函数调用
   114          // 参数说明     void
-C251 COMPILER V5.60.0,  zf_common_debug                                                    14/07/26  10:25:57  PAGE 3   
+C251 COMPILER V5.60.0,  zf_common_debug                                                    15/07/26  18:51:55  PAGE 3   
 
   115          // 返回参数     void
   116          // 使用示例     debug_interrupr_handler();
@@ -202,7 +202,7 @@ stmt  level    source
                            uart_write_byte(DEBUG_UART_INDEX, c);//把自己实现的串口打印一字节数据的函数替换到这里
                            return c;
                        #endif
-C251 COMPILER V5.60.0,  zf_common_debug                                                    14/07/26  10:25:57  PAGE 4   
+C251 COMPILER V5.60.0,  zf_common_debug                                                    15/07/26  18:51:55  PAGE 4   
 
   176   1      
   177   1          }
@@ -270,7 +270,7 @@ stmt  level    source
   233   1          #endif
   234   1      #else
                    uint8 uartx = DEBUG_UART_INDEX;
-C251 COMPILER V5.60.0,  zf_common_debug                                                    14/07/26  10:25:57  PAGE 5   
+C251 COMPILER V5.60.0,  zf_common_debug                                                    15/07/26  18:51:55  PAGE 5   
 
                    
                    uart_init(

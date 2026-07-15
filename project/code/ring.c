@@ -7,10 +7,13 @@
 #define TURN_TO_IN_CONFIRM_FRAMES      3u
 #define IN_TO_OUT_MIN_FRAMES           20u
 #define IN_TO_OUT_CONFIRM_FRAMES       3u
-#define RING_IN_LEFT_TOP_COL           50u
+#define RING_IN_LEFT_TOP_COL           65u
+#define RING_OUT_LEFT_TOP_COL          30u
 #define RING_MIRROR_COL(col)           ((uint8)(SEARCH_IMAGE_W - 1u - (col)))
-#define RING_IN_RIGHT_TOP_COL          140u
+#define RING_IN_RIGHT_TOP_COL          122u
+#define RING_OUT_RIGHT_TOP_COL         157u
 #define RIGHT_IN_AUTO_OUT_FRAMES       40u
+#define BACK_AUTO_EXIT_FRAMES          200u
 #define RIGHT_RING_ENABLE              1u
 
 #define RING_STEP_PRE_MEET              0u
@@ -46,6 +49,7 @@ static uint8 enter_to_first_cnt = 0;
 static uint8 turn_to_in_cnt = 0;
 static uint8 in_to_out_cnt = 0;
 static uint16 cnt_over = 0;
+static uint16 back_frame_cnt = 0;
 
 static void Ring_First_meeting_Right(void);
 static void Ring_Enter_Right(void);
@@ -101,6 +105,7 @@ static void Ring_Change_Step(uint8 next_step)
 
     case RING_STEP_STRAIGHTEN:
         ring_over_flag = 0;
+        back_frame_cnt = 0;
         break;
 
     case RING_STEP_OVER:
@@ -281,13 +286,17 @@ void Ring(void)
         break;
 
     case RING_STEP_STRAIGHTEN:
+        if (back_frame_cnt < BACK_AUTO_EXIT_FRAMES) {
+            back_frame_cnt++;
+        }
+
         if (ring_r) {
             Ring_Straighten_Right();
         } else {
             Ring_Straighten();
         }
 
-        if (ring_over_flag) {
+        if (ring_over_flag || back_frame_cnt >= BACK_AUTO_EXIT_FRAMES) {
             Ring_Change_Step(RING_STEP_OVER);
         }
         break;
@@ -612,8 +621,9 @@ void Ring_Ring_Ring(void)
         minPoint < SEARCH_IMAGE_H - PIXEL_OFFSET &&
         (((int16)right_edge_line[minPoint - PIXEL_OFFSET] - (int16)right_edge_line[minPoint] < 30 &&
          (int16)right_edge_line[minPoint + PIXEL_OFFSET] - (int16)right_edge_line[minPoint] < 30) ||
-         minPoint < 40)) {
+        minPoint < 40)) {
         left_control_line[0] = RING_IN_LEFT_TOP_COL;
+        right_control_line[0] = RING_IN_LEFT_TOP_COL;
         draw_line(0, SEARCH_IMAGE_H - 1, 1);
     }
 
@@ -634,6 +644,8 @@ void Ring_Ring_Ring(void)
 /* 出圆环阶段，继续补右控制线并判断是否可以开始回正。 */
 void Ring_Out(void)
 {
+    left_control_line[0] = RING_OUT_LEFT_TOP_COL;
+    right_control_line[0] = RING_OUT_LEFT_TOP_COL;
     draw_line(0, SEARCH_IMAGE_H - 1, 1);
 
     if ((left_edge_line[30] > 16 ||
@@ -846,8 +858,8 @@ static void Ring_Ring_Ring_Right(void)
 static void Ring_Out_Right(void)
 {
     left_control_line[SEARCH_IMAGE_H - 1] = 0;
-    left_control_line[0] = SEARCH_IMAGE_W - 1;
-    right_control_line[0] = SEARCH_IMAGE_W - 1;
+    left_control_line[0] = RING_OUT_RIGHT_TOP_COL;
+    right_control_line[0] = RING_OUT_RIGHT_TOP_COL;
     draw_line(SEARCH_IMAGE_H - 1, 0, 0);
 
     if ((right_edge_line[30] < RING_MIRROR_COL(16u) ||
@@ -909,4 +921,5 @@ void Ring_Over(void)
     in_to_out_cnt = 0;
     current_step = 0;
     cnt_over = 0;
+    back_frame_cnt = 0;
 }

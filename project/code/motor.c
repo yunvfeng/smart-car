@@ -7,9 +7,12 @@ int16 encoder_data_r = 0;
 int16 encoder_data_l = 0;
 
 int16 tar_speed = BASE_TARGET_SPEED;
-int16 diff_left = 0;
-int16 diff_right = 0;
-int16 diff_kp_q10 = 0;
+volatile int16 min_speed = MIN_SPEED;
+volatile int16 max_speed = MAX_SPEED;
+volatile int16 target_speed_l = BASE_TARGET_SPEED;
+volatile int16 target_speed_r = BASE_TARGET_SPEED;
+volatile int16 motor_pwm_l = 0;
+volatile int16 motor_pwm_r = 0;
 
 /* 限制电机 PWM 输出，防止超过驱动允许范围。 */
 static int16 clamp_motor(int16 x)
@@ -17,6 +20,46 @@ static int16 clamp_motor(int16 x)
     if (x > MOTOR_MAX_LIMIT) return MOTOR_MAX_LIMIT;
     if (x < -MOTOR_MAX_LIMIT) return -MOTOR_MAX_LIMIT;
     return x;
+}
+
+/* 将单轮目标速度限制在可用范围内。 */
+static int16 clamp_wheel_target(int16 x, int16 speed_ceiling)
+{
+    if (x > speed_ceiling) return speed_ceiling;
+    if (x < WHEEL_TARGET_MIN) return WHEEL_TARGET_MIN;
+    return x;
+}
+
+/*
+ * 对 PI 请求的 PWM 加死区补偿和变化率限制。
+ * 返回值是本周期真正写入电机的 PWM，后续同步回 pid.out。
+ */
+static int16 shape_motor_pwm(int16 target, int32 requested, int16 previous)
+{
+    int32 next;
+    int32 upper;
+    int32 lower;
+
+    next = requested;
+    if (target > 0 && next < MOTOR_MIN_EFFECTIVE_PWM) {
+        next = MOTOR_MIN_EFFECTIVE_PWM;
+    }
+
+    if (next > MOTOR_MAX_LIMIT) {
+        next = MOTOR_MAX_LIMIT;
+    } else if (next < -MOTOR_MAX_LIMIT) {
+        next = -MOTOR_MAX_LIMIT;
+    }
+
+    upper = (int32)previous + MOTOR_PWM_RISE_STEP;
+    lower = (int32)previous - MOTOR_PWM_FALL_STEP;
+    if (next > upper) {
+        next = upper;
+    } else if (next < lower) {
+        next = lower;
+    }
+
+    return clamp_motor((int16)next);
 }
 
 /* 初始化左右轮编码器通道。 */
@@ -39,15 +82,15 @@ void Motor_Init(void)
 /* 电机正反转测试函数，用于单独检查左右电机接线和方向。 */
 void motor_test(void)
 {
-    Motor_control(PWM_L, 1000);
+    Motor_control(PWM_L, MOTOR_MIN_EFFECTIVE_PWM);
     system_delay_ms(1000);
-    Motor_control(PWM_L, -1000);
+    Motor_control(PWM_L, -MOTOR_MIN_EFFECTIVE_PWM);
     system_delay_ms(1000);
     Motor_control(PWM_L, 0);
 
-    Motor_control(PWM_R, 1000);
+    Motor_control(PWM_R, MOTOR_MIN_EFFECTIVE_PWM);
     system_delay_ms(1000);
-    Motor_control(PWM_R, -1000);
+    Motor_control(PWM_R, -MOTOR_MIN_EFFECTIVE_PWM);
     system_delay_ms(1000);
     Motor_control(PWM_R, 0);
 }
@@ -91,30 +134,67 @@ void Encoder_GetValue(void)
 void Dream_speed(void)
 {
     uint16 tp_turn;
-    int16 delta;
-    int32 diff_tmp;
-
-    delta = (int16)(err_sum - Mid_Col);
+    uint16 turn_limit;
+    uint32 turn_square;
+    uint32 max_turn_square;
+    int16 speed_floor;
+    int16 speed_ceiling;
+    int16 turn_diff;
+    int16 left_target;
+    int16 right_target;
 
     if (Out_servo > SERVO_CENTER) {
         tp_turn = Out_servo - SERVO_CENTER;
-        diff_tmp = ((int32)delta * (int32)diff_kp_q10) >> 10;
-        diff_left  = (int16)(-diff_tmp);
-        diff_right = (int16)((diff_tmp * 76L) / 100L);
+        turn_limit = SERVO_DUTY_MAX - SERVO_CENTER;
     } else {
         tp_turn = SERVO_CENTER - Out_servo;
-        delta = -delta;
-        diff_tmp = ((int32)delta * (int32)diff_kp_q10) >> 10;
-        diff_left  = (int16)((diff_tmp * 76L) / 100L);
-        diff_right = (int16)(-diff_tmp);
+        turn_limit = SERVO_CENTER - SERVO_DUTY_MIN;
     }
 
-    if (tp_turn > MAX_TURN) {
-        tp_turn = MAX_TURN;
+    if (turn_limit > MAX_TURN) {
+        turn_limit = MAX_TURN;
+    }
+    if (tp_turn > turn_limit) {
+        tp_turn = turn_limit;
     }
 
-    tar_speed = MAX_SPEED -
-        (int16)(((uint32)(MAX_SPEED - MIN_SPEED) * tp_turn) / MAX_TURN);
+    /* 每个控制周期使用同一份原子快照，避免 WiFi 更新时混用新旧范围。 */
+    speed_ceiling = max_speed;
+
+    if (speed_ceiling < WHEEL_TARGET_MIN) {
+        speed_ceiling = WHEEL_TARGET_MIN;
+    } else if (speed_ceiling > MAX_SPEED_TUNE_MAX) {
+        speed_ceiling = MAX_SPEED_TUNE_MAX;
+    }
+
+    speed_floor = min_speed;
+    if (speed_floor < WHEEL_TARGET_MIN) {
+        speed_floor = WHEEL_TARGET_MIN;
+    } else if (speed_floor > speed_ceiling) {
+        speed_floor = speed_ceiling;
+    }
+
+    /* 转角平方映射：中小弯少降速，大转角仍平滑降到可调最低速度。 */
+    turn_square = (uint32)tp_turn * (uint32)tp_turn;
+    max_turn_square = (uint32)turn_limit * (uint32)turn_limit;
+    tar_speed = speed_ceiling -
+        (int16)(((uint32)(speed_ceiling - speed_floor) * turn_square) / max_turn_square);
+
+    turn_diff = (int16)(((uint32)TURN_DIFF_MAX * tp_turn) / turn_limit);
+    left_target = tar_speed;
+    right_target = tar_speed;
+
+    /* 沿用当前舵机方向约定：大于中值时右轮为内轮。 */
+    if (Out_servo > SERVO_CENTER) {
+        left_target += turn_diff;
+        right_target -= turn_diff;
+    } else if (Out_servo < SERVO_CENTER) {
+        left_target -= turn_diff;
+        right_target += turn_diff;
+    }
+
+    target_speed_l = clamp_wheel_target(left_target, speed_ceiling);
+    target_speed_r = clamp_wheel_target(right_target, speed_ceiling);
 }
 
 /* 电机速度闭环：计算目标速度，更新左右 PI，再输出 PWM。 */
@@ -122,9 +202,16 @@ void Motor_Loop(void)
 {
     Dream_speed();
 
-    Increment_PID(&pid_lf, (int16)(tar_speed + diff_left),  encoder_data_l);
-    Increment_PID(&pid_rf, (int16)(tar_speed + diff_right), encoder_data_r);
+    Increment_PID(&pid_lf, target_speed_l, encoder_data_l);
+    Increment_PID(&pid_rf, target_speed_r, encoder_data_r);
 
-    Motor_control(PWM_L, (int16)pid_lf.out);
-    Motor_control(PWM_R, (int16)pid_rf.out);
+    motor_pwm_l = shape_motor_pwm(target_speed_l, pid_lf.out, motor_pwm_l);
+    motor_pwm_r = shape_motor_pwm(target_speed_r, pid_rf.out, motor_pwm_r);
+
+    /* PI 内部输出与实际 PWM 保持一致，不留隐藏积累。 */
+    pid_lf.out = motor_pwm_l;
+    pid_rf.out = motor_pwm_r;
+
+    Motor_control(PWM_L, motor_pwm_l);
+    Motor_control(PWM_R, motor_pwm_r);
 }

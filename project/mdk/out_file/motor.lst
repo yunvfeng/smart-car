@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  motor                                                              14/07/26  10:26:00  PAGE 1   
+C251 COMPILER V5.60.0,  motor                                                              15/07/26  18:51:59  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE motor
@@ -19,141 +19,230 @@ stmt  level    source
     7          int16 encoder_data_l = 0;
     8          
     9          int16 tar_speed = BASE_TARGET_SPEED;
-   10          int16 diff_left = 0;
-   11          int16 diff_right = 0;
-   12          int16 diff_kp_q10 = 0;
-   13          
-   14          /* 限制电机 PWM 输出，防止超过驱动允许范围。 */
-   15          static int16 clamp_motor(int16 x)
-   16          {
-   17   1          if (x > MOTOR_MAX_LIMIT) return MOTOR_MAX_LIMIT;
-   18   1          if (x < -MOTOR_MAX_LIMIT) return -MOTOR_MAX_LIMIT;
-   19   1          return x;
-   20   1      }
-   21          
-   22          /* 初始化左右轮编码器通道。 */
-   23          void Encoder_Init(void)
-   24          {
-   25   1          encoder_quad_init(ENCODER_DIR_1, ENCODER_DIR_PULSE_1, ENCODER_DIR_DIR_1);
-   26   1          encoder_quad_init(ENCODER_DIR_2, ENCODER_DIR_PULSE_2, ENCODER_DIR_DIR_2);
-   27   1      }
-   28          
-   29          /* 初始化左右电机 PWM 和方向控制引脚。 */
-   30          void Motor_Init(void)
-   31          {
-   32   1          pwm_init(PWM_L, MOTOR_FREQ, 0);
-   33   1          pwm_init(PWM_R, MOTOR_FREQ, 0);
-   34   1      
-   35   1          gpio_init(DIR_L, GPO, 0, GPO_PUSH_PULL);
-   36   1          gpio_init(DIR_R, GPO, 0, GPO_PUSH_PULL);
-   37   1      }
-   38          
-   39          /* 电机正反转测试函数，用于单独检查左右电机接线和方向。 */
-   40          void motor_test(void)
-   41          {
-   42   1          Motor_control(PWM_L, 1000);
-   43   1          system_delay_ms(1000);
-   44   1          Motor_control(PWM_L, -1000);
-   45   1          system_delay_ms(1000);
-   46   1          Motor_control(PWM_L, 0);
+   10          volatile int16 min_speed = MIN_SPEED;
+   11          volatile int16 max_speed = MAX_SPEED;
+   12          volatile int16 target_speed_l = BASE_TARGET_SPEED;
+   13          volatile int16 target_speed_r = BASE_TARGET_SPEED;
+   14          volatile int16 motor_pwm_l = 0;
+   15          volatile int16 motor_pwm_r = 0;
+   16          
+   17          /* 限制电机 PWM 输出，防止超过驱动允许范围。 */
+   18          static int16 clamp_motor(int16 x)
+   19          {
+   20   1          if (x > MOTOR_MAX_LIMIT) return MOTOR_MAX_LIMIT;
+   21   1          if (x < -MOTOR_MAX_LIMIT) return -MOTOR_MAX_LIMIT;
+   22   1          return x;
+   23   1      }
+   24          
+   25          /* 将单轮目标速度限制在可用范围内。 */
+   26          static int16 clamp_wheel_target(int16 x, int16 speed_ceiling)
+   27          {
+   28   1          if (x > speed_ceiling) return speed_ceiling;
+   29   1          if (x < WHEEL_TARGET_MIN) return WHEEL_TARGET_MIN;
+   30   1          return x;
+   31   1      }
+   32          
+   33          /*
+   34           * 对 PI 请求的 PWM 加死区补偿和变化率限制。
+   35           * 返回值是本周期真正写入电机的 PWM，后续同步回 pid.out。
+   36           */
+   37          static int16 shape_motor_pwm(int16 target, int32 requested, int16 previous)
+   38          {
+   39   1          int32 next;
+   40   1          int32 upper;
+   41   1          int32 lower;
+   42   1      
+   43   1          next = requested;
+   44   1          if (target > 0 && next < MOTOR_MIN_EFFECTIVE_PWM) {
+   45   2              next = MOTOR_MIN_EFFECTIVE_PWM;
+   46   2          }
    47   1      
-   48   1          Motor_control(PWM_R, 1000);
-   49   1          system_delay_ms(1000);
-   50   1          Motor_control(PWM_R, -1000);
-   51   1          system_delay_ms(1000);
-   52   1          Motor_control(PWM_R, 0);
-   53   1      }
-   54          
-   55          /* 控制指定电机输出，speed 正负决定方向，绝对值决定 PWM 占空比。 */
-   56          void Motor_control(pwm_channel_enum wheel, int16 speed)
-C251 COMPILER V5.60.0,  motor                                                              14/07/26  10:26:00  PAGE 2   
+   48   1          if (next > MOTOR_MAX_LIMIT) {
+   49   2              next = MOTOR_MAX_LIMIT;
+   50   2          } else if (next < -MOTOR_MAX_LIMIT) {
+   51   2              next = -MOTOR_MAX_LIMIT;
+   52   2          }
+   53   1      
+   54   1          upper = (int32)previous + MOTOR_PWM_RISE_STEP;
+   55   1          lower = (int32)previous - MOTOR_PWM_FALL_STEP;
+   56   1          if (next > upper) {
+C251 COMPILER V5.60.0,  motor                                                              15/07/26  18:51:59  PAGE 2   
 
-   57          {
-   58   1          speed = clamp_motor(speed);
-   59   1      
-   60   1          if (wheel == PWM_L) {
-   61   2              if (speed >= 0) {
-   62   3                  gpio_set_level(DIR_L, 1);
-   63   3                  pwm_set_duty(PWM_L, (uint32)speed);
-   64   3              } else {
-   65   3                  gpio_set_level(DIR_L, 0);
-   66   3                  pwm_set_duty(PWM_L, (uint32)(-speed));
-   67   3              }
-   68   2          } else {
-   69   2              if (speed >= 0) {
-   70   3                  gpio_set_level(DIR_R, 1);
-   71   3                  pwm_set_duty(PWM_R, (uint32)speed);
-   72   3              } else {
-   73   3                  gpio_set_level(DIR_R, 0);
-   74   3                  pwm_set_duty(PWM_R, (uint32)(-speed));
-   75   3              }
-   76   2          }
-   77   1      }
-   78          
-   79          /* 读取左右编码器脉冲并清零，供本周期速度闭环使用。 */
-   80          void Encoder_GetValue(void)
-   81          {
-   82   1          /* 右轮编码器安装方向相反，所以读取后取负。 */
-   83   1          encoder_data_l = encoder_get_count(ENCODER_DIR_2);
-   84   1          encoder_clear_count(ENCODER_DIR_2);
-   85   1      
-   86   1          encoder_data_r = -encoder_get_count(ENCODER_DIR_1);
-   87   1          encoder_clear_count(ENCODER_DIR_1);
-   88   1      }
-   89          
-   90          /* 根据当前舵机转角降低目标速度，并计算左右轮差速补偿。 */
-   91          void Dream_speed(void)
-   92          {
-   93   1          uint16 tp_turn;
-   94   1          int16 delta;
-   95   1          int32 diff_tmp;
-   96   1      
-   97   1          delta = (int16)(err_sum - Mid_Col);
-   98   1      
-   99   1          if (Out_servo > SERVO_CENTER) {
-  100   2              tp_turn = Out_servo - SERVO_CENTER;
-  101   2              diff_tmp = ((int32)delta * (int32)diff_kp_q10) >> 10;
-  102   2              diff_left  = (int16)(-diff_tmp);
-  103   2              diff_right = (int16)((diff_tmp * 76L) / 100L);
-  104   2          } else {
-  105   2              tp_turn = SERVO_CENTER - Out_servo;
-  106   2              delta = -delta;
-  107   2              diff_tmp = ((int32)delta * (int32)diff_kp_q10) >> 10;
-  108   2              diff_left  = (int16)((diff_tmp * 76L) / 100L);
-  109   2              diff_right = (int16)(-diff_tmp);
-  110   2          }
-  111   1      
-  112   1          if (tp_turn > MAX_TURN) {
-  113   2              tp_turn = MAX_TURN;
-  114   2          }
-  115   1      
-  116   1          tar_speed = MAX_SPEED -
-  117   1              (int16)(((uint32)(MAX_SPEED - MIN_SPEED) * tp_turn) / MAX_TURN);
-  118   1      }
-  119          
-  120          /* 电机速度闭环：计算目标速度，更新左右 PI，再输出 PWM。 */
-  121          void Motor_Loop(void)
-  122          {
-C251 COMPILER V5.60.0,  motor                                                              14/07/26  10:26:00  PAGE 3   
+   57   2              next = upper;
+   58   2          } else if (next < lower) {
+   59   2              next = lower;
+   60   2          }
+   61   1      
+   62   1          return clamp_motor((int16)next);
+   63   1      }
+   64          
+   65          /* 初始化左右轮编码器通道。 */
+   66          void Encoder_Init(void)
+   67          {
+   68   1          encoder_quad_init(ENCODER_DIR_1, ENCODER_DIR_PULSE_1, ENCODER_DIR_DIR_1);
+   69   1          encoder_quad_init(ENCODER_DIR_2, ENCODER_DIR_PULSE_2, ENCODER_DIR_DIR_2);
+   70   1      }
+   71          
+   72          /* 初始化左右电机 PWM 和方向控制引脚。 */
+   73          void Motor_Init(void)
+   74          {
+   75   1          pwm_init(PWM_L, MOTOR_FREQ, 0);
+   76   1          pwm_init(PWM_R, MOTOR_FREQ, 0);
+   77   1      
+   78   1          gpio_init(DIR_L, GPO, 0, GPO_PUSH_PULL);
+   79   1          gpio_init(DIR_R, GPO, 0, GPO_PUSH_PULL);
+   80   1      }
+   81          
+   82          /* 电机正反转测试函数，用于单独检查左右电机接线和方向。 */
+   83          void motor_test(void)
+   84          {
+   85   1          Motor_control(PWM_L, MOTOR_MIN_EFFECTIVE_PWM);
+   86   1          system_delay_ms(1000);
+   87   1          Motor_control(PWM_L, -MOTOR_MIN_EFFECTIVE_PWM);
+   88   1          system_delay_ms(1000);
+   89   1          Motor_control(PWM_L, 0);
+   90   1      
+   91   1          Motor_control(PWM_R, MOTOR_MIN_EFFECTIVE_PWM);
+   92   1          system_delay_ms(1000);
+   93   1          Motor_control(PWM_R, -MOTOR_MIN_EFFECTIVE_PWM);
+   94   1          system_delay_ms(1000);
+   95   1          Motor_control(PWM_R, 0);
+   96   1      }
+   97          
+   98          /* 控制指定电机输出，speed 正负决定方向，绝对值决定 PWM 占空比。 */
+   99          void Motor_control(pwm_channel_enum wheel, int16 speed)
+  100          {
+  101   1          speed = clamp_motor(speed);
+  102   1      
+  103   1          if (wheel == PWM_L) {
+  104   2              if (speed >= 0) {
+  105   3                  gpio_set_level(DIR_L, 1);
+  106   3                  pwm_set_duty(PWM_L, (uint32)speed);
+  107   3              } else {
+  108   3                  gpio_set_level(DIR_L, 0);
+  109   3                  pwm_set_duty(PWM_L, (uint32)(-speed));
+  110   3              }
+  111   2          } else {
+  112   2              if (speed >= 0) {
+  113   3                  gpio_set_level(DIR_R, 1);
+  114   3                  pwm_set_duty(PWM_R, (uint32)speed);
+  115   3              } else {
+  116   3                  gpio_set_level(DIR_R, 0);
+  117   3                  pwm_set_duty(PWM_R, (uint32)(-speed));
+  118   3              }
+  119   2          }
+  120   1      }
+  121          
+  122          /* 读取左右编码器脉冲并清零，供本周期速度闭环使用。 */
+C251 COMPILER V5.60.0,  motor                                                              15/07/26  18:51:59  PAGE 3   
 
-  123   1          Dream_speed();
-  124   1      
-  125   1          Increment_PID(&pid_lf, (int16)(tar_speed + diff_left),  encoder_data_l);
-  126   1          Increment_PID(&pid_rf, (int16)(tar_speed + diff_right), encoder_data_r);
-  127   1      
-  128   1          Motor_control(PWM_L, (int16)pid_lf.out);
-  129   1          Motor_control(PWM_R, (int16)pid_rf.out);
-  130   1      }
+  123          void Encoder_GetValue(void)
+  124          {
+  125   1          /* 右轮编码器安装方向相反，所以读取后取负。 */
+  126   1          encoder_data_l = encoder_get_count(ENCODER_DIR_2);
+  127   1          encoder_clear_count(ENCODER_DIR_2);
+  128   1      
+  129   1          encoder_data_r = -encoder_get_count(ENCODER_DIR_1);
+  130   1          encoder_clear_count(ENCODER_DIR_1);
+  131   1      }
+  132          
+  133          /* 根据当前舵机转角降低目标速度，并计算左右轮差速补偿。 */
+  134          void Dream_speed(void)
+  135          {
+  136   1          uint16 tp_turn;
+  137   1          uint16 turn_limit;
+  138   1          uint32 turn_square;
+  139   1          uint32 max_turn_square;
+  140   1          int16 speed_floor;
+  141   1          int16 speed_ceiling;
+  142   1          int16 turn_diff;
+  143   1          int16 left_target;
+  144   1          int16 right_target;
+  145   1      
+  146   1          if (Out_servo > SERVO_CENTER) {
+  147   2              tp_turn = Out_servo - SERVO_CENTER;
+  148   2              turn_limit = SERVO_DUTY_MAX - SERVO_CENTER;
+  149   2          } else {
+  150   2              tp_turn = SERVO_CENTER - Out_servo;
+  151   2              turn_limit = SERVO_CENTER - SERVO_DUTY_MIN;
+  152   2          }
+  153   1      
+  154   1          if (turn_limit > MAX_TURN) {
+  155   2              turn_limit = MAX_TURN;
+  156   2          }
+  157   1          if (tp_turn > turn_limit) {
+  158   2              tp_turn = turn_limit;
+  159   2          }
+  160   1      
+  161   1          /* 每个控制周期使用同一份原子快照，避免 WiFi 更新时混用新旧范围。 */
+  162   1          speed_ceiling = max_speed;
+  163   1      
+  164   1          if (speed_ceiling < WHEEL_TARGET_MIN) {
+  165   2              speed_ceiling = WHEEL_TARGET_MIN;
+  166   2          } else if (speed_ceiling > MAX_SPEED_TUNE_MAX) {
+  167   2              speed_ceiling = MAX_SPEED_TUNE_MAX;
+  168   2          }
+  169   1      
+  170   1          speed_floor = min_speed;
+  171   1          if (speed_floor < WHEEL_TARGET_MIN) {
+  172   2              speed_floor = WHEEL_TARGET_MIN;
+  173   2          } else if (speed_floor > speed_ceiling) {
+  174   2              speed_floor = speed_ceiling;
+  175   2          }
+  176   1      
+  177   1          /* 转角平方映射：中小弯少降速，大转角仍平滑降到可调最低速度。 */
+  178   1          turn_square = (uint32)tp_turn * (uint32)tp_turn;
+  179   1          max_turn_square = (uint32)turn_limit * (uint32)turn_limit;
+  180   1          tar_speed = speed_ceiling -
+  181   1              (int16)(((uint32)(speed_ceiling - speed_floor) * turn_square) / max_turn_square);
+  182   1      
+  183   1          turn_diff = (int16)(((uint32)TURN_DIFF_MAX * tp_turn) / turn_limit);
+  184   1          left_target = tar_speed;
+  185   1          right_target = tar_speed;
+  186   1      
+  187   1          /* 沿用当前舵机方向约定：大于中值时右轮为内轮。 */
+  188   1          if (Out_servo > SERVO_CENTER) {
+C251 COMPILER V5.60.0,  motor                                                              15/07/26  18:51:59  PAGE 4   
+
+  189   2              left_target += turn_diff;
+  190   2              right_target -= turn_diff;
+  191   2          } else if (Out_servo < SERVO_CENTER) {
+  192   2              left_target -= turn_diff;
+  193   2              right_target += turn_diff;
+  194   2          }
+  195   1      
+  196   1          target_speed_l = clamp_wheel_target(left_target, speed_ceiling);
+  197   1          target_speed_r = clamp_wheel_target(right_target, speed_ceiling);
+  198   1      }
+  199          
+  200          /* 电机速度闭环：计算目标速度，更新左右 PI，再输出 PWM。 */
+  201          void Motor_Loop(void)
+  202          {
+  203   1          Dream_speed();
+  204   1      
+  205   1          Increment_PID(&pid_lf, target_speed_l, encoder_data_l);
+  206   1          Increment_PID(&pid_rf, target_speed_r, encoder_data_r);
+  207   1      
+  208   1          motor_pwm_l = shape_motor_pwm(target_speed_l, pid_lf.out, motor_pwm_l);
+  209   1          motor_pwm_r = shape_motor_pwm(target_speed_r, pid_rf.out, motor_pwm_r);
+  210   1      
+  211   1          /* PI 内部输出与实际 PWM 保持一致，不留隐藏积累。 */
+  212   1          pid_lf.out = motor_pwm_l;
+  213   1          pid_rf.out = motor_pwm_r;
+  214   1      
+  215   1          Motor_control(PWM_L, motor_pwm_l);
+  216   1          Motor_control(PWM_R, motor_pwm_r);
+  217   1      }
 
 
 Module Information          Static   Overlayable
 ------------------------------------------------
   code size            =    ------     ------
-  ecode size           =      1058     ------
+  ecode size           =      1698     ------
   data size            =    ------     ------
   idata size           =    ------     ------
   pdata size           =    ------     ------
-  xdata size           =        26     ------
+  xdata size           =        70     ------
   xdata-const size     =    ------     ------
   edata size           =    ------     ------
   bit size             =    ------     ------
@@ -163,7 +252,7 @@ Module Information          Static   Overlayable
   far data size        =    ------     ------
   huge data size       =    ------     ------
   const size           =    ------     ------
-  hconst size          =        42     ------
+  hconst size          =        63     ------
 End of Module Information.
 
 
