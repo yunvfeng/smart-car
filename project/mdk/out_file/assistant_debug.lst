@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  assistant_debug                                                    15/07/26  18:52:00  PAGE 1   
+C251 COMPILER V5.60.0,  assistant_debug                                                    15/07/26  19:17:45  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE assistant_debug
@@ -15,284 +15,314 @@ stmt  level    source
     3          #if ASSISTANT_DEBUG_ENABLE
     4          
     5          #include "image.h"
-    6          #include "laser.h"
-    7          #include "motor.h"
-    8          #include "pid.h"
-    9          #include "ring.h"
-   10          
-   11          #define ASSISTANT_PARAM_MIN_CHANNEL     1u
-   12          #define ASSISTANT_PARAM_MAX_CHANNEL     SEEKFREE_ASSISTANT_SET_PARAMETR_COUNT
-   13          #define ASSISTANT_EXPOSURE_MIN          1.0f
-   14          #define ASSISTANT_EXPOSURE_MAX          4095.0f
-   15          #define ASSISTANT_SPEED_MIN              165.0f
-   16          
-   17          static uint8 assistant_image_cnt = 0;
-   18          static uint8 assistant_scope_cnt = 0;
-   19          static volatile uint16 assistant_time_100us = 0;
-   20          static volatile uint16 assistant_image_process_time_100us = 0;
-   21          
-   22          #if ASSISTANT_DEBUG_IMAGE_ENABLE && ASSISTANT_DEBUG_IMAGE_OVERLAY_ENABLE
-   23          static const char *Assistant_Ring_State_Name(void)
-   24          {
-   25   1          switch (current_step) {
-   26   2          case 0: return "NORM";
-   27   2          case 1: return "FIRST";
-   28   2          case 2: return "ENTER";
-   29   2          case 3: return "TURN";
-   30   2          case 4: return "IN";
-   31   2          case 5: return "OUT";
-   32   2          case 6: return "BACK";
-   33   2          case 7: return "OVER";
-   34   2          default: return "ERR";
-   35   2          }
-   36   1      }
-   37          
-   38          static void Assistant_Draw_Image_Point(uint8 x, uint8 y, uint8 gray)
-   39          {
-   40   1          if (x < MT9V03X_W && y < MT9V03X_H) {
-   41   2              mt9v03x_image[y][x] = gray;
-   42   2          }
-   43   1      }
-   44          
-   45          static void Assistant_Draw_Image_Char(uint8 x, uint8 y, char dat)
-   46          {
-   47   1          uint8 row;
-   48   1          uint8 col;
-   49   1          uint8 temp;
-   50   1          uint8 far *p;
-   51   1      
-   52   1          if (dat < ' ' || dat > '~') {
-   53   2              dat = ' ';
-   54   2          }
-   55   1          if (x + 8u > MT9V03X_W || y + 16u > MT9V03X_H) {
-   56   2              return;
-C251 COMPILER V5.60.0,  assistant_debug                                                    15/07/26  18:52:00  PAGE 2   
+    6          #include "gyro.h"
+    7          #include "laser.h"
+    8          #include "motor.h"
+    9          #include "pid.h"
+   10          #include "ring.h"
+   11          
+   12          #define ASSISTANT_PARAM_MIN_CHANNEL     1u
+   13          #define ASSISTANT_PARAM_MAX_CHANNEL     SEEKFREE_ASSISTANT_SET_PARAMETR_COUNT
+   14          #define ASSISTANT_EXPOSURE_MIN          1.0f
+   15          #define ASSISTANT_EXPOSURE_MAX          4095.0f
+   16          #define ASSISTANT_SPEED_MIN              165.0f
+   17          #define ASSISTANT_GYRO_KG_MIN            (-32.0f)
+   18          #define ASSISTANT_GYRO_KG_MAX            32.0f
+   19          
+   20          static uint8 assistant_image_cnt = 0;
+   21          static uint8 assistant_scope_cnt = 0;
+   22          static volatile uint16 assistant_time_100us = 0;
+   23          static volatile uint16 assistant_image_process_time_100us = 0;
+   24          
+   25          #if ASSISTANT_DEBUG_IMAGE_ENABLE && ASSISTANT_DEBUG_IMAGE_OVERLAY_ENABLE
+   26          static const char *Assistant_Ring_State_Name(void)
+   27          {
+   28   1          switch (current_step) {
+   29   2          case 0: return "NORM";
+   30   2          case 1: return "FIRST";
+   31   2          case 2: return "ENTER";
+   32   2          case 3: return "TURN";
+   33   2          case 4: return "IN";
+   34   2          case 5: return "OUT";
+   35   2          case 6: return "BACK";
+   36   2          case 7: return "OVER";
+   37   2          default: return "ERR";
+   38   2          }
+   39   1      }
+   40          
+   41          static void Assistant_Draw_Image_Point(uint8 x, uint8 y, uint8 gray)
+   42          {
+   43   1          if (x < MT9V03X_W && y < MT9V03X_H) {
+   44   2              mt9v03x_image[y][x] = gray;
+   45   2          }
+   46   1      }
+   47          
+   48          static void Assistant_Draw_Image_Char(uint8 x, uint8 y, char dat)
+   49          {
+   50   1          uint8 row;
+   51   1          uint8 col;
+   52   1          uint8 temp;
+   53   1          uint8 far *p;
+   54   1      
+   55   1          if (dat < ' ' || dat > '~') {
+   56   2              dat = ' ';
+C251 COMPILER V5.60.0,  assistant_debug                                                    15/07/26  19:17:45  PAGE 2   
 
    57   2          }
-   58   1      
-   59   1          for (row = 0; row < 16; row++) {
-   60   2              temp = ascii_font_8x16[dat - 32][row];
-   61   2              p = &mt9v03x_image[y + row][x];
-   62   2              for (col = 0; col < 8; col++) {
-   63   3                  *p++ = (temp & 0x01) ? 255 : 0;
-   64   3                  temp >>= 1;
-   65   3              }
-   66   2          }
-   67   1      }
-   68          
-   69          static uint8 Assistant_Draw_Image_String(uint8 x, uint8 y, const char *str)
-   70          {
-   71   1          while (*str && x + 8u <= MT9V03X_W) {
-   72   2              Assistant_Draw_Image_Char(x, y, *str++);
-   73   2              x += 8;
-   74   2          }
-   75   1      
-   76   1          return x;
-   77   1      }
-   78          
-   79          static void Assistant_Draw_Target_Cross(void)
-   80          {
-   81   1          uint8 i;
-   82   1      
-   83   1          if (!tar_flag) {
-   84   2              return;
-   85   2          }
-   86   1      
-   87   1          for (i = 0; i <= 4; i++) {
-   88   2              Assistant_Draw_Image_Point((uint8)(tar_x - 2 + i), tar_y, 255);
-   89   2              Assistant_Draw_Image_Point(tar_x, (uint8)(tar_y - 2 + i), 255);
-   90   2          }
-   91   1      }
-   92          
-   93          static void Assistant_Draw_Status_Overlay(void)
-   94          {
-   95   1          uint8 x;
-   96   1      
-   97   1          x = 2;
-   98   1          x = Assistant_Draw_Image_String(x, 2, "R:");
-   99   1          Assistant_Draw_Image_String(x, 2, Assistant_Ring_State_Name());
-  100   1      
-  101   1          Assistant_Draw_Target_Cross();
-  102   1      }
-  103          #endif
-  104          
-  105          static void Assistant_Send_Camera(void)
-  106          {
-  107   1      #if ASSISTANT_DEBUG_IMAGE_ENABLE && ASSISTANT_DEBUG_IMAGE_OVERLAY_ENABLE
-  108   1          Assistant_Draw_Status_Overlay();
-  109   1      #endif
-  110   1          seekfree_assistant_camera_send();
-  111   1      }
-  112          
-  113          static float Assistant_Clamp_Float(float value, float min_value, float max_value)
-  114          {
-  115   1          if (value < min_value) {
-  116   2              return min_value;
-  117   2          }
-  118   1          if (value > max_value) {
-  119   2              return max_value;
+   58   1          if (x + 8u > MT9V03X_W || y + 16u > MT9V03X_H) {
+   59   2              return;
+   60   2          }
+   61   1      
+   62   1          for (row = 0; row < 16; row++) {
+   63   2              temp = ascii_font_8x16[dat - 32][row];
+   64   2              p = &mt9v03x_image[y + row][x];
+   65   2              for (col = 0; col < 8; col++) {
+   66   3                  *p++ = (temp & 0x01) ? 255 : 0;
+   67   3                  temp >>= 1;
+   68   3              }
+   69   2          }
+   70   1      }
+   71          
+   72          static uint8 Assistant_Draw_Image_String(uint8 x, uint8 y, const char *str)
+   73          {
+   74   1          while (*str && x + 8u <= MT9V03X_W) {
+   75   2              Assistant_Draw_Image_Char(x, y, *str++);
+   76   2              x += 8;
+   77   2          }
+   78   1      
+   79   1          return x;
+   80   1      }
+   81          
+   82          static void Assistant_Draw_Target_Cross(void)
+   83          {
+   84   1          uint8 i;
+   85   1      
+   86   1          if (!tar_flag) {
+   87   2              return;
+   88   2          }
+   89   1      
+   90   1          for (i = 0; i <= 4; i++) {
+   91   2              Assistant_Draw_Image_Point((uint8)(tar_x - 2 + i), tar_y, 255);
+   92   2              Assistant_Draw_Image_Point(tar_x, (uint8)(tar_y - 2 + i), 255);
+   93   2          }
+   94   1      }
+   95          
+   96          static void Assistant_Draw_Status_Overlay(void)
+   97          {
+   98   1          uint8 x;
+   99   1      
+  100   1          x = 2;
+  101   1          x = Assistant_Draw_Image_String(x, 2, "R:");
+  102   1          Assistant_Draw_Image_String(x, 2, Assistant_Ring_State_Name());
+  103   1      
+  104   1          Assistant_Draw_Target_Cross();
+  105   1      }
+  106          #endif
+  107          
+  108          static void Assistant_Send_Camera(void)
+  109          {
+  110   1      #if ASSISTANT_DEBUG_IMAGE_ENABLE && ASSISTANT_DEBUG_IMAGE_OVERLAY_ENABLE
+  111   1          Assistant_Draw_Status_Overlay();
+  112   1      #endif
+  113   1          seekfree_assistant_camera_send();
+  114   1      }
+  115          
+  116          static float Assistant_Clamp_Float(float value, float min_value, float max_value)
+  117          {
+  118   1          if (value < min_value) {
+  119   2              return min_value;
   120   2          }
-  121   1          return value;
-  122   1      }
-C251 COMPILER V5.60.0,  assistant_debug                                                    15/07/26  18:52:00  PAGE 3   
+  121   1          if (value > max_value) {
+  122   2              return max_value;
+C251 COMPILER V5.60.0,  assistant_debug                                                    15/07/26  19:17:45  PAGE 3   
 
-  123          
-  124          static int32 Assistant_Float_To_Int32(float value)
-  125          {
-  126   1          return (int32)value;
-  127   1      }
-  128          
-  129          static uint8 Assistant_Frame_Div_Hit(uint8 *counter, uint8 divider)
-  130          {
-  131   1          if (divider <= 1u) {
-  132   2              return 1;
-  133   2          }
-  134   1      
-  135   1          (*counter)++;
-  136   1          if (*counter >= divider) {
-  137   2              *counter = 0;
-  138   2              return 1;
-  139   2          }
-  140   1      
-  141   1          return 0;
-  142   1      }
-  143          
-  144          static void Assistant_Load_Default_Params(void)
-  145          {
-  146   1          seekfree_assistant_parameter[ASSISTANT_PARAM_SERVO_KP - 1] =
-  147   1              (float)servo_pidf.kp;
-  148   1          seekfree_assistant_parameter[ASSISTANT_PARAM_SERVO_KD - 1] =
-  149   1              (float)servo_pidf.kd;
-  150   1          seekfree_assistant_parameter[ASSISTANT_PARAM_SERVO_KF - 1] =
-  151   1              (float)servo_pidf.kf;
-  152   1          seekfree_assistant_parameter[ASSISTANT_PARAM_MOTOR_KP - 1] =
-  153   1              (float)pid_lf.kp;
-  154   1          seekfree_assistant_parameter[ASSISTANT_PARAM_MOTOR_KI - 1] =
-  155   1              (float)pid_lf.ki;
-  156   1          seekfree_assistant_parameter[ASSISTANT_PARAM_MIN_SPEED - 1] =
-  157   1              (float)min_speed;
-  158   1          seekfree_assistant_parameter[ASSISTANT_PARAM_MAX_SPEED - 1] =
-  159   1              (float)max_speed;
-  160   1          seekfree_assistant_parameter[ASSISTANT_PARAM_CAMERA_EXPOSURE - 1] =
-  161   1              (float)camera_exposure_time;
-  162   1      }
-  163          
-  164          static void Assistant_Apply_Param(uint8 channel, float value)
-  165          {
-  166   1          int32 fixed_value;
-  167   1          uint16 exposure;
-  168   1      
-  169   1          switch (channel) {
-  170   2          case ASSISTANT_PARAM_SERVO_KP:
-  171   2              servo_pidf.kp = Assistant_Float_To_Int32(value);
-  172   2              break;
-  173   2      
-  174   2          case ASSISTANT_PARAM_SERVO_KD:
-  175   2              servo_pidf.kd = Assistant_Float_To_Int32(value);
-  176   2              break;
-  177   2      
-  178   2          case ASSISTANT_PARAM_SERVO_KF:
-  179   2              servo_pidf.kf = Assistant_Float_To_Int32(value);
-  180   2              break;
-  181   2      
-  182   2          case ASSISTANT_PARAM_MOTOR_KP:
-  183   2              fixed_value = Assistant_Float_To_Int32(value);
-  184   2              pid_lf.kp = fixed_value;
-  185   2              pid_rf.kp = fixed_value;
-  186   2              break;
-  187   2      
-  188   2          case ASSISTANT_PARAM_MOTOR_KI:
-C251 COMPILER V5.60.0,  assistant_debug                                                    15/07/26  18:52:00  PAGE 4   
+  123   2          }
+  124   1          return value;
+  125   1      }
+  126          
+  127          static int32 Assistant_Float_To_Int32(float value)
+  128          {
+  129   1          return (int32)value;
+  130   1      }
+  131          
+  132          static uint8 Assistant_Frame_Div_Hit(uint8 *counter, uint8 divider)
+  133          {
+  134   1          if (divider <= 1u) {
+  135   2              return 1;
+  136   2          }
+  137   1      
+  138   1          (*counter)++;
+  139   1          if (*counter >= divider) {
+  140   2              *counter = 0;
+  141   2              return 1;
+  142   2          }
+  143   1      
+  144   1          return 0;
+  145   1      }
+  146          
+  147          static void Assistant_Load_Default_Params(void)
+  148          {
+  149   1          int16 speed_min;
+  150   1          int16 speed_max;
+  151   1      
+  152   1          Motor_Get_Speed_Range(&speed_min, &speed_max);
+  153   1          seekfree_assistant_parameter[ASSISTANT_PARAM_SERVO_KP - 1] =
+  154   1              (float)servo_pidf.kp;
+  155   1          seekfree_assistant_parameter[ASSISTANT_PARAM_SERVO_KD - 1] =
+  156   1              (float)servo_pidf.kd;
+  157   1          seekfree_assistant_parameter[ASSISTANT_PARAM_GYRO_KG - 1] =
+  158   1              (float)PID_Get_Servo_Gyro_Gain();
+  159   1          seekfree_assistant_parameter[ASSISTANT_PARAM_MOTOR_KP - 1] =
+  160   1              (float)pid_lf.kp;
+  161   1          seekfree_assistant_parameter[ASSISTANT_PARAM_MOTOR_KI - 1] =
+  162   1              (float)pid_lf.ki;
+  163   1          seekfree_assistant_parameter[ASSISTANT_PARAM_MIN_SPEED - 1] =
+  164   1              (float)speed_min;
+  165   1          seekfree_assistant_parameter[ASSISTANT_PARAM_MAX_SPEED - 1] =
+  166   1              (float)speed_max;
+  167   1          seekfree_assistant_parameter[ASSISTANT_PARAM_CAMERA_EXPOSURE - 1] =
+  168   1              (float)camera_exposure_time;
+  169   1      }
+  170          
+  171          static void Assistant_Apply_Param(uint8 channel, float value)
+  172          {
+  173   1          int32 fixed_value;
+  174   1          uint16 exposure;
+  175   1          int16 speed_min;
+  176   1          int16 speed_max;
+  177   1      
+  178   1          switch (channel) {
+  179   2          case ASSISTANT_PARAM_SERVO_KP:
+  180   2              servo_pidf.kp = Assistant_Float_To_Int32(value);
+  181   2              break;
+  182   2      
+  183   2          case ASSISTANT_PARAM_SERVO_KD:
+  184   2              servo_pidf.kd = Assistant_Float_To_Int32(value);
+  185   2              break;
+  186   2      
+  187   2          case ASSISTANT_PARAM_GYRO_KG:
+  188   2              value = Assistant_Clamp_Float(value, ASSISTANT_GYRO_KG_MIN, ASSISTANT_GYRO_KG_MAX);
+C251 COMPILER V5.60.0,  assistant_debug                                                    15/07/26  19:17:45  PAGE 4   
 
-  189   2              fixed_value = Assistant_Float_To_Int32(value);
-  190   2              pid_lf.ki = fixed_value;
-  191   2              pid_rf.ki = fixed_value;
-  192   2              break;
-  193   2      
-  194   2          case ASSISTANT_PARAM_MIN_SPEED:
-  195   2              value = Assistant_Clamp_Float(value, ASSISTANT_SPEED_MIN, (float)MAX_SPEED_TUNE_MAX);
-  196   2              min_speed = (int16)(value + 0.5f);
-  197   2              if (max_speed < min_speed) {
-  198   3                  max_speed = min_speed;
-  199   3              }
-  200   2              break;
-  201   2      
-  202   2          case ASSISTANT_PARAM_MAX_SPEED:
-  203   2              value = Assistant_Clamp_Float(value, ASSISTANT_SPEED_MIN, (float)MAX_SPEED_TUNE_MAX);
-  204   2              max_speed = (int16)(value + 0.5f);
-  205   2              if (min_speed > max_speed) {
-  206   3                  min_speed = max_speed;
-  207   3              }
-  208   2              break;
-  209   2      
-  210   2          case ASSISTANT_PARAM_CAMERA_EXPOSURE:
-  211   2              value = Assistant_Clamp_Float(value, ASSISTANT_EXPOSURE_MIN, ASSISTANT_EXPOSURE_MAX);
-  212   2              exposure = (uint16)(value + 0.5f);
-  213   2              if (exposure != camera_exposure_time) {
-  214   3                  camera_exposure_time = exposure;
-  215   3                  mt9v03x_set_exposure_time(camera_exposure_time);
-  216   3              }
-  217   2              break;
-  218   2      
-  219   2          default:
-  220   2              break;
-  221   2          }
-  222   1      }
-  223          
-  224          static void Assistant_Apply_Param_Updates(void)
-  225          {
-  226   1          uint8 i;
-  227   1      
-  228   1          for (i = ASSISTANT_PARAM_MIN_CHANNEL; i <= ASSISTANT_PARAM_MAX_CHANNEL; i++) {
-  229   2              if (seekfree_assistant_parameter_update_flag[i - 1]) {
-  230   3                  seekfree_assistant_parameter_update_flag[i - 1] = 0;
-  231   3                  Assistant_Apply_Param(i, seekfree_assistant_parameter[i - 1]);
-  232   3              }
-  233   2          }
-  234   1      }
-  235          
-  236          static void Assistant_Send_Scope(void)
-  237          {
-  238   1          int16 mid_error;
-  239   1          int16 servo_error;
-  240   1      
-  241   1          mid_error = (int16)mid_line[controlReferenceLine] - (int16)Mid_Col;
-  242   1          servo_error = (int16)Out_servo - (int16)SERVO_DUTY_MID;
-  243   1      
-  244   1          seekfree_assistant_oscilloscope_data.channel_num = SEEKFREE_ASSISTANT_SET_OSCILLOSCOPE_COUNT;
-  245   1          seekfree_assistant_oscilloscope_data.dat[0] = (float)mid_error;
-  246   1          seekfree_assistant_oscilloscope_data.dat[1] = (float)servo_error;
-  247   1          seekfree_assistant_oscilloscope_data.dat[2] = (float)encoder_data_l;
-  248   1          seekfree_assistant_oscilloscope_data.dat[3] = (float)encoder_data_r;
-  249   1          seekfree_assistant_oscilloscope_data.dat[4] = (float)target_speed_l;
-  250   1          seekfree_assistant_oscilloscope_data.dat[5] = (float)target_speed_r;
-  251   1          seekfree_assistant_oscilloscope_data.dat[6] = (float)motor_pwm_l;
-  252   1          seekfree_assistant_oscilloscope_data.dat[7] = (float)motor_pwm_r;
-  253   1      
-  254   1          seekfree_assistant_oscilloscope_send(&seekfree_assistant_oscilloscope_data);
-C251 COMPILER V5.60.0,  assistant_debug                                                    15/07/26  18:52:00  PAGE 5   
+  189   2              if (value >= 0.0f) {
+  190   3                  fixed_value = (int32)(value + 0.5f);
+  191   3              } else {
+  192   3                  fixed_value = (int32)(value - 0.5f);
+  193   3              }
+  194   2              PID_Set_Servo_Gyro_Gain((int16)fixed_value);
+  195   2              seekfree_assistant_parameter[ASSISTANT_PARAM_GYRO_KG - 1] =
+  196   2                  (float)PID_Get_Servo_Gyro_Gain();
+  197   2              break;
+  198   2      
+  199   2          case ASSISTANT_PARAM_MOTOR_KP:
+  200   2              fixed_value = Assistant_Float_To_Int32(value);
+  201   2              pid_lf.kp = fixed_value;
+  202   2              pid_rf.kp = fixed_value;
+  203   2              break;
+  204   2      
+  205   2          case ASSISTANT_PARAM_MOTOR_KI:
+  206   2              fixed_value = Assistant_Float_To_Int32(value);
+  207   2              pid_lf.ki = fixed_value;
+  208   2              pid_rf.ki = fixed_value;
+  209   2              break;
+  210   2      
+  211   2          case ASSISTANT_PARAM_MIN_SPEED:
+  212   2              value = Assistant_Clamp_Float(value, ASSISTANT_SPEED_MIN, (float)MAX_SPEED_TUNE_MAX);
+  213   2              Motor_Get_Speed_Range(&speed_min, &speed_max);
+  214   2              speed_min = (int16)(value + 0.5f);
+  215   2              if (speed_max < speed_min) {
+  216   3                  speed_max = speed_min;
+  217   3              }
+  218   2              Motor_Set_Speed_Range(speed_min, speed_max);
+  219   2              Motor_Get_Speed_Range(&speed_min, &speed_max);
+  220   2              seekfree_assistant_parameter[ASSISTANT_PARAM_MIN_SPEED - 1] = (float)speed_min;
+  221   2              seekfree_assistant_parameter[ASSISTANT_PARAM_MAX_SPEED - 1] = (float)speed_max;
+  222   2              break;
+  223   2      
+  224   2          case ASSISTANT_PARAM_MAX_SPEED:
+  225   2              value = Assistant_Clamp_Float(value, ASSISTANT_SPEED_MIN, (float)MAX_SPEED_TUNE_MAX);
+  226   2              Motor_Get_Speed_Range(&speed_min, &speed_max);
+  227   2              speed_max = (int16)(value + 0.5f);
+  228   2              if (speed_min > speed_max) {
+  229   3                  speed_min = speed_max;
+  230   3              }
+  231   2              Motor_Set_Speed_Range(speed_min, speed_max);
+  232   2              Motor_Get_Speed_Range(&speed_min, &speed_max);
+  233   2              seekfree_assistant_parameter[ASSISTANT_PARAM_MIN_SPEED - 1] = (float)speed_min;
+  234   2              seekfree_assistant_parameter[ASSISTANT_PARAM_MAX_SPEED - 1] = (float)speed_max;
+  235   2              break;
+  236   2      
+  237   2          case ASSISTANT_PARAM_CAMERA_EXPOSURE:
+  238   2              value = Assistant_Clamp_Float(value, ASSISTANT_EXPOSURE_MIN, ASSISTANT_EXPOSURE_MAX);
+  239   2              exposure = (uint16)(value + 0.5f);
+  240   2              if (exposure != camera_exposure_time) {
+  241   3                  camera_exposure_time = exposure;
+  242   3                  mt9v03x_set_exposure_time(camera_exposure_time);
+  243   3              }
+  244   2              break;
+  245   2      
+  246   2          default:
+  247   2              break;
+  248   2          }
+  249   1      }
+  250          
+  251          static void Assistant_Apply_Param_Updates(void)
+  252          {
+  253   1          uint8 i;
+  254   1      
+C251 COMPILER V5.60.0,  assistant_debug                                                    15/07/26  19:17:45  PAGE 5   
 
-  255   1      }
-  256          
-  257          void Assistant_Debug_Init(void)
-  258          {
-  259   1          seekfree_assistant_interface_init(ASSISTANT_DEBUG_DEVICE);
-  260   1          seekfree_assistant_init();
-  261   1      
-  262   1          seekfree_assistant_camera_information_config(SEEKFREE_ASSISTANT_MT9V03X,
-  263   1                                                       (void *)&mt9v03x_image[0][0],
-  264   1                                                       MT9V03X_W,
-  265   1                                                       MT9V03X_H);
-  266   1      #if ASSISTANT_DEBUG_BOUNDARY_ENABLE
-  267   1          seekfree_assistant_camera_boundary_config(X_BOUNDARY,
-  268   1                                                    SEARCH_IMAGE_H,
-  269   1                                                    left_control_line,
-  270   1                                                    mid_line,
-  271   1                                                    right_control_line,
-  272   1                                                    NULL,
-  273   1                                                    NULL,
-  274   1                                                    NULL);
-  275   1      #else
+  255   1          for (i = ASSISTANT_PARAM_MIN_CHANNEL; i <= ASSISTANT_PARAM_MAX_CHANNEL; i++) {
+  256   2              if (seekfree_assistant_parameter_update_flag[i - 1]) {
+  257   3                  seekfree_assistant_parameter_update_flag[i - 1] = 0;
+  258   3                  Assistant_Apply_Param(i, seekfree_assistant_parameter[i - 1]);
+  259   3              }
+  260   2          }
+  261   1      }
+  262          
+  263          static void Assistant_Send_Scope(void)
+  264          {
+  265   1          int16 mid_error;
+  266   1          int16 servo_error;
+  267   1          int16 gyro_z;
+  268   1          int16 gyro_correction;
+  269   1      
+  270   1          mid_error = (int16)mid_line[controlReferenceLine] - (int16)Mid_Col;
+  271   1          servo_error = (int16)Out_servo - (int16)SERVO_DUTY_MID;
+  272   1          Gyro_Get_Debug(NULL, &gyro_z, &gyro_correction);
+  273   1      
+  274   1          seekfree_assistant_oscilloscope_data.channel_num = SEEKFREE_ASSISTANT_SET_OSCILLOSCOPE_COUNT;
+  275   1          seekfree_assistant_oscilloscope_data.dat[0] = (float)mid_error;
+  276   1          seekfree_assistant_oscilloscope_data.dat[1] = (float)servo_error;
+  277   1          seekfree_assistant_oscilloscope_data.dat[2] = (float)encoder_data_l;
+  278   1          seekfree_assistant_oscilloscope_data.dat[3] = (float)encoder_data_r;
+  279   1          seekfree_assistant_oscilloscope_data.dat[4] = (float)gyro_z;
+  280   1          seekfree_assistant_oscilloscope_data.dat[5] = (float)gyro_correction;
+  281   1          seekfree_assistant_oscilloscope_data.dat[6] = (float)motor_pwm_l;
+  282   1          seekfree_assistant_oscilloscope_data.dat[7] = (float)motor_pwm_r;
+  283   1      
+  284   1          seekfree_assistant_oscilloscope_send(&seekfree_assistant_oscilloscope_data);
+  285   1      }
+  286          
+  287          void Assistant_Debug_Init(void)
+  288          {
+  289   1          seekfree_assistant_interface_init(ASSISTANT_DEBUG_DEVICE);
+  290   1          seekfree_assistant_init();
+  291   1      
+  292   1          seekfree_assistant_camera_information_config(SEEKFREE_ASSISTANT_MT9V03X,
+  293   1                                                       (void *)&mt9v03x_image[0][0],
+  294   1                                                       MT9V03X_W,
+  295   1                                                       MT9V03X_H);
+  296   1      #if ASSISTANT_DEBUG_BOUNDARY_ENABLE
+  297   1          seekfree_assistant_camera_boundary_config(X_BOUNDARY,
+  298   1                                                    SEARCH_IMAGE_H,
+  299   1                                                    left_control_line,
+  300   1                                                    mid_line,
+  301   1                                                    right_control_line,
+  302   1                                                    NULL,
+  303   1                                                    NULL,
+  304   1                                                    NULL);
+  305   1      #else
                    seekfree_assistant_camera_boundary_config(NO_BOUNDARY,
                                                              0,
                                                              NULL,
@@ -302,62 +332,62 @@ stmt  level    source
                                                              NULL,
                                                              NULL);
                #endif
-  285   1          Assistant_Load_Default_Params();
-  286   1      }
-  287          
-  288          void Assistant_Debug_Task(void)
-  289          {
-  290   1      #if ASSISTANT_DEBUG_PARAM_ENABLE
-  291   1          seekfree_assistant_data_analysis();
-  292   1          Assistant_Apply_Param_Updates();
-  293   1      #endif
-  294   1      }
-  295          
-  296          void Assistant_Debug_On_Frame(void)
-  297          {
-  298   1          Assistant_Debug_Task();
-  299   1      
-  300   1      #if ASSISTANT_DEBUG_SCOPE_ENABLE
-  301   1          if (Assistant_Frame_Div_Hit(&assistant_scope_cnt, ASSISTANT_DEBUG_SCOPE_DIV)) {
-  302   2              Assistant_Send_Scope();
-  303   2          }
-  304   1      #endif
-  305   1      
-  306   1      #if ASSISTANT_DEBUG_IMAGE_ENABLE
-  307   1          if (Assistant_Frame_Div_Hit(&assistant_image_cnt, ASSISTANT_DEBUG_IMAGE_DIV)) {
-  308   2              Assistant_Send_Camera();
-  309   2          }
-  310   1      #endif
-  311   1      }
-  312          
-  313          void Assistant_Debug_Send_Now(void)
-  314          {
-  315   1      #if ASSISTANT_DEBUG_SCOPE_ENABLE
-  316   1          Assistant_Send_Scope();
-  317   1      #endif
-  318   1      #if ASSISTANT_DEBUG_IMAGE_ENABLE
-  319   1          Assistant_Send_Camera();
-  320   1      #endif
-C251 COMPILER V5.60.0,  assistant_debug                                                    15/07/26  18:52:00  PAGE 6   
+  315   1          Assistant_Load_Default_Params();
+  316   1      }
+  317          
+  318          void Assistant_Debug_Task(void)
+  319          {
+  320   1      #if ASSISTANT_DEBUG_PARAM_ENABLE
+C251 COMPILER V5.60.0,  assistant_debug                                                    15/07/26  19:17:45  PAGE 6   
 
-  321   1      }
-  322          
-  323          void Assistant_Debug_Timebase_Tick(void)
-  324          {
-  325   1          assistant_time_100us++;
-  326   1      }
-  327          
-  328          uint16 Assistant_Debug_Timebase_Now(void)
-  329          {
-  330   1          return assistant_time_100us;
-  331   1      }
-  332          
-  333          void Assistant_Debug_Set_Image_Process_Time(uint16 time_100us)
-  334          {
-  335   1          assistant_image_process_time_100us = time_100us;
-  336   1      }
-  337          
-  338          #else
+  321   1          seekfree_assistant_data_analysis();
+  322   1          Assistant_Apply_Param_Updates();
+  323   1      #endif
+  324   1      }
+  325          
+  326          void Assistant_Debug_On_Frame(void)
+  327          {
+  328   1          Assistant_Debug_Task();
+  329   1      
+  330   1      #if ASSISTANT_DEBUG_SCOPE_ENABLE
+  331   1          if (Assistant_Frame_Div_Hit(&assistant_scope_cnt, ASSISTANT_DEBUG_SCOPE_DIV)) {
+  332   2              Assistant_Send_Scope();
+  333   2          }
+  334   1      #endif
+  335   1      
+  336   1      #if ASSISTANT_DEBUG_IMAGE_ENABLE
+  337   1          if (Assistant_Frame_Div_Hit(&assistant_image_cnt, ASSISTANT_DEBUG_IMAGE_DIV)) {
+  338   2              Assistant_Send_Camera();
+  339   2          }
+  340   1      #endif
+  341   1      }
+  342          
+  343          void Assistant_Debug_Send_Now(void)
+  344          {
+  345   1      #if ASSISTANT_DEBUG_SCOPE_ENABLE
+  346   1          Assistant_Send_Scope();
+  347   1      #endif
+  348   1      #if ASSISTANT_DEBUG_IMAGE_ENABLE
+  349   1          Assistant_Send_Camera();
+  350   1      #endif
+  351   1      }
+  352          
+  353          void Assistant_Debug_Timebase_Tick(void)
+  354          {
+  355   1          assistant_time_100us++;
+  356   1      }
+  357          
+  358          uint16 Assistant_Debug_Timebase_Now(void)
+  359          {
+  360   1          return assistant_time_100us;
+  361   1      }
+  362          
+  363          void Assistant_Debug_Set_Image_Process_Time(uint16 time_100us)
+  364          {
+  365   1          assistant_image_process_time_100us = time_100us;
+  366   1      }
+  367          
+  368          #else
                
                void Assistant_Debug_Init(void)
                {
@@ -376,6 +406,8 @@ stmt  level    source
                }
                
                void Assistant_Debug_Timebase_Tick(void)
+C251 COMPILER V5.60.0,  assistant_debug                                                    15/07/26  19:17:45  PAGE 7   
+
                {
                }
                
@@ -395,11 +427,11 @@ stmt  level    source
 Module Information          Static   Overlayable
 ------------------------------------------------
   code size            =    ------     ------
-  ecode size           =      2392     ------
+  ecode size           =      2780     ------
   data size            =    ------     ------
   idata size           =    ------     ------
   pdata size           =    ------     ------
-  xdata size           =        66     ------
+  xdata size           =        78     ------
   xdata-const size     =    ------     ------
   edata size           =    ------     ------
   bit size             =    ------     ------
@@ -407,8 +439,6 @@ Module Information          Static   Overlayable
   bitaddressable size  =    ------     ------
   ebitaddressable size =    ------     ------
   far data size        =    ------     ------
-C251 COMPILER V5.60.0,  assistant_debug                                                    15/07/26  18:52:00  PAGE 7   
-
   huge data size       =    ------     ------
   const size           =    ------     ------
   hconst size          =        72     ------

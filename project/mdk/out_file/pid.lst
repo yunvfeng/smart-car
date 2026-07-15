@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  pid                                                                15/07/26  18:51:59  PAGE 1   
+C251 COMPILER V5.60.0,  pid                                                                15/07/26  19:17:45  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE pid
@@ -12,9 +12,9 @@ stmt  level    source
 
     1          #include "pid.h"
     2          #include "image.h"
-    3          
-    4          volatile uint16 Out_servo = SERVO_DUTY_MID;
-    5          volatile int16 g_gyro_z_for_servo = 0;
+    3          #include "gyro.h"
+    4          
+    5          volatile uint16 Out_servo = SERVO_DUTY_MID;
     6          
     7          /* 左右电机各一套 PI，参数在 pid.h 里改。 */
     8          volatile PID_t pid_rf = {MOTOR_KP_Q10, MOTOR_KI_Q10, MOTOR_KD_Q10, 0, 0, 0, 0, 0, 0, 0};
@@ -66,7 +66,7 @@ stmt  level    source
    54          /* 舵机 PID：根据中线偏差、偏差变化和曲率前馈计算舵机占空比。 */
    55          void PID_servof(volatile PID_t *pid)
    56          {
-C251 COMPILER V5.60.0,  pid                                                                15/07/26  18:51:59  PAGE 2   
+C251 COMPILER V5.60.0,  pid                                                                15/07/26  19:17:45  PAGE 2   
 
    57   1          uint8 ref;
    58   1          uint8 near_ref;
@@ -74,61 +74,93 @@ stmt  level    source
    60   1          int16 d_err;
    61   1          int16 curve;
    62   1          int16 abs_err;
-   63   1          int32 out;
-   64   1          int32 duty;
-   65   1      
-   66   1          ref = controlReferenceLine;
-   67   1          if (ref >= SEARCH_IMAGE_H) {
-   68   2              ref = SEARCH_IMAGE_H - 1;
-   69   2          }
-   70   1      
-   71   1          near_ref = (uint8)(ref + 20);
-   72   1          if (near_ref >= SEARCH_IMAGE_H) {
-   73   2              near_ref = SEARCH_IMAGE_H - 1;
-   74   2          }
-   75   1      
-   76   1          err = (int16)mid_line[ref] - (int16)Mid_Col;
-   77   1          curve = (int16)mid_line[ref] - (int16)mid_line[near_ref];
-   78   1          d_err = err - pid->err1;
-   79   1          abs_err = abs16_local(err);
-   80   1      
-   81   1          out = pid->kp * (int32)err;
-   82   1          out += pid->kd * (int32)d_err;
-   83   1          out += pid->kf * (int32)curve;
-   84   1          out += pid->kp2 * (int32)err * (int32)abs_err;
-   85   1          out -= pid->kg * (int32)g_gyro_z_for_servo;
+   63   1          int16 gyro_correction;
+   64   1          int32 out;
+   65   1          int32 duty;
+   66   1      
+   67   1          ref = controlReferenceLine;
+   68   1          if (ref >= SEARCH_IMAGE_H) {
+   69   2              ref = SEARCH_IMAGE_H - 1;
+   70   2          }
+   71   1      
+   72   1          near_ref = (uint8)(ref + 20);
+   73   1          if (near_ref >= SEARCH_IMAGE_H) {
+   74   2              near_ref = SEARCH_IMAGE_H - 1;
+   75   2          }
+   76   1      
+   77   1          err = (int16)mid_line[ref] - (int16)Mid_Col;
+   78   1          curve = (int16)mid_line[ref] - (int16)mid_line[near_ref];
+   79   1          d_err = err - pid->err1;
+   80   1          abs_err = abs16_local(err);
+   81   1      
+   82   1          out = pid->kp * (int32)err;
+   83   1          out += pid->kd * (int32)d_err;
+   84   1          out += pid->kf * (int32)curve;
+   85   1          out += pid->kp2 * (int32)err * (int32)abs_err;
    86   1          out >>= PID_Q_SHIFT;
    87   1      
-   88   1          out = limit_int16(out, -MAX_TURN, MAX_TURN);
-   89   1      
-   90   1          duty = (int32)SERVO_DUTY_MID - out;
-   91   1          duty = limit_int16(duty, SERVO_DUTY_MIN, SERVO_DUTY_MAX);
-   92   1      
-   93   1          Out_servo = (uint16)duty;
-   94   1          pid->err2 = pid->err1;
-   95   1          pid->err1 = err;
-   96   1          pid->out = out;
-   97   1      }
+   88   1          gyro_correction = limit_int16(
+   89   1              (pid->kg * (int32)g_gyro_z_for_servo) / PID_Q_ONE,
+   90   1              -GYRO_SERVO_CORRECTION_LIMIT,
+   91   1              GYRO_SERVO_CORRECTION_LIMIT);
+   92   1          Gyro_Set_Servo_Correction(gyro_correction);
+   93   1          out -= gyro_correction;
+   94   1      
+   95   1          out = limit_int16(out, -MAX_TURN, MAX_TURN);
+   96   1      
+   97   1          duty = (int32)SERVO_DUTY_MID - out;
+   98   1          duty = limit_int16(duty, SERVO_DUTY_MIN, SERVO_DUTY_MAX);
+   99   1      
+  100   1          Out_servo = (uint16)duty;
+  101   1          pid->err2 = pid->err1;
+  102   1          pid->err1 = err;
+  103   1          pid->out = out;
+  104   1      }
+  105          
+  106          void PID_Set_Servo_Gyro_Gain(int16 gain_q10)
+  107          {
+  108   1          bit interrupt_state;
+  109   1      
+  110   1          interrupt_state = EA;
+  111   1          EA = 0;
+  112   1          servo_pidf.kg = gain_q10;
+  113   1          EA = interrupt_state;
+  114   1      }
+  115          
+  116          int16 PID_Get_Servo_Gyro_Gain(void)
+  117          {
+  118   1          bit interrupt_state;
+  119   1          int32 gain_q10;
+  120   1      
+  121   1          interrupt_state = EA;
+  122   1          EA = 0;
+C251 COMPILER V5.60.0,  pid                                                                15/07/26  19:17:45  PAGE 3   
+
+  123   1          gain_q10 = servo_pidf.kg;
+  124   1          EA = interrupt_state;
+  125   1      
+  126   1          return limit_int16(gain_q10, -32768, 32767);
+  127   1      }
 
 
 Module Information          Static   Overlayable
 ------------------------------------------------
   code size            =    ------     ------
-  ecode size           =      1300     ------
+  ecode size           =      1436     ------
   data size            =    ------     ------
   idata size           =    ------     ------
   pdata size           =    ------     ------
-  xdata size           =       162     ------
+  xdata size           =       168     ------
   xdata-const size     =    ------     ------
   edata size           =    ------     ------
-  bit size             =    ------     ------
+  bit size             =         2     ------
   ebit size            =    ------     ------
   bitaddressable size  =    ------     ------
   ebitaddressable size =    ------     ------
   far data size        =    ------     ------
   huge data size       =    ------     ------
   const size           =    ------     ------
-  hconst size          =       137     ------
+  hconst size          =       130     ------
 End of Module Information.
 
 

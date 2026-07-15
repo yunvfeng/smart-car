@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  laser                                                              15/07/26  18:51:59  PAGE 1   
+C251 COMPILER V5.60.0,  laser                                                              15/07/26  19:17:45  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE laser
@@ -66,7 +66,7 @@ stmt  level    source
    54          
    55          static void Target_Build_Bottom_Map(uint8 scan_min, uint8 scan_max)
    56          {
-C251 COMPILER V5.60.0,  laser                                                              15/07/26  18:51:59  PAGE 2   
+C251 COMPILER V5.60.0,  laser                                                              15/07/26  19:17:45  PAGE 2   
 
    57   1          uint8 row;
    58   1          uint8 row_start;
@@ -134,7 +134,7 @@ stmt  level    source
   120   2              row_ptr = mt9v03x_image[row];
   121   2              row_up = mt9v03x_image[row - 1];
   122   2              row_down = mt9v03x_image[row + PIXEL_OFFSET];
-C251 COMPILER V5.60.0,  laser                                                              15/07/26  18:51:59  PAGE 3   
+C251 COMPILER V5.60.0,  laser                                                              15/07/26  19:17:45  PAGE 3   
 
   123   2      
   124   2              for (col = row_scan_min; col + 3 <= row_scan_max; col += 4) {
@@ -202,7 +202,7 @@ stmt  level    source
   186          {
   187   1          uint8 left;
   188   1          uint8 right;
-C251 COMPILER V5.60.0,  laser                                                              15/07/26  18:51:59  PAGE 4   
+C251 COMPILER V5.60.0,  laser                                                              15/07/26  19:17:45  PAGE 4   
 
   189   1          uint8 run_width;
   190   1          int16 l_edge;
@@ -270,7 +270,7 @@ stmt  level    source
   252   1          static uint8 cooldown_cnt = 0;
   253   1      
   254   1          if (cooldown_cnt) {
-C251 COMPILER V5.60.0,  laser                                                              15/07/26  18:51:59  PAGE 5   
+C251 COMPILER V5.60.0,  laser                                                              15/07/26  19:17:45  PAGE 5   
 
   255   2              cooldown_cnt--;
   256   2              shoot_cnt = 0;
@@ -338,7 +338,7 @@ stmt  level    source
   318   1      
   319   1          if (pre_r <= pre_l || pre_l == 0 || pre_r == 0 || pre_r - pre_l < 8) {
   320   2              pre_find_offset = 0;
-C251 COMPILER V5.60.0,  laser                                                              15/07/26  18:51:59  PAGE 6   
+C251 COMPILER V5.60.0,  laser                                                              15/07/26  19:17:45  PAGE 6   
 
   321   2              return;
   322   2          }
@@ -406,7 +406,7 @@ stmt  level    source
   384   3              }
   385   2          }
   386   1      
-C251 COMPILER V5.60.0,  laser                                                              15/07/26  18:51:59  PAGE 7   
+C251 COMPILER V5.60.0,  laser                                                              15/07/26  19:17:45  PAGE 7   
 
   387   1          if (!best_x) {
   388   2              return;

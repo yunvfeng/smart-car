@@ -44,6 +44,10 @@ extern volatile int16 motor_pwm_r;
 extern volatile int16 min_speed;
 extern volatile int16 max_speed;
 
+/* 原子更新或读取 WiFi 使用的最低/最高目标速度。 */
+void Motor_Set_Speed_Range(int16 speed_min, int16 speed_max);
+void Motor_Get_Speed_Range(int16 *speed_min, int16 *speed_max);
+
 /* 初始化电机 PWM 和方向引脚。 */
 void Motor_Init(void);
 /* 初始化左右编码器。 */

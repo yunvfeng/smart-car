@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  18:51:57  PAGE 1   
+C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  19:17:43  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_device_wifi_spi
@@ -66,7 +66,7 @@ stmt  level    source
    50          
    51          #include "stdio.h"
    52          #include "zf_common_clock.h"
-C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  18:51:57  PAGE 2   
+C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  19:17:43  PAGE 2   
 
    53          #include "zf_common_debug.h"
    54          #include "zf_common_fifo.h"
@@ -134,7 +134,7 @@ stmt  level    source
   113          // 函数简介     写入数据到WIFI SPI
   114          // 参数说明     *buffer1        第一组需要发送的数据缓冲区地址
   115          // 参数说明     length1         第一组数据长度
-C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  18:51:57  PAGE 3   
+C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  19:17:43  PAGE 3   
 
   116          // 参数说明     *buffer2        第二组需要发送的数据缓冲区地址
   117          // 参数说明     length2         第二组数据长度
@@ -202,7 +202,7 @@ stmt  level    source
   170          {
   171   1          WIFI_SPI_CS(0);
   172   1          
-C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  18:51:57  PAGE 4   
+C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  19:17:43  PAGE 4   
 
   173   1          read_data->head.command = WIFI_SPI_DATA;
   174   1          // 大小端不一致，高低字节交换
@@ -270,7 +270,7 @@ stmt  level    source
   229   2      
   230   2              head.command = WIFI_SPI_DATA;
   231   2              head.length = 0;
-C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  18:51:57  PAGE 5   
+C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  19:17:43  PAGE 5   
 
   232   2              wifi_spi_dma_transfer_command((wifi_spi_packets_struct *)&head, head.length);
   233   2              system_delay_us(20);
@@ -338,7 +338,7 @@ stmt  level    source
   290   1      
   291   1          return_state = wifi_spi_get_parameter(WIFI_SPI_GET_VERSION, &temp_packets, OTHER_TIME_OUT);
   292   1          if((0 == return_state) && (WIFI_SPI_REPLY_VERSION == temp_packets.head.command))
-C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  18:51:57  PAGE 6   
+C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  19:17:43  PAGE 6   
 
   293   1          {
   294   2              memcpy(wifi_spi_version, temp_packets.buffer, temp_packets.head.length);
@@ -406,7 +406,7 @@ stmt  level    source
   350          //-------------------------------------------------------------------------------------------------------
              -------------
   351          uint8 wifi_spi_get_time (wifi_spi_time_enum time_format, char *buffer, uint8 buffer_size)
-C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  18:51:57  PAGE 7   
+C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  19:17:43  PAGE 7   
 
   352          {
   353   1          uint8 return_state = 1;
@@ -474,7 +474,7 @@ stmt  level    source
   413          //-------------------------------------------------------------------------------------------------------
              -------------
   414          // 函数简介     WIFI SPI 设置连接的WiFi信息并尝试连接WiFi
-C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  18:51:57  PAGE 8   
+C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  19:17:43  PAGE 8   
 
   415          // 参数说明     *wifi_ssid      WIFI名称
   416          // 参数说明     *pass_word      WIFI密码
@@ -542,7 +542,7 @@ stmt  level    source
   472          //-------------------------------------------------------------------------------------------------------
              -------------
   473          // 函数简介     WIFI SPI 断开Socket连接
-C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  18:51:57  PAGE 9   
+C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  19:17:43  PAGE 9   
 
   474          // 参数说明     void            
   475          // 返回参数     uint8           状态 0-成功 1-错误
@@ -610,7 +610,7 @@ stmt  level    source
   531   3                  if(wifi_spi_wait_idle(OTHER_TIME_OUT))
   532   3                  {
   533   4                      break;
-C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  18:51:57  PAGE 10  
+C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  19:17:43  PAGE 10  
 
   534   4                  }
   535   3      
@@ -678,7 +678,7 @@ stmt  level    source
   594   2              
   595   2              while(length)
   596   2              {
-C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  18:51:57  PAGE 11  
+C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  19:17:43  PAGE 11  
 
   597   3                  send_length = length > WIFI_SPI_TRANSFER_SIZE ? WIFI_SPI_TRANSFER_SIZE : length;
   598   3                  
@@ -746,7 +746,7 @@ stmt  level    source
   656   1          wifi_spi_send_buffer((uint8*)string, strlen(string));
   657   1      }
   658              
-C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  18:51:57  PAGE 12  
+C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  19:17:43  PAGE 12  
 
   659          //-------------------------------------------------------------------------------------------------------
              -------------
@@ -814,7 +814,7 @@ stmt  level    source
   718   6                              fifo_write_buffer(&wifi_spi_fifo, temp_packets.buffer + fifo_read_length, temp_pa
              -ckets.head.length - fifo_read_length);
   719   6                          }
-C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  18:51:57  PAGE 13  
+C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  19:17:43  PAGE 13  
 
   720   5                      }
   721   4                      else                                                // 全部写入FIFO
@@ -882,7 +882,7 @@ stmt  level    source
   780   2              return_state = wifi_spi_wifi_connect(wifi_ssid, pass_word);
   781   2              if(return_state)
   782   2              {
-C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  18:51:57  PAGE 14  
+C251 COMPILER V5.60.0,  zf_device_wifi_spi                                                 15/07/26  19:17:43  PAGE 14  
 
   783   3                  break;
   784   3              }

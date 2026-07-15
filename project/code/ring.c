@@ -7,10 +7,10 @@
 #define TURN_TO_IN_CONFIRM_FRAMES      3u
 #define IN_TO_OUT_MIN_FRAMES           20u
 #define IN_TO_OUT_CONFIRM_FRAMES       3u
-#define RING_IN_LEFT_TOP_COL           65u
+#define RING_IN_LEFT_TOP_COL           57u
 #define RING_OUT_LEFT_TOP_COL          30u
 #define RING_MIRROR_COL(col)           ((uint8)(SEARCH_IMAGE_W - 1u - (col)))
-#define RING_IN_RIGHT_TOP_COL          122u
+#define RING_IN_RIGHT_TOP_COL          130u
 #define RING_OUT_RIGHT_TOP_COL         157u
 #define RIGHT_IN_AUTO_OUT_FRAMES       40u
 #define BACK_AUTO_EXIT_FRAMES          200u

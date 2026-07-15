@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  image                                                              15/07/26  18:51:59  PAGE 1   
+C251 COMPILER V5.60.0,  image                                                              15/07/26  19:17:44  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE image
@@ -66,7 +66,7 @@ stmt  level    source
    54          uint8 lost_right;
    55          
    56          uint8 cross_flag = 0;
-C251 COMPILER V5.60.0,  image                                                              15/07/26  18:51:59  PAGE 2   
+C251 COMPILER V5.60.0,  image                                                              15/07/26  19:17:44  PAGE 2   
 
    57          uint8 zebra_flag = 0;
    58          uint16 encoder_enter = 0;
@@ -134,7 +134,7 @@ stmt  level    source
                    const uint8 *row_ptr;
                
                    left = (int16)left_edge_line[row] + ZEBRA_MARGIN;
-C251 COMPILER V5.60.0,  image                                                              15/07/26  18:51:59  PAGE 3   
+C251 COMPILER V5.60.0,  image                                                              15/07/26  19:17:44  PAGE 3   
 
                    right = (int16)right_edge_line[row] - ZEBRA_MARGIN;
                
@@ -202,7 +202,7 @@ stmt  level    source
                    uint8 col_hits = 0;
                    uint8 left;
                    uint8 right;
-C251 COMPILER V5.60.0,  image                                                              15/07/26  18:51:59  PAGE 4   
+C251 COMPILER V5.60.0,  image                                                              15/07/26  19:17:44  PAGE 4   
 
                    uint8 step;
                
@@ -270,7 +270,7 @@ stmt  level    source
   252   1          uint32 sum;
   253   1          const uint8 *p;
   254   1      
-C251 COMPILER V5.60.0,  image                                                              15/07/26  18:51:59  PAGE 5   
+C251 COMPILER V5.60.0,  image                                                              15/07/26  19:17:44  PAGE 5   
 
   255   1          sample_count = 0;
   256   1          sum = 0;
@@ -338,7 +338,7 @@ stmt  level    source
   318   3                  break;
   319   3              }
   320   2      
-C251 COMPILER V5.60.0,  image                                                              15/07/26  18:51:59  PAGE 6   
+C251 COMPILER V5.60.0,  image                                                              15/07/26  19:17:44  PAGE 6   
 
   321   2              camera_exposure_time = next_exposure;
   322   2              mt9v03x_set_exposure_time(camera_exposure_time);
@@ -406,7 +406,7 @@ stmt  level    source
   384   3              }
   385   2              valid_count = count;
   386   2          }
-C251 COMPILER V5.60.0,  image                                                              15/07/26  18:51:59  PAGE 7   
+C251 COMPILER V5.60.0,  image                                                              15/07/26  19:17:44  PAGE 7   
 
   387   1      
   388   1          reference_point = (uint8)(sum / valid_count);
@@ -474,7 +474,7 @@ stmt  level    source
   450   4                  }
   451   3      
   452   3                  row_ptr -= row_step;
-C251 COMPILER V5.60.0,  image                                                              15/07/26  18:51:59  PAGE 8   
+C251 COMPILER V5.60.0,  image                                                              15/07/26  19:17:44  PAGE 8   
 
   453   3              }
   454   2      
@@ -542,7 +542,7 @@ stmt  level    source
   516   5                          left_end_col = col_min;
   517   5                      }
   518   4                      search_time--;
-C251 COMPILER V5.60.0,  image                                                              15/07/26  18:51:59  PAGE 9   
+C251 COMPILER V5.60.0,  image                                                              15/07/26  19:17:44  PAGE 9   
 
   519   4      
   520   4                      for (col = left_start_col; col > left_end_col + PIXEL_OFFSET; col -= PIXEL_OFFSET) {
@@ -610,7 +610,7 @@ stmt  level    source
   582   5                          temp2 = *(p + col + PIXEL_OFFSET);
   583   5      
   584   5                          if (is_reflect_pixel(temp1) || is_reflect_pixel(temp2)) {
-C251 COMPILER V5.60.0,  image                                                              15/07/26  18:51:59  PAGE 10  
+C251 COMPILER V5.60.0,  image                                                              15/07/26  19:17:44  PAGE 10  
 
   585   6                              continue;
   586   6                          }
@@ -678,7 +678,7 @@ stmt  level    source
   648   1          memcpy(right_control_line, right_edge_line, sizeof(right_edge_line));
   649   1      }
   650          
-C251 COMPILER V5.60.0,  image                                                              15/07/26  18:51:59  PAGE 11  
+C251 COMPILER V5.60.0,  image                                                              15/07/26  19:17:44  PAGE 11  
 
   651          /* 对按 PIXEL_OFFSET 搜到的稀疏边线做行间插值。 */
   652          void insert_val(void)
@@ -746,7 +746,7 @@ stmt  level    source
   714          {
   715   1          uint8 i;
   716   1          int32 err1 = 0;
-C251 COMPILER V5.60.0,  image                                                              15/07/26  18:51:59  PAGE 12  
+C251 COMPILER V5.60.0,  image                                                              15/07/26  19:17:44  PAGE 12  
 
   717   1          int32 err2 = 0;
   718   1          int32 err3 = 0;
@@ -814,7 +814,7 @@ stmt  level    source
   780   1          Ring();
   781   1      
   782   1          Fitted_Midline();
-C251 COMPILER V5.60.0,  image                                                              15/07/26  18:51:59  PAGE 13  
+C251 COMPILER V5.60.0,  image                                                              15/07/26  19:17:44  PAGE 13  
 
   783   1      
   784   1          /* 识别到目标后，tar_flag 会在 15 ms 中断里控制激光开关。 */

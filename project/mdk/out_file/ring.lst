@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  ring                                                               15/07/26  18:52:00  PAGE 1   
+C251 COMPILER V5.60.0,  ring                                                               15/07/26  19:17:45  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE ring
@@ -19,10 +19,10 @@ stmt  level    source
     7          #define TURN_TO_IN_CONFIRM_FRAMES      3u
     8          #define IN_TO_OUT_MIN_FRAMES           20u
     9          #define IN_TO_OUT_CONFIRM_FRAMES       3u
-   10          #define RING_IN_LEFT_TOP_COL           65u
+   10          #define RING_IN_LEFT_TOP_COL           57u
    11          #define RING_OUT_LEFT_TOP_COL          30u
    12          #define RING_MIRROR_COL(col)           ((uint8)(SEARCH_IMAGE_W - 1u - (col)))
-   13          #define RING_IN_RIGHT_TOP_COL          122u
+   13          #define RING_IN_RIGHT_TOP_COL          130u
    14          #define RING_OUT_RIGHT_TOP_COL         157u
    15          #define RIGHT_IN_AUTO_OUT_FRAMES       40u
    16          #define BACK_AUTO_EXIT_FRAMES          200u
@@ -66,7 +66,7 @@ stmt  level    source
    54          static void Ring_First_meeting_Right(void);
    55          static void Ring_Enter_Right(void);
    56          static void Ring_Turing_Right(void);
-C251 COMPILER V5.60.0,  ring                                                               15/07/26  18:52:00  PAGE 2   
+C251 COMPILER V5.60.0,  ring                                                               15/07/26  19:17:45  PAGE 2   
 
    57          static void Ring_Ring_Ring_Right(void);
    58          static void Ring_Out_Right(void);
@@ -134,7 +134,7 @@ stmt  level    source
   120   1      }
   121          
   122          /* 计算两个无符号 8 位数的差值绝对值。 */
-C251 COMPILER V5.60.0,  ring                                                               15/07/26  18:52:00  PAGE 3   
+C251 COMPILER V5.60.0,  ring                                                               15/07/26  19:17:45  PAGE 3   
 
   123          static uint8 abs_diff_u8(uint8 a, uint8 b)
   124          {
@@ -202,7 +202,7 @@ stmt  level    source
   186   2              col = (int16)(col + dir * base_step);
   187   2              acc = (int16)(acc + rem);
   188   2              if (acc >= den) {
-C251 COMPILER V5.60.0,  ring                                                               15/07/26  18:52:00  PAGE 4   
+C251 COMPILER V5.60.0,  ring                                                               15/07/26  19:17:45  PAGE 4   
 
   189   3                  col = (int16)(col + dir);
   190   3                  acc = (int16)(acc - den);
@@ -270,7 +270,7 @@ stmt  level    source
   251   3              }
   252   2      
   253   2              if (ring_turn_flag) {
-C251 COMPILER V5.60.0,  ring                                                               15/07/26  18:52:00  PAGE 5   
+C251 COMPILER V5.60.0,  ring                                                               15/07/26  19:17:45  PAGE 5   
 
   254   3                  if (++turn_to_in_cnt >= TURN_TO_IN_CONFIRM_FRAMES) {
   255   4                      Ring_Change_Step(RING_STEP_IN);
@@ -338,7 +338,7 @@ stmt  level    source
   317   1          int16 end_col;
   318   1      
   319   1          if (left_point >= SEARCH_IMAGE_H) left_point = SEARCH_IMAGE_H - 1;
-C251 COMPILER V5.60.0,  ring                                                               15/07/26  18:52:00  PAGE 6   
+C251 COMPILER V5.60.0,  ring                                                               15/07/26  19:17:45  PAGE 6   
 
   320   1          if (right_point >= SEARCH_IMAGE_H) right_point = SEARCH_IMAGE_H - 1;
   321   1      
@@ -406,7 +406,7 @@ stmt  level    source
   383   1      }
   384          
   385          /* 圆环预判：左右边线一侧连续、一侧不连续时认为可能进入圆环。 */
-C251 COMPILER V5.60.0,  ring                                                               15/07/26  18:52:00  PAGE 7   
+C251 COMPILER V5.60.0,  ring                                                               15/07/26  19:17:45  PAGE 7   
 
   386          uint8 Ring_Pre_Meet(void)
   387          {
@@ -474,7 +474,7 @@ stmt  level    source
   449          /* 第一次遇到圆环边线变化时，寻找拐点并尝试补左边线。 */
   450          void Ring_First_meeting(void)
   451          {
-C251 COMPILER V5.60.0,  ring                                                               15/07/26  18:52:00  PAGE 8   
+C251 COMPILER V5.60.0,  ring                                                               15/07/26  19:17:45  PAGE 8   
 
   452   1          uint8 i;
   453   1          uint8 under;
@@ -542,7 +542,7 @@ stmt  level    source
   515   1          uint8 midPoint = 0;
   516   1          uint8 turn_flag = 0;
   517   1      
-C251 COMPILER V5.60.0,  ring                                                               15/07/26  18:52:00  PAGE 9   
+C251 COMPILER V5.60.0,  ring                                                               15/07/26  19:17:45  PAGE 9   
 
   518   1          for (i = SEARCH_IMAGE_H - 1 - 2 * 2; i > 20; i -= 2) {
   519   2              uunder = left_edge_line[i + 4 ];
@@ -610,7 +610,7 @@ stmt  level    source
   580   3                  leftTopPoint = i - 2;
   581   3                  break;
   582   3              }
-C251 COMPILER V5.60.0,  ring                                                               15/07/26  18:52:00  PAGE 10  
+C251 COMPILER V5.60.0,  ring                                                               15/07/26  19:17:45  PAGE 10  
 
   583   2          }
   584   1      
@@ -678,7 +678,7 @@ stmt  level    source
   646          {
   647   1          left_control_line[0] = RING_OUT_LEFT_TOP_COL;
   648   1          right_control_line[0] = RING_OUT_LEFT_TOP_COL;
-C251 COMPILER V5.60.0,  ring                                                               15/07/26  18:52:00  PAGE 11  
+C251 COMPILER V5.60.0,  ring                                                               15/07/26  19:17:45  PAGE 11  
 
   649   1          draw_line(0, SEARCH_IMAGE_H - 1, 1);
   650   1      
@@ -746,7 +746,7 @@ stmt  level    source
   712   1          if (turnPoint == 0) {
   713   2              Ring_First_To_Normal_Check();
   714   2              return;
-C251 COMPILER V5.60.0,  ring                                                               15/07/26  18:52:00  PAGE 12  
+C251 COMPILER V5.60.0,  ring                                                               15/07/26  19:17:45  PAGE 12  
 
   715   2          }
   716   1      
@@ -814,7 +814,7 @@ stmt  level    source
   778   1      
   779   1          if (midPoint) {
   780   2              enter_to_first_cnt = 0;
-C251 COMPILER V5.60.0,  ring                                                               15/07/26  18:52:00  PAGE 13  
+C251 COMPILER V5.60.0,  ring                                                               15/07/26  19:17:45  PAGE 13  
 
   781   2              connect_point(SEARCH_IMAGE_H - 1, midPoint, 1);
   782   2          } else {
@@ -882,7 +882,7 @@ stmt  level    source
   844   1          if (cnt_over < RIGHT_IN_AUTO_OUT_FRAMES) {
   845   2              cnt_over++;
   846   2          }
-C251 COMPILER V5.60.0,  ring                                                               15/07/26  18:52:00  PAGE 14  
+C251 COMPILER V5.60.0,  ring                                                               15/07/26  19:17:45  PAGE 14  
 
   847   1      
   848   1          left_control_line[SEARCH_IMAGE_H - 1] = 0;
@@ -950,7 +950,7 @@ stmt  level    source
   910   1          ring_l = 0;
   911   1          ring_r = 0;
   912   1          ring_enter_flag = 0;
-C251 COMPILER V5.60.0,  ring                                                               15/07/26  18:52:00  PAGE 15  
+C251 COMPILER V5.60.0,  ring                                                               15/07/26  19:17:45  PAGE 15  
 
   913   1          ring_turn_flag = 0;
   914   1          Out_flag = 0;

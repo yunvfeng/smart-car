@@ -1,8 +1,8 @@
 #include "pid.h"
 #include "image.h"
+#include "gyro.h"
 
 volatile uint16 Out_servo = SERVO_DUTY_MID;
-volatile int16 g_gyro_z_for_servo = 0;
 
 /* 左右电机各一套 PI，参数在 pid.h 里改。 */
 volatile PID_t pid_rf = {MOTOR_KP_Q10, MOTOR_KI_Q10, MOTOR_KD_Q10, 0, 0, 0, 0, 0, 0, 0};
@@ -60,6 +60,7 @@ void PID_servof(volatile PID_t *pid)
     int16 d_err;
     int16 curve;
     int16 abs_err;
+    int16 gyro_correction;
     int32 out;
     int32 duty;
 
@@ -82,8 +83,14 @@ void PID_servof(volatile PID_t *pid)
     out += pid->kd * (int32)d_err;
     out += pid->kf * (int32)curve;
     out += pid->kp2 * (int32)err * (int32)abs_err;
-    out -= pid->kg * (int32)g_gyro_z_for_servo;
     out >>= PID_Q_SHIFT;
+
+    gyro_correction = limit_int16(
+        (pid->kg * (int32)g_gyro_z_for_servo) / PID_Q_ONE,
+        -GYRO_SERVO_CORRECTION_LIMIT,
+        GYRO_SERVO_CORRECTION_LIMIT);
+    Gyro_Set_Servo_Correction(gyro_correction);
+    out -= gyro_correction;
 
     out = limit_int16(out, -MAX_TURN, MAX_TURN);
 
@@ -94,4 +101,27 @@ void PID_servof(volatile PID_t *pid)
     pid->err2 = pid->err1;
     pid->err1 = err;
     pid->out = out;
+}
+
+void PID_Set_Servo_Gyro_Gain(int16 gain_q10)
+{
+    bit interrupt_state;
+
+    interrupt_state = EA;
+    EA = 0;
+    servo_pidf.kg = gain_q10;
+    EA = interrupt_state;
+}
+
+int16 PID_Get_Servo_Gyro_Gain(void)
+{
+    bit interrupt_state;
+    int32 gain_q10;
+
+    interrupt_state = EA;
+    EA = 0;
+    gain_q10 = servo_pidf.kg;
+    EA = interrupt_state;
+
+    return limit_int16(gain_q10, -32768, 32767);
 }

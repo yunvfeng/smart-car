@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  18:51:57  PAGE 1   
+C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  19:17:42  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_driver_uart
@@ -66,7 +66,7 @@ stmt  level    source
    52          
    53          
    54          // UR1~UR8 通用寄存器宏定义（自动区分范围）
-C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  18:51:57  PAGE 2   
+C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  19:17:42  PAGE 2   
 
    55          #define DMA_URXT_CFG(uart_n)  \
    56              (*(unsigned char volatile far *)( \
@@ -134,7 +134,7 @@ stmt  level    source
   108              (*(unsigned char volatile far *)( \
   109                  (uart_n >= UART_1 && uart_n <= UART_4) ? (0x7efa3b + (uart_n)*0x10) : (0x7ef765 + (uart_n - UART_
              -5)*0x30) \
-C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  18:51:57  PAGE 3   
+C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  19:17:42  PAGE 3   
 
   110              ))
   111          
@@ -202,7 +202,7 @@ stmt  level    source
   164          //#define DMA_URXT_AMT(uart_n)      (*(unsigned char volatile far *)(0x7efa33 + uart_n*0x10))
   165          //#define DMA_URXT_DONE(uart_n)     (*(unsigned char volatile far *)(0x7efa34 + uart_n*0x10))
   166          //#define DMA_URXT_TXAH(uart_n)     (*(unsigned char volatile far *)(0x7efa35 + uart_n*0x10))
-C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  18:51:57  PAGE 4   
+C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  19:17:42  PAGE 4   
 
   167          //#define DMA_URXT_TXAL(uart_n)     (*(unsigned char volatile far *)(0x7efa36 + uart_n*0x10))
   168              
@@ -270,7 +270,7 @@ stmt  level    source
   226          {
   227   1          uint16 len = strlen(str);
   228   1          uart_write_buffer(uart_n, str, len);
-C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  18:51:57  PAGE 5   
+C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  19:17:42  PAGE 5   
 
   229   1      }
   230          
@@ -338,7 +338,7 @@ stmt  level    source
   285          //-------------------------------------------------------------------------------------------------------
              -------------
   286          uint8 uart_read_byte(uart_index_enum uart_n)
-C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  18:51:57  PAGE 6   
+C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  19:17:42  PAGE 6   
 
   287          {
   288   1        uint8 dat;
@@ -406,7 +406,7 @@ stmt  level    source
   346   1          
   347   1        DMA_URXR_CFG(uart_n)  = 0x00; // 关闭DMA接收中断
   348   1        DMA_URXR_STA(uart_n)  = 0x00; // 清除DMA RX状态
-C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  18:51:57  PAGE 7   
+C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  19:17:42  PAGE 7   
 
   349   1        DMA_URXR_CR(uart_n)   = 0x00; // 关闭DMA RX
   350   1      
@@ -474,7 +474,7 @@ stmt  level    source
   408   4                      TR1 = 1;  
   409   4                  }
   410   3                  else if(TIM_2 == tim_n)
-C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  18:51:57  PAGE 8   
+C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  19:17:42  PAGE 8   
 
   411   3                  {
   412   4                      SCON |= 0x50;
@@ -542,7 +542,7 @@ stmt  level    source
   474   3                  
   475   3                  break;
   476   3              }
-C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  18:51:57  PAGE 9   
+C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  19:17:42  PAGE 9   
 
   477   2              
   478   2              case UART_3:
@@ -610,7 +610,7 @@ stmt  level    source
   540   3                  S4CON |= 0x50;
   541   3                  P_SW2  &= ~(0x01 << 2);
   542   3                  P_SWX1 &= ~(0x01 << 7);
-C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  18:51:57  PAGE 10  
+C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  19:17:42  PAGE 10  
 
   543   3                  if((UART4_RX_P02 == rx_pin) && (UART4_TX_P03 == tx_pin))
   544   3                  {
@@ -678,7 +678,7 @@ stmt  level    source
   606   3                  break;
   607   3              }
   608   2              
-C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  18:51:57  PAGE 11  
+C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  19:17:42  PAGE 11  
 
   609   2              case UART_6:
   610   2              {
@@ -746,7 +746,7 @@ stmt  level    source
   672   3                  else if((UART7_RX_PA4 == rx_pin) && (UART7_TX_PA5 == tx_pin))
   673   3                  {
   674   4                      P_SWX5 |= 0x01 << 4; 
-C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  18:51:57  PAGE 12  
+C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  19:17:42  PAGE 12  
 
   675   4                  }
   676   3                  else if((UART7_RX_P90 == rx_pin) && (UART7_TX_P91 == tx_pin))
@@ -814,7 +814,7 @@ stmt  level    source
   738   1          // 合法性检查：仅处理 UART_1~UART_8，避免越界访问和非法配置
   739   1          zf_assert(!(uart_n < UART_1 || uart_n > UART_8));
   740   1      
-C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  18:51:57  PAGE 13  
+C251 COMPILER V5.60.0,  zf_driver_uart                                                     15/07/26  19:17:42  PAGE 13  
 
   741   1          uart_tim_init(uart_n, baud, tx_pin, rx_pin, tim_index);
   742   1      }

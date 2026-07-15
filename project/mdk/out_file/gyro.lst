@@ -1,0 +1,119 @@
+C251 COMPILER V5.60.0,  gyro                                                               15/07/26  19:17:45  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE gyro
+OBJECT MODULE PLACED IN .\out_file\gyro.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\code\gyro.c LARGE ROM(HUGE) WARNINGLEVEL(3) OPTIMIZE(0,SIZE) BROWSE
+                    - INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\u
+                    -ser;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekfree_assistant) DEBUG PRINT(.
+                    -\out_file\gyro.lst) TABS(2) OBJECT(.\out_file\gyro.obj) 
+
+stmt  level    source
+
+    1          #include "gyro.h"
+    2          #include "zf_device_imu660rb.h"
+    3          
+    4          static volatile uint8 gyro_ready = 0;
+    5          static volatile int16 gyro_servo_correction = 0;
+    6          static int16 gyro_z_bias = 0;
+    7          static int32 gyro_z_filtered = 0;
+    8          
+    9          volatile int16 g_gyro_z_for_servo = 0;
+   10          
+   11          uint8 Gyro_Init(void)
+   12          {
+   13   1          uint16 i;
+   14   1          int32 sample_sum;
+   15   1      
+   16   1          gyro_ready = 0;
+   17   1          gyro_servo_correction = 0;
+   18   1          gyro_z_bias = 0;
+   19   1          gyro_z_filtered = 0;
+   20   1          g_gyro_z_for_servo = 0;
+   21   1      
+   22   1          if (imu660rb_init()) {
+   23   2              return 1;
+   24   2          }
+   25   1      
+   26   1          sample_sum = 0;
+   27   1          for (i = 0; i < GYRO_CALIBRATION_SAMPLES; i++) {
+   28   2              imu660rb_get_gyro();
+   29   2              sample_sum += imu660rb_gyro_z;
+   30   2              system_delay_ms(GYRO_CALIBRATION_DELAY_MS);
+   31   2          }
+   32   1      
+   33   1          gyro_z_bias = (int16)(sample_sum / (int32)GYRO_CALIBRATION_SAMPLES);
+   34   1          gyro_ready = 1;
+   35   1          return 0;
+   36   1      }
+   37          
+   38          void Gyro_Update(void)
+   39          {
+   40   1          int32 corrected;
+   41   1      
+   42   1          if (!gyro_ready) {
+   43   2              g_gyro_z_for_servo = 0;
+   44   2              gyro_servo_correction = 0;
+   45   2              return;
+   46   2          }
+   47   1      
+   48   1          imu660rb_get_gyro();
+   49   1          corrected = (int32)imu660rb_gyro_z - (int32)gyro_z_bias;
+   50   1          if (corrected > 32767L) {
+   51   2              corrected = 32767L;
+   52   2          } else if (corrected < -32768L) {
+   53   2              corrected = -32768L;
+   54   2          }
+   55   1      
+   56   1          gyro_z_filtered = (gyro_z_filtered * 3L + corrected) / 4L;
+C251 COMPILER V5.60.0,  gyro                                                               15/07/26  19:17:45  PAGE 2   
+
+   57   1          g_gyro_z_for_servo = (int16)gyro_z_filtered;
+   58   1      }
+   59          
+   60          void Gyro_Set_Servo_Correction(int16 correction)
+   61          {
+   62   1          gyro_servo_correction = gyro_ready ? correction : 0;
+   63   1      }
+   64          
+   65          void Gyro_Get_Debug(uint8 *ready, int16 *filtered_z, int16 *correction)
+   66          {
+   67   1          bit interrupt_state;
+   68   1      
+   69   1          interrupt_state = EA;
+   70   1          EA = 0;
+   71   1          if (ready != NULL) {
+   72   2              *ready = gyro_ready;
+   73   2          }
+   74   1          if (filtered_z != NULL) {
+   75   2              *filtered_z = g_gyro_z_for_servo;
+   76   2          }
+   77   1          if (correction != NULL) {
+   78   2              *correction = gyro_servo_correction;
+   79   2          }
+   80   1          EA = interrupt_state;
+   81   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =       553     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =        35     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =         1     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =        36     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

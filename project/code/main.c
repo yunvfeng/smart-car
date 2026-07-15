@@ -7,6 +7,7 @@
 #include "image2.h"
 #include "ring.h"
 #include "pid.h"
+#include "gyro.h"
 #include "motor.h"
 #include "servo.h"
 #include "laser.h"
@@ -29,6 +30,7 @@ static void Timer0_Callback(void)
 {
     /* 中断里只放轻量控制任务，避免影响下一帧图像采集。 */
     Encoder_GetValue();
+    Gyro_Update();
 
     Servo_Loop();
     Motor_Loop();
@@ -52,6 +54,7 @@ void main(void)
     servo_init();
     laser_init();
     Key_Init();
+    Gyro_Init();
 
     mt9v03x_init();
     mt9v03x_set_exposure_time(camera_exposure_time);
@@ -95,6 +98,11 @@ void main(void)
         /* 摄像头完成一帧后再处理图像，处理完再等下一帧。 */
         if (mt9v03x_finish_flag) {
             mt9v03x_finish_flag = 0;
+
+            /* 发车前按图像周期采样，发车后由 15 ms 控制定时器独占采样。 */
+            if (!car_started) {
+                Gyro_Update();
+            }
 
             Image_OldStyle_Process();
 

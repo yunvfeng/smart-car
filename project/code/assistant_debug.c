@@ -3,6 +3,7 @@
 #if ASSISTANT_DEBUG_ENABLE
 
 #include "image.h"
+#include "gyro.h"
 #include "laser.h"
 #include "motor.h"
 #include "pid.h"
@@ -13,6 +14,8 @@
 #define ASSISTANT_EXPOSURE_MIN          1.0f
 #define ASSISTANT_EXPOSURE_MAX          4095.0f
 #define ASSISTANT_SPEED_MIN              165.0f
+#define ASSISTANT_GYRO_KG_MIN            (-32.0f)
+#define ASSISTANT_GYRO_KG_MAX            32.0f
 
 static uint8 assistant_image_cnt = 0;
 static uint8 assistant_scope_cnt = 0;
@@ -143,20 +146,24 @@ static uint8 Assistant_Frame_Div_Hit(uint8 *counter, uint8 divider)
 
 static void Assistant_Load_Default_Params(void)
 {
+    int16 speed_min;
+    int16 speed_max;
+
+    Motor_Get_Speed_Range(&speed_min, &speed_max);
     seekfree_assistant_parameter[ASSISTANT_PARAM_SERVO_KP - 1] =
         (float)servo_pidf.kp;
     seekfree_assistant_parameter[ASSISTANT_PARAM_SERVO_KD - 1] =
         (float)servo_pidf.kd;
-    seekfree_assistant_parameter[ASSISTANT_PARAM_SERVO_KF - 1] =
-        (float)servo_pidf.kf;
+    seekfree_assistant_parameter[ASSISTANT_PARAM_GYRO_KG - 1] =
+        (float)PID_Get_Servo_Gyro_Gain();
     seekfree_assistant_parameter[ASSISTANT_PARAM_MOTOR_KP - 1] =
         (float)pid_lf.kp;
     seekfree_assistant_parameter[ASSISTANT_PARAM_MOTOR_KI - 1] =
         (float)pid_lf.ki;
     seekfree_assistant_parameter[ASSISTANT_PARAM_MIN_SPEED - 1] =
-        (float)min_speed;
+        (float)speed_min;
     seekfree_assistant_parameter[ASSISTANT_PARAM_MAX_SPEED - 1] =
-        (float)max_speed;
+        (float)speed_max;
     seekfree_assistant_parameter[ASSISTANT_PARAM_CAMERA_EXPOSURE - 1] =
         (float)camera_exposure_time;
 }
@@ -165,6 +172,8 @@ static void Assistant_Apply_Param(uint8 channel, float value)
 {
     int32 fixed_value;
     uint16 exposure;
+    int16 speed_min;
+    int16 speed_max;
 
     switch (channel) {
     case ASSISTANT_PARAM_SERVO_KP:
@@ -175,8 +184,16 @@ static void Assistant_Apply_Param(uint8 channel, float value)
         servo_pidf.kd = Assistant_Float_To_Int32(value);
         break;
 
-    case ASSISTANT_PARAM_SERVO_KF:
-        servo_pidf.kf = Assistant_Float_To_Int32(value);
+    case ASSISTANT_PARAM_GYRO_KG:
+        value = Assistant_Clamp_Float(value, ASSISTANT_GYRO_KG_MIN, ASSISTANT_GYRO_KG_MAX);
+        if (value >= 0.0f) {
+            fixed_value = (int32)(value + 0.5f);
+        } else {
+            fixed_value = (int32)(value - 0.5f);
+        }
+        PID_Set_Servo_Gyro_Gain((int16)fixed_value);
+        seekfree_assistant_parameter[ASSISTANT_PARAM_GYRO_KG - 1] =
+            (float)PID_Get_Servo_Gyro_Gain();
         break;
 
     case ASSISTANT_PARAM_MOTOR_KP:
@@ -193,18 +210,28 @@ static void Assistant_Apply_Param(uint8 channel, float value)
 
     case ASSISTANT_PARAM_MIN_SPEED:
         value = Assistant_Clamp_Float(value, ASSISTANT_SPEED_MIN, (float)MAX_SPEED_TUNE_MAX);
-        min_speed = (int16)(value + 0.5f);
-        if (max_speed < min_speed) {
-            max_speed = min_speed;
+        Motor_Get_Speed_Range(&speed_min, &speed_max);
+        speed_min = (int16)(value + 0.5f);
+        if (speed_max < speed_min) {
+            speed_max = speed_min;
         }
+        Motor_Set_Speed_Range(speed_min, speed_max);
+        Motor_Get_Speed_Range(&speed_min, &speed_max);
+        seekfree_assistant_parameter[ASSISTANT_PARAM_MIN_SPEED - 1] = (float)speed_min;
+        seekfree_assistant_parameter[ASSISTANT_PARAM_MAX_SPEED - 1] = (float)speed_max;
         break;
 
     case ASSISTANT_PARAM_MAX_SPEED:
         value = Assistant_Clamp_Float(value, ASSISTANT_SPEED_MIN, (float)MAX_SPEED_TUNE_MAX);
-        max_speed = (int16)(value + 0.5f);
-        if (min_speed > max_speed) {
-            min_speed = max_speed;
+        Motor_Get_Speed_Range(&speed_min, &speed_max);
+        speed_max = (int16)(value + 0.5f);
+        if (speed_min > speed_max) {
+            speed_min = speed_max;
         }
+        Motor_Set_Speed_Range(speed_min, speed_max);
+        Motor_Get_Speed_Range(&speed_min, &speed_max);
+        seekfree_assistant_parameter[ASSISTANT_PARAM_MIN_SPEED - 1] = (float)speed_min;
+        seekfree_assistant_parameter[ASSISTANT_PARAM_MAX_SPEED - 1] = (float)speed_max;
         break;
 
     case ASSISTANT_PARAM_CAMERA_EXPOSURE:
@@ -237,17 +264,20 @@ static void Assistant_Send_Scope(void)
 {
     int16 mid_error;
     int16 servo_error;
+    int16 gyro_z;
+    int16 gyro_correction;
 
     mid_error = (int16)mid_line[controlReferenceLine] - (int16)Mid_Col;
     servo_error = (int16)Out_servo - (int16)SERVO_DUTY_MID;
+    Gyro_Get_Debug(NULL, &gyro_z, &gyro_correction);
 
     seekfree_assistant_oscilloscope_data.channel_num = SEEKFREE_ASSISTANT_SET_OSCILLOSCOPE_COUNT;
     seekfree_assistant_oscilloscope_data.dat[0] = (float)mid_error;
     seekfree_assistant_oscilloscope_data.dat[1] = (float)servo_error;
     seekfree_assistant_oscilloscope_data.dat[2] = (float)encoder_data_l;
     seekfree_assistant_oscilloscope_data.dat[3] = (float)encoder_data_r;
-    seekfree_assistant_oscilloscope_data.dat[4] = (float)target_speed_l;
-    seekfree_assistant_oscilloscope_data.dat[5] = (float)target_speed_r;
+    seekfree_assistant_oscilloscope_data.dat[4] = (float)gyro_z;
+    seekfree_assistant_oscilloscope_data.dat[5] = (float)gyro_correction;
     seekfree_assistant_oscilloscope_data.dat[6] = (float)motor_pwm_l;
     seekfree_assistant_oscilloscope_data.dat[7] = (float)motor_pwm_r;
 

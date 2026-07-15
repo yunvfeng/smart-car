@@ -46,6 +46,7 @@
 ".\out_file\laser.obj",
 ".\out_file\motor.obj",
 ".\out_file\pid.obj",
+".\out_file\gyro.obj",
 ".\out_file\ring.obj",
 ".\out_file\servo.obj",
 ".\out_file\assistant_debug.obj",

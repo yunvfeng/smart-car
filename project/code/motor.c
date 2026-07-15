@@ -14,6 +14,45 @@ volatile int16 target_speed_r = BASE_TARGET_SPEED;
 volatile int16 motor_pwm_l = 0;
 volatile int16 motor_pwm_r = 0;
 
+static int16 clamp_speed_setting(int16 speed)
+{
+    if (speed < WHEEL_TARGET_MIN) return WHEEL_TARGET_MIN;
+    if (speed > MAX_SPEED_TUNE_MAX) return MAX_SPEED_TUNE_MAX;
+    return speed;
+}
+
+void Motor_Set_Speed_Range(int16 speed_min, int16 speed_max)
+{
+    bit interrupt_state;
+
+    speed_min = clamp_speed_setting(speed_min);
+    speed_max = clamp_speed_setting(speed_max);
+    if (speed_min > speed_max) {
+        speed_min = speed_max;
+    }
+
+    interrupt_state = EA;
+    EA = 0;
+    min_speed = speed_min;
+    max_speed = speed_max;
+    EA = interrupt_state;
+}
+
+void Motor_Get_Speed_Range(int16 *speed_min, int16 *speed_max)
+{
+    bit interrupt_state;
+
+    if (speed_min == NULL || speed_max == NULL) {
+        return;
+    }
+
+    interrupt_state = EA;
+    EA = 0;
+    *speed_min = min_speed;
+    *speed_max = max_speed;
+    EA = interrupt_state;
+}
+
 /* 限制电机 PWM 输出，防止超过驱动允许范围。 */
 static int16 clamp_motor(int16 x)
 {
@@ -159,7 +198,7 @@ void Dream_speed(void)
     }
 
     /* 每个控制周期使用同一份原子快照，避免 WiFi 更新时混用新旧范围。 */
-    speed_ceiling = max_speed;
+    Motor_Get_Speed_Range(&speed_floor, &speed_ceiling);
 
     if (speed_ceiling < WHEEL_TARGET_MIN) {
         speed_ceiling = WHEEL_TARGET_MIN;
@@ -167,7 +206,6 @@ void Dream_speed(void)
         speed_ceiling = MAX_SPEED_TUNE_MAX;
     }
 
-    speed_floor = min_speed;
     if (speed_floor < WHEEL_TARGET_MIN) {
         speed_floor = WHEEL_TARGET_MIN;
     } else if (speed_floor > speed_ceiling) {

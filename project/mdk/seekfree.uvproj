@@ -850,6 +850,16 @@
               <FilePath>..\code\pid.h</FilePath>
             </File>
             <File>
+              <FileName>gyro.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\gyro.c</FilePath>
+            </File>
+            <File>
+              <FileName>gyro.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\gyro.h</FilePath>
+            </File>
+            <File>
               <FileName>ring.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\code\ring.c</FilePath>
