@@ -650,16 +650,6 @@
               <FilePath>..\..\libraries\zf_device\zf_device_dl1a.c</FilePath>
             </File>
             <File>
-              <FileName>zf_device_dl1b.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\libraries\zf_device\zf_device_dl1b.c</FilePath>
-            </File>
-            <File>
-              <FileName>zf_device_dl1b.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\libraries\zf_device\zf_device_dl1b.h</FilePath>
-            </File>
-            <File>
               <FileName>zf_device_imu660rb.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\libraries\zf_device\zf_device_imu660rb.c</FilePath>
@@ -878,6 +868,16 @@
               <FileName>servo.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\code\servo.h</FilePath>
+            </File>
+            <File>
+              <FileName>visual_avoidance.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\visual_avoidance.c</FilePath>
+            </File>
+            <File>
+              <FileName>visual_avoidance.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\visual_avoidance.h</FilePath>
             </File>
             <File>
               <FileName>assistant_debug.c</FileName>

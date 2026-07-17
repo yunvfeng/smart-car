@@ -8,17 +8,19 @@
 #include "motor.h"
 #include "pid.h"
 #include "ring.h"
+#include "visual_avoidance.h"
 
 #define ASSISTANT_PARAM_MIN_CHANNEL     1u
 #define ASSISTANT_PARAM_MAX_CHANNEL     SEEKFREE_ASSISTANT_SET_PARAMETR_COUNT
 #define ASSISTANT_EXPOSURE_MIN          1.0f
 #define ASSISTANT_EXPOSURE_MAX          4095.0f
 #define ASSISTANT_SPEED_MIN              165.0f
-#define ASSISTANT_GYRO_KG_MIN            (-32.0f)
-#define ASSISTANT_GYRO_KG_MAX            32.0f
+#define ASSISTANT_GYRO_KG_MIN            (-3000.0f)
+#define ASSISTANT_GYRO_KG_MAX            3000.0f
 
 static uint8 assistant_image_cnt = 0;
 static uint8 assistant_scope_cnt = 0;
+static uint8 assistant_visual_avoid_enabled = 0;
 static volatile uint16 assistant_time_100us = 0;
 static volatile uint16 assistant_image_process_time_100us = 0;
 
@@ -35,6 +37,24 @@ static const char *Assistant_Ring_State_Name(void)
     case 6: return "BACK";
     case 7: return "OVER";
     default: return "ERR";
+    }
+}
+
+static const char *Assistant_Visual_Avoid_State_Name(uint8 enabled,
+                                                      uint8 state,
+                                                      uint8 candidate_valid,
+                                                      uint8 pending_hit)
+{
+    if (!enabled) return "OFF";
+    switch (state) {
+    case VISUAL_AVOID_STATE_BYPASS: return "BYP";
+    case VISUAL_AVOID_STATE_RECENTER: return "REC";
+    case VISUAL_AVOID_STATE_FOLLOW:
+        if (pending_hit) return "H1";
+        if (candidate_valid) return "RAW";
+        return "SCN";
+    default:
+        return "ERR";
     }
 }
 
@@ -73,7 +93,7 @@ static uint8 Assistant_Draw_Image_String(uint8 x, uint8 y, const char *str)
 {
     while (*str && x + 8u <= MT9V03X_W) {
         Assistant_Draw_Image_Char(x, y, *str++);
-        x += 8;
+        x += 8u;
     }
 
     return x;
@@ -93,14 +113,67 @@ static void Assistant_Draw_Target_Cross(void)
     }
 }
 
+static void Assistant_Draw_Visual_Avoid_Candidate(uint8 valid,
+                                                  uint8 left,
+                                                  uint8 right,
+                                                  uint8 bottom)
+{
+    uint8 x;
+    uint8 y;
+    uint8 top;
+    uint8 lower;
+
+    if (!valid || left >= MT9V03X_W || right >= MT9V03X_W ||
+        left >= right || bottom >= MT9V03X_H) {
+        return;
+    }
+
+    top = (bottom > 6u) ? (uint8)(bottom - 6u) : 0u;
+    lower = (bottom + 6u < MT9V03X_H) ?
+            (uint8)(bottom + 6u) : (uint8)(MT9V03X_H - 1u);
+
+    for (x = left; x <= right; x++) {
+        Assistant_Draw_Image_Point(x, bottom, 128u);
+    }
+    for (y = top; y <= lower; y++) {
+        Assistant_Draw_Image_Point(left, y, 128u);
+        Assistant_Draw_Image_Point(right, y, 128u);
+    }
+}
+
 static void Assistant_Draw_Status_Overlay(void)
 {
     uint8 x;
+    uint8 candidate_valid;
+    uint8 candidate_left;
+    uint8 candidate_right;
+    uint8 candidate_bottom;
+    uint8 avoid_state;
+    uint8 avoid_pending_hit;
 
-    x = 2;
-    x = Assistant_Draw_Image_String(x, 2, "R:");
-    Assistant_Draw_Image_String(x, 2, Assistant_Ring_State_Name());
+    VisualAvoid_GetDebug(&candidate_valid,
+                         &candidate_left,
+                         &candidate_right,
+                         &candidate_bottom,
+                         &avoid_state,
+                         &avoid_pending_hit,
+                         NULL,
+                         NULL);
 
+    x = Assistant_Draw_Image_String(2u, 2u, "R:");
+    Assistant_Draw_Image_String(x, 2u, Assistant_Ring_State_Name());
+    x = Assistant_Draw_Image_String(2u, 18u, "V:");
+    Assistant_Draw_Image_String(x, 18u,
+                                Assistant_Visual_Avoid_State_Name(
+                                    assistant_visual_avoid_enabled,
+                                    avoid_state,
+                                    candidate_valid,
+                                    avoid_pending_hit));
+
+    Assistant_Draw_Visual_Avoid_Candidate(candidate_valid,
+                                          candidate_left,
+                                          candidate_right,
+                                          candidate_bottom);
     Assistant_Draw_Target_Cross();
 }
 #endif
@@ -158,8 +231,7 @@ static void Assistant_Load_Default_Params(void)
         (float)PID_Get_Servo_Gyro_Gain();
     seekfree_assistant_parameter[ASSISTANT_PARAM_MOTOR_KP - 1] =
         (float)pid_lf.kp;
-    seekfree_assistant_parameter[ASSISTANT_PARAM_MOTOR_KI - 1] =
-        (float)pid_lf.ki;
+    seekfree_assistant_parameter[ASSISTANT_PARAM_MOTOR_STOP - 1] = 1.0f;
     seekfree_assistant_parameter[ASSISTANT_PARAM_MIN_SPEED - 1] =
         (float)speed_min;
     seekfree_assistant_parameter[ASSISTANT_PARAM_MAX_SPEED - 1] =
@@ -170,6 +242,7 @@ static void Assistant_Load_Default_Params(void)
 
 static void Assistant_Apply_Param(uint8 channel, float value)
 {
+    bit interrupt_state;
     int32 fixed_value;
     uint16 exposure;
     int16 speed_min;
@@ -202,10 +275,21 @@ static void Assistant_Apply_Param(uint8 channel, float value)
         pid_rf.kp = fixed_value;
         break;
 
-    case ASSISTANT_PARAM_MOTOR_KI:
-        fixed_value = Assistant_Float_To_Int32(value);
-        pid_lf.ki = fixed_value;
-        pid_rf.ki = fixed_value;
+    case ASSISTANT_PARAM_MOTOR_STOP:
+        fixed_value = Assistant_Float_To_Int32(value + 0.5f);
+        if (fixed_value == 2) {
+            interrupt_state = EA;
+            EA = 0;
+            Motor_Set_Safety_Command(MOTOR_SAFETY_STOP, 0);
+            EA = interrupt_state;
+            seekfree_assistant_parameter[ASSISTANT_PARAM_MOTOR_STOP - 1] = 2.0f;
+        } else {
+            interrupt_state = EA;
+            EA = 0;
+            Motor_Set_Safety_Command(MOTOR_SAFETY_NORMAL, 0);
+            EA = interrupt_state;
+            seekfree_assistant_parameter[ASSISTANT_PARAM_MOTOR_STOP - 1] = 1.0f;
+        }
         break;
 
     case ASSISTANT_PARAM_MIN_SPEED:
@@ -260,6 +344,7 @@ static void Assistant_Apply_Param_Updates(void)
     }
 }
 
+#if ASSISTANT_DEBUG_SCOPE_ENABLE
 static void Assistant_Send_Scope(void)
 {
     int16 mid_error;
@@ -283,6 +368,7 @@ static void Assistant_Send_Scope(void)
 
     seekfree_assistant_oscilloscope_send(&seekfree_assistant_oscilloscope_data);
 }
+#endif
 
 void Assistant_Debug_Init(void)
 {
@@ -323,8 +409,9 @@ void Assistant_Debug_Task(void)
 #endif
 }
 
-void Assistant_Debug_On_Frame(void)
+void Assistant_Debug_On_Frame(uint8 visual_avoid_enabled)
 {
+    assistant_visual_avoid_enabled = visual_avoid_enabled ? 1u : 0u;
     Assistant_Debug_Task();
 
 #if ASSISTANT_DEBUG_SCOPE_ENABLE
@@ -375,8 +462,9 @@ void Assistant_Debug_Task(void)
 {
 }
 
-void Assistant_Debug_On_Frame(void)
+void Assistant_Debug_On_Frame(uint8 visual_avoid_enabled)
 {
+    (void)visual_avoid_enabled;
 }
 
 void Assistant_Debug_Send_Now(void)

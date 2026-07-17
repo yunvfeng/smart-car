@@ -1,0 +1,260 @@
+C251 COMPILER V5.60.0,  tof_avoidance                                                      17/07/26  20:16:33  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE tof_avoidance
+OBJECT MODULE PLACED IN .\out_file\tof_avoidance.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\code\tof_avoidance.c LARGE ROM(HUGE) WARNINGLEVEL(3) OPTIMIZE(0,SIZ
+                    -E) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_dr
+                    -iver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekfree_assistant) DEBU
+                    -G PRINT(.\out_file\tof_avoidance.lst) TABS(2) OBJECT(.\out_file\tof_avoidance.obj) 
+
+stmt  level    source
+
+    1          #include "tof_avoidance.h"
+    2          
+    3          #include "zf_device_dl1b.h"
+    4          #include "motor.h"
+    5          #include "servo.h"
+    6          
+    7          #define TOF_AVOID_INVALID_DISTANCE_MM         8192u
+    8          
+    9          /* 只有轮询请求和状态会跨主循环/中断访问，均为 8 位。 */
+   10          static volatile uint8 tof_poll_due = 0;
+   11          static volatile uint8 tof_state = TOF_AVOID_STATE_FOLLOW;
+   12          
+   13          static uint8 dl1b_ready = 0;
+   14          static uint8 poll_tick_count = 0;
+   15          static uint8 near_sample_count = 0;
+   16          static uint8 clear_sample_count = 0;
+   17          static uint8 invalid_sample_count = 0;
+   18          static uint8 rearm_requested = 0;
+   19          static uint8 tof_last_valid = 0;
+   20          static uint16 tof_last_distance_mm = TOF_AVOID_INVALID_DISTANCE_MM;
+   21          
+   22          static void TofAvoid_SetState(tof_avoid_state_enum next_state)
+   23          {
+   24   1          bit interrupt_state;
+   25   1      
+   26   1          interrupt_state = EA;
+   27   1          EA = 0;
+   28   1      
+   29   1          near_sample_count = 0;
+   30   1          clear_sample_count = 0;
+   31   1          invalid_sample_count = 0;
+   32   1          rearm_requested = 0;
+   33   1      
+   34   1          if (next_state == TOF_AVOID_STATE_AVOID) {
+   35   2              Servo_Set_Path_Bias(TOF_AVOID_RIGHT_BIAS_PX);
+   36   2              Servo_Set_Mode(SERVO_MODE_PATH_BIAS);
+   37   2              Motor_Set_Safety_Command(MOTOR_SAFETY_CAP, TOF_AVOID_SPEED_CAP);
+   38   2          } else if (next_state == TOF_AVOID_STATE_STOPPED) {
+   39   2              /* Hard-stop first; publish STOPPED only after the outputs are safe. */
+   40   2              Motor_Set_Safety_Command(MOTOR_SAFETY_STOP, 0);
+   41   2              Servo_Set_Path_Bias(0);
+   42   2              Servo_Set_Mode(SERVO_MODE_CENTER);
+   43   2          } else {
+   44   2              /* PATH_BIAS=0 与普通循迹目标相同，并可平滑撤销右偏。 */
+   45   2              Servo_Set_Path_Bias(0);
+   46   2              Servo_Set_Mode(SERVO_MODE_PATH_BIAS);
+   47   2              Motor_Set_Safety_Command(MOTOR_SAFETY_NORMAL, 0);
+   48   2          }
+   49   1      
+   50   1          /* ISR feature gating observes the new state only after commands are ready. */
+   51   1          tof_state = (uint8)next_state;
+   52   1          EA = interrupt_state;
+   53   1      }
+   54          
+   55          static void TofAvoid_ProcessSample(uint8 valid, uint16 distance_mm)
+   56          {
+C251 COMPILER V5.60.0,  tof_avoidance                                                      17/07/26  20:16:33  PAGE 2   
+
+   57   1          tof_last_valid = valid;
+   58   1          tof_last_distance_mm = valid ? distance_mm : TOF_AVOID_INVALID_DISTANCE_MM;
+   59   1      
+   60   1          if (!valid) {
+   61   2              /* 数据可能只是尚未 ready；连续约 150 ms 无效才按失效处理。 */
+   62   2              if (invalid_sample_count < TOF_AVOID_INVALID_LIMIT) {
+   63   3                  invalid_sample_count++;
+   64   3              }
+   65   2              if (invalid_sample_count >= TOF_AVOID_INVALID_LIMIT) {
+   66   3                  near_sample_count = 0;
+   67   3                  clear_sample_count = 0;
+   68   3                  if (tof_state == TOF_AVOID_STATE_AVOID) {
+   69   4                      TofAvoid_SetState(TOF_AVOID_STATE_FOLLOW);
+   70   4                  }
+   71   3              }
+   72   2              return;
+   73   2          }
+   74   1      
+   75   1          invalid_sample_count = 0;
+   76   1      
+   77   1          if (distance_mm <= TOF_AVOID_EMERGENCY_MM) {
+   78   2              if (tof_state != TOF_AVOID_STATE_STOPPED) {
+   79   3                  TofAvoid_SetState(TOF_AVOID_STATE_STOPPED);
+   80   3              }
+   81   2              return;
+   82   2          }
+   83   1      
+   84   1          if (tof_state == TOF_AVOID_STATE_STOPPED) {
+   85   2              if (rearm_requested && distance_mm > TOF_AVOID_CLEAR_MM) {
+   86   3                  TofAvoid_SetState(TOF_AVOID_STATE_FOLLOW);
+   87   3              }
+   88   2              return;
+   89   2          }
+   90   1      
+   91   1          if (tof_state == TOF_AVOID_STATE_FOLLOW) {
+   92   2              if (distance_mm < TOF_AVOID_TRIGGER_MM) {
+   93   3                  if (near_sample_count < TOF_AVOID_TRIGGER_SAMPLES) {
+   94   4                      near_sample_count++;
+   95   4                  }
+   96   3              } else {
+   97   3                  near_sample_count = 0;
+   98   3              }
+   99   2      
+  100   2              if (near_sample_count >= TOF_AVOID_TRIGGER_SAMPLES) {
+  101   3                  TofAvoid_SetState(TOF_AVOID_STATE_AVOID);
+  102   3              }
+  103   2              return;
+  104   2          }
+  105   1      
+  106   1          /* AVOID：前方扫空后继续保持右偏约 20 x 30 ms，再交回摄像头。 */
+  107   1          if (distance_mm > TOF_AVOID_CLEAR_MM) {
+  108   2              if (clear_sample_count < TOF_AVOID_PASS_CLEAR_SAMPLES) {
+  109   3                  clear_sample_count++;
+  110   3              }
+  111   2          } else {
+  112   2              clear_sample_count = 0;
+  113   2          }
+  114   1      
+  115   1          if (clear_sample_count >= TOF_AVOID_PASS_CLEAR_SAMPLES) {
+  116   2              TofAvoid_SetState(TOF_AVOID_STATE_FOLLOW);
+  117   2          }
+  118   1      }
+  119          
+  120          uint8 TofAvoid_Init(void)
+  121          {
+  122   1          uint8 init_error;
+C251 COMPILER V5.60.0,  tof_avoidance                                                      17/07/26  20:16:33  PAGE 3   
+
+  123   1      
+  124   1          tof_poll_due = 0;
+  125   1          poll_tick_count = 0;
+  126   1          near_sample_count = 0;
+  127   1          clear_sample_count = 0;
+  128   1          invalid_sample_count = 0;
+  129   1          rearm_requested = 0;
+  130   1          tof_last_valid = 0;
+  131   1          tof_last_distance_mm = TOF_AVOID_INVALID_DISTANCE_MM;
+  132   1          dl1b_ready = 0;
+  133   1      
+  134   1          TofAvoid_SetState(TOF_AVOID_STATE_FOLLOW);
+  135   1      
+  136   1          init_error = dl1b_init();
+  137   1          if (!init_error) {
+  138   2              dl1b_ready = 1;
+  139   2              tof_poll_due = 1;
+  140   2          }
+  141   1          return init_error;
+  142   1      }
+  143          
+  144          void TofAvoid_ServiceMain(void)
+  145          {
+  146   1          uint8 should_poll;
+  147   1          uint8 valid;
+  148   1          uint16 distance_mm;
+  149   1          bit interrupt_state;
+  150   1      
+  151   1          if (!dl1b_ready) {
+  152   2              return;
+  153   2          }
+  154   1      
+  155   1          should_poll = 0;
+  156   1          interrupt_state = EA;
+  157   1          EA = 0;
+  158   1          if (tof_poll_due) {
+  159   2              tof_poll_due = 0;
+  160   2              should_poll = 1;
+  161   2          }
+  162   1          EA = interrupt_state;
+  163   1      
+  164   1          if (!should_poll) {
+  165   2              return;
+  166   2          }
+  167   1      
+  168   1          valid = 0;
+  169   1          distance_mm = TOF_AVOID_INVALID_DISTANCE_MM;
+  170   1          dl1b_finsh_flag = 0;
+  171   1          dl1b_get_distance();
+  172   1          if (dl1b_finsh_flag && dl1b_distance_mm <= 4000u) {
+  173   2              valid = 1;
+  174   2              distance_mm = dl1b_distance_mm;
+  175   2          }
+  176   1      
+  177   1          TofAvoid_ProcessSample(valid, distance_mm);
+  178   1      }
+  179          
+  180          void TofAvoid_ControlTick(void)
+  181          {
+  182   1          poll_tick_count++;
+  183   1          if (poll_tick_count >= TOF_AVOID_POLL_TICKS) {
+  184   2              poll_tick_count = 0;
+  185   2              tof_poll_due = 1;
+  186   2          }
+  187   1      }
+  188          
+C251 COMPILER V5.60.0,  tof_avoidance                                                      17/07/26  20:16:33  PAGE 4   
+
+  189          void TofAvoid_RequestRearm(void)
+  190          {
+  191   1          if (tof_state == TOF_AVOID_STATE_STOPPED) {
+  192   2              rearm_requested = 1;
+  193   2          }
+  194   1      }
+  195          
+  196          uint8 TofAvoid_InhibitFeatures(void)
+  197          {
+  198   1          return (tof_state != TOF_AVOID_STATE_FOLLOW) ? 1u : 0u;
+  199   1      }
+  200          
+  201          void TofAvoid_GetDebug(uint8 *valid,
+  202                                 uint16 *distance_mm,
+  203                                 uint8 *state,
+  204                                 uint8 *clear_samples)
+  205          {
+  206   1          if (valid != NULL) {
+  207   2              *valid = tof_last_valid;
+  208   2          }
+  209   1          if (distance_mm != NULL) {
+  210   2              *distance_mm = tof_last_distance_mm;
+  211   2          }
+  212   1          if (state != NULL) {
+  213   2              *state = tof_state;
+  214   2          }
+  215   1          if (clear_samples != NULL) {
+  216   2              *clear_samples = clear_sample_count;
+  217   2          }
+  218   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =       934     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =        37     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =         2     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =        61     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

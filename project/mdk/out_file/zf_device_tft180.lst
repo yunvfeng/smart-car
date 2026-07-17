@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  zf_device_tft180                                                   15/07/26  19:17:43  PAGE 1   
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   17/07/26  22:33:43  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_device_tft180
@@ -66,7 +66,7 @@ stmt  level    source
    50          
    51          #include "zf_common_clock.h"
    52          #include "zf_common_debug.h"
-C251 COMPILER V5.60.0,  zf_device_tft180                                                   15/07/26  19:17:43  PAGE 2   
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   17/07/26  22:33:43  PAGE 2   
 
    53          #include "zf_common_font.h"
    54          #include "zf_common_function.h"
@@ -134,7 +134,7 @@ stmt  level    source
   112   1          {
   113   2              tft180_write_index(0x2a);
   114   2              tft180_write_16bit_data(x1+2);
-C251 COMPILER V5.60.0,  zf_device_tft180                                                   15/07/26  19:17:43  PAGE 3   
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   17/07/26  22:33:43  PAGE 3   
 
   115   2              tft180_write_16bit_data(x2+2);
   116   2      
@@ -202,7 +202,7 @@ stmt  level    source
   174   2              tft180_x_max = 160;
   175   2              tft180_y_max = 128;
   176   2          }
-C251 COMPILER V5.60.0,  zf_device_tft180                                                   15/07/26  19:17:43  PAGE 4   
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   17/07/26  22:33:43  PAGE 4   
 
   177   1      }
   178          
@@ -270,7 +270,7 @@ stmt  level    source
   233   3                  else
   234   3                      tft180_write_16bit_data(tft180_bgcolor);
   235   3                  temp>>=1;
-C251 COMPILER V5.60.0,  zf_device_tft180                                                   15/07/26  19:17:43  PAGE 5   
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   17/07/26  22:33:43  PAGE 5   
 
   236   3              }
   237   2          }
@@ -338,7 +338,7 @@ stmt  level    source
   295   2              i++;
   296   2          }
   297   1      }
-C251 COMPILER V5.60.0,  zf_device_tft180                                                   15/07/26  19:17:43  PAGE 6   
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   17/07/26  22:33:43  PAGE 6   
 
   298          
   299          //-------------------------------------------------------------------------------------------------------
@@ -406,7 +406,7 @@ stmt  level    source
   357   1          while(i<5)
   358   1          {
   359   2              tft180_show_char(x+(8*(i+1)),y,(uint8)('0' + a[i]));
-C251 COMPILER V5.60.0,  zf_device_tft180                                                   15/07/26  19:17:43  PAGE 7   
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   17/07/26  22:33:43  PAGE 7   
 
   360   2              i++;
   361   2          }
@@ -474,7 +474,7 @@ stmt  level    source
   418   2              buff[0] = ' ';
   419   2              length = zf_sprintf( &buff[1],(const int8 *)"%d",dat);
   420   2              length++;
-C251 COMPILER V5.60.0,  zf_device_tft180                                                   15/07/26  19:17:43  PAGE 8   
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   17/07/26  22:33:43  PAGE 8   
 
   421   2          }
   422   1          while(length < num)
@@ -542,7 +542,7 @@ stmt  level    source
   480   1      }
   481          
   482          //-------------------------------------------------------------------------------------------------------
-C251 COMPILER V5.60.0,  zf_device_tft180                                                   15/07/26  19:17:43  PAGE 9   
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   17/07/26  22:33:43  PAGE 9   
 
              -------------
   483          // 函数简介     TFT180 显示 8bit 灰度图像 带二值化阈值
@@ -610,7 +610,7 @@ stmt  level    source
   541   1      }
   542          
   543          //-------------------------------------------------------------------------------------------------------
-C251 COMPILER V5.60.0,  zf_device_tft180                                                   15/07/26  19:17:43  PAGE 10  
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   17/07/26  22:33:43  PAGE 10  
 
              -------------
   544          // 函数简介       TFT180 显示波形2
@@ -678,7 +678,7 @@ stmt  level    source
   599   1          tft180_set_color(tft180_pencolor, tft180_bgcolor);
   600   1      
   601   1          TFT180_RES(0);
-C251 COMPILER V5.60.0,  zf_device_tft180                                                   15/07/26  19:17:43  PAGE 11  
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   17/07/26  22:33:43  PAGE 11  
 
   602   1          system_delay_ms(10);
   603   1      
@@ -746,7 +746,7 @@ stmt  level    source
   663   1          tft180_write_8bit_data(0x1a);
   664   1          tft180_write_8bit_data(0x0f);
   665   1          tft180_write_8bit_data(0x18);
-C251 COMPILER V5.60.0,  zf_device_tft180                                                   15/07/26  19:17:43  PAGE 12  
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   17/07/26  22:33:43  PAGE 12  
 
   666   1          tft180_write_8bit_data(0x2f);
   667   1          tft180_write_8bit_data(0x28);
@@ -815,7 +815,7 @@ Module Information          Static   Overlayable
   xdata-const size     =    ------     ------
   edata size           =    ------     ------
   bit size             =    ------     ------
-C251 COMPILER V5.60.0,  zf_device_tft180                                                   15/07/26  19:17:43  PAGE 13  
+C251 COMPILER V5.60.0,  zf_device_tft180                                                   17/07/26  22:33:43  PAGE 13  
 
   ebit size            =    ------     ------
   bitaddressable size  =    ------     ------

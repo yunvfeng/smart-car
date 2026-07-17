@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  servo                                                              15/07/26  19:17:45  PAGE 1   
+C251 COMPILER V5.60.0,  servo                                                              17/07/26  22:33:46  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE servo
@@ -14,54 +14,135 @@ stmt  level    source
     2          #include "pid.h"
     3          #include "image.h"
     4          
-    5          /* 初始化舵机 PWM，并打开 PWME 输出。 */
-    6          void servo_init(void)
-    7          {
-    8   1          pwm_init(STEER_PWM_PIN, SERVO_FREQ, SERVO_DUTY_MID);
-    9   1      
-   10   1          /* 打开 PWME 输出，否则舵机 PWM 不会真正输出到引脚。 */
-   11   1          PWME_BKR |= 0x80;
+    5          static volatile servo_mode_enum servo_mode = SERVO_MODE_VISION;
+    6          static volatile int16 servo_path_bias_target = 0;
+    7          static volatile int16 servo_path_bias_applied = 0;
+    8          
+    9          void Servo_Reset_Controller(void)
+   10          {
+   11   1          PID_Reset(&servo_pidf);
    12   1      }
    13          
-   14          /* 设置舵机占空比，写入 PWM 前先限制在安全范围内。 */
-   15          void Set_Servo_Duty(uint32 duty)
-   16          {
-   17   1          if (duty > SERVO_DUTY_MAX) {
-   18   2              duty = SERVO_DUTY_MAX;
-   19   2          } else if (duty < SERVO_DUTY_MIN) {
-   20   2              duty = SERVO_DUTY_MIN;
-   21   2          }
-   22   1      
-   23   1          pwm_set_duty(STEER_PWM_PIN, duty);
-   24   1      }
-   25          
-   26          /* 舵机控制循环：根据当前中线误差计算并输出新的舵机 PWM。 */
-   27          void Servo_Loop(void)
-   28          {
-   29   1          Error_sum();
-   30   1          PID_servof(&servo_pidf);
-   31   1          Set_Servo_Duty((uint32)Out_servo);
-   32   1      }
+   14          void Servo_Set_Mode(servo_mode_enum mode)
+   15          {
+   16   1          bit interrupt_state;
+   17   1      
+   18   1          if (mode != SERVO_MODE_PATH_BIAS && mode != SERVO_MODE_CENTER) {
+   19   2              mode = SERVO_MODE_VISION;
+   20   2          }
+   21   1      
+   22   1          interrupt_state = EA;
+   23   1          EA = 0;
+   24   1          if (servo_mode != mode) {
+   25   2              servo_mode = mode;
+   26   2              servo_path_bias_applied = 0;
+   27   2              PID_Reset(&servo_pidf);
+   28   2          }
+   29   1          EA = interrupt_state;
+   30   1      }
+   31          
+   32          void Servo_Set_Path_Bias(int16 bias)
+   33          {
+   34   1          bit interrupt_state;
+   35   1      
+   36   1          if (bias > (SEARCH_IMAGE_W - 1)) {
+   37   2              bias = SEARCH_IMAGE_W - 1;
+   38   2          } else if (bias < -(SEARCH_IMAGE_W - 1)) {
+   39   2              bias = -(SEARCH_IMAGE_W - 1);
+   40   2          }
+   41   1      
+   42   1          interrupt_state = EA;
+   43   1          EA = 0;
+   44   1          servo_path_bias_target = bias;
+   45   1          EA = interrupt_state;
+   46   1      }
+   47          
+   48          /* 初始化舵机 PWM，并打开 PWME 输出。 */
+   49          void servo_init(void)
+   50          {
+   51   1          pwm_init(STEER_PWM_PIN, SERVO_FREQ, SERVO_DUTY_MID);
+   52   1      
+   53   1          /* 打开 PWME 输出，否则舵机 PWM 不会真正输出到引脚。 */
+   54   1          PWME_BKR |= 0x80;
+   55   1      }
+   56          
+C251 COMPILER V5.60.0,  servo                                                              17/07/26  22:33:46  PAGE 2   
+
+   57          /* 设置舵机占空比，写入 PWM 前先限制在安全范围内。 */
+   58          void Set_Servo_Duty(uint32 duty)
+   59          {
+   60   1          if (duty > SERVO_DUTY_MAX) {
+   61   2              duty = SERVO_DUTY_MAX;
+   62   2          } else if (duty < SERVO_DUTY_MIN) {
+   63   2              duty = SERVO_DUTY_MIN;
+   64   2          }
+   65   1      
+   66   1          pwm_set_duty(STEER_PWM_PIN, duty);
+   67   1      }
+   68          
+   69          /* 舵机控制循环：根据当前中线误差计算并输出新的舵机 PWM。 */
+   70          void Servo_Loop(void)
+   71          {
+   72   1          bit interrupt_state;
+   73   1          servo_mode_enum mode;
+   74   1          int16 path_bias_target;
+   75   1          int16 path_bias_applied;
+   76   1          int16 target_col;
+   77   1      
+   78   1          interrupt_state = EA;
+   79   1          EA = 0;
+   80   1          mode = servo_mode;
+   81   1          path_bias_target = servo_path_bias_target;
+   82   1          path_bias_applied = servo_path_bias_applied;
+   83   1      
+   84   1          if (mode == SERVO_MODE_PATH_BIAS) {
+   85   2              if (path_bias_applied < path_bias_target) {
+   86   3                  path_bias_applied += SERVO_PATH_BIAS_STEP_PER_TICK;
+   87   3                  if (path_bias_applied > path_bias_target) {
+   88   4                      path_bias_applied = path_bias_target;
+   89   4                  }
+   90   3              } else if (path_bias_applied > path_bias_target) {
+   91   3                  path_bias_applied -= SERVO_PATH_BIAS_STEP_PER_TICK;
+   92   3                  if (path_bias_applied < path_bias_target) {
+   93   4                      path_bias_applied = path_bias_target;
+   94   4                  }
+   95   3              }
+   96   2              servo_path_bias_applied = path_bias_applied;
+   97   2          }
+   98   1          EA = interrupt_state;
+   99   1      
+  100   1          if (mode == SERVO_MODE_CENTER) {
+  101   2              Out_servo = SERVO_DUTY_MID;
+  102   2          } else if (mode == SERVO_MODE_PATH_BIAS) {
+  103   2              target_col = (int16)Mid_Col + path_bias_applied;
+  104   2              PID_servof_Target(&servo_pidf, target_col);
+  105   2          } else {
+  106   2              PID_servof(&servo_pidf);
+  107   2          }
+  108   1          Set_Servo_Duty((uint32)Out_servo);
+  109   1      }
 
 
 Module Information          Static   Overlayable
 ------------------------------------------------
   code size            =    ------     ------
-  ecode size           =       165     ------
+  ecode size           =       630     ------
   data size            =    ------     ------
   idata size           =    ------     ------
   pdata size           =    ------     ------
-  xdata size           =         4     ------
+  xdata size           =        22     ------
   xdata-const size     =    ------     ------
   edata size           =    ------     ------
-  bit size             =    ------     ------
+  bit size             =         3     ------
   ebit size            =    ------     ------
+C251 COMPILER V5.60.0,  servo                                                              17/07/26  22:33:46  PAGE 3   
+
   bitaddressable size  =    ------     ------
   ebitaddressable size =    ------     ------
   far data size        =    ------     ------
   huge data size       =    ------     ------
   const size           =    ------     ------
-  hconst size          =    ------     ------
+  hconst size          =        21     ------
 End of Module Information.
 
 

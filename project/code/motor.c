@@ -14,11 +14,81 @@ volatile int16 target_speed_r = BASE_TARGET_SPEED;
 volatile int16 motor_pwm_l = 0;
 volatile int16 motor_pwm_r = 0;
 
+static volatile motor_safety_mode_enum motor_safety_mode = MOTOR_SAFETY_NORMAL;
+static volatile int16 motor_safety_cap = WHEEL_TARGET_MIN;
+static volatile uint8 motor_force_stopped = 0u;
+
 static int16 clamp_speed_setting(int16 speed)
 {
     if (speed < WHEEL_TARGET_MIN) return WHEEL_TARGET_MIN;
     if (speed > MAX_SPEED_TUNE_MAX) return MAX_SPEED_TUNE_MAX;
     return speed;
+}
+
+static void motor_get_safety_command(motor_safety_mode_enum *mode, int16 *cap)
+{
+    bit interrupt_state;
+
+    interrupt_state = EA;
+    EA = 0;
+    if (mode != NULL) {
+        *mode = motor_safety_mode;
+    }
+    if (cap != NULL) {
+        *cap = motor_safety_cap;
+    }
+    EA = interrupt_state;
+}
+
+void Motor_Set_Safety_Command(motor_safety_mode_enum mode, int16 cap)
+{
+    bit interrupt_state;
+
+    if (mode == MOTOR_SAFETY_STOP) {
+        Motor_Force_Stop_Reset();
+        return;
+    }
+
+    if (mode != MOTOR_SAFETY_CAP) {
+        mode = MOTOR_SAFETY_NORMAL;
+    }
+    cap = clamp_speed_setting(cap);
+
+    interrupt_state = EA;
+    EA = 0;
+    motor_safety_cap = cap;
+    motor_safety_mode = mode;
+    motor_force_stopped = 0u;
+    EA = interrupt_state;
+}
+
+uint8 Motor_Is_Force_Stopped(void)
+{
+    return motor_force_stopped;
+}
+
+void Motor_Force_Stop_Reset(void)
+{
+    bit interrupt_state;
+
+    interrupt_state = EA;
+    EA = 0;
+
+    motor_safety_mode = MOTOR_SAFETY_STOP;
+    motor_force_stopped = 1u;
+    tar_speed = 0;
+    target_speed_l = 0;
+    target_speed_r = 0;
+    motor_pwm_l = 0;
+    motor_pwm_r = 0;
+    PID_Reset(&pid_lf);
+    PID_Reset(&pid_rf);
+
+    /* Bypass minimum PWM and both slew-rate limits for a true hard stop. */
+    Motor_control(PWM_L, 0);
+    Motor_control(PWM_R, 0);
+
+    EA = interrupt_state;
 }
 
 void Motor_Set_Speed_Range(int16 speed_min, int16 speed_max)
@@ -181,6 +251,8 @@ void Dream_speed(void)
     int16 turn_diff;
     int16 left_target;
     int16 right_target;
+    int16 safety_cap;
+    motor_safety_mode_enum safety_mode;
 
     if (Out_servo > SERVO_CENTER) {
         tp_turn = Out_servo - SERVO_CENTER;
@@ -199,6 +271,11 @@ void Dream_speed(void)
 
     /* 每个控制周期使用同一份原子快照，避免 WiFi 更新时混用新旧范围。 */
     Motor_Get_Speed_Range(&speed_floor, &speed_ceiling);
+    motor_get_safety_command(&safety_mode, &safety_cap);
+
+    if (safety_mode == MOTOR_SAFETY_CAP && safety_cap < speed_ceiling) {
+        speed_ceiling = safety_cap;
+    }
 
     if (speed_ceiling < WHEEL_TARGET_MIN) {
         speed_ceiling = WHEEL_TARGET_MIN;
@@ -238,6 +315,14 @@ void Dream_speed(void)
 /* 电机速度闭环：计算目标速度，更新左右 PI，再输出 PWM。 */
 void Motor_Loop(void)
 {
+    motor_safety_mode_enum safety_mode;
+
+    motor_get_safety_command(&safety_mode, NULL);
+    if (safety_mode == MOTOR_SAFETY_STOP) {
+        Motor_Force_Stop_Reset();
+        return;
+    }
+
     Dream_speed();
 
     Increment_PID(&pid_lf, target_speed_l, encoder_data_l);

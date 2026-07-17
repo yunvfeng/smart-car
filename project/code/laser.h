@@ -25,11 +25,13 @@ void laser_init(void);
 void laser_on(void);
 /* 关闭激光。 */
 void laser_off(void);
+/* 安全抑制使能；使能时立即关闭激光并清空发射时序。 */
+void Laser_Set_Inhibit(uint8 inhibit);
 void Laser_Task(void);
 
 /* 预扫描目标位置，得到横向偏移。 */
 void Pre_Scan(void);
 /* 根据预扫描偏移精找目标区域。 */
-void Target_find(void);
+void Target_find(int8 mid_offset);
 
 #endif

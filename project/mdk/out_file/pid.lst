@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  pid                                                                15/07/26  19:17:45  PAGE 1   
+C251 COMPILER V5.60.0,  pid                                                                17/07/26  22:33:46  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE pid
@@ -31,129 +31,167 @@ stmt  level    source
    19   1          return (x < 0) ? (int16)(-x) : x;
    20   1      }
    21          
-   22          /* 将 32 位计算结果限制到给定 int16 范围内。 */
-   23          int16 limit_int16(int32 x, int16 min_v, int16 max_v)
+   22          /* Q10 除法按 C 的向零截断规则实现，避免 15 ms 中断中的 32 位软件除法。 */
+   23          static int32 q10_divide_toward_zero(int32 value)
    24          {
-   25   1          if (x > max_v) return max_v;
-   26   1          if (x < min_v) return min_v;
-   27   1          return (int16)x;
-   28   1      }
-   29          
-   30          /* 增量式 PID，用于左右电机速度闭环。 */
-   31          void Increment_PID(volatile PID_t *pid, int16 tar_val, int16 act_val)
-   32          {
-   33   1          int16 error;
-   34   1          int16 d_err;
-   35   1          int16 dd_err;
-   36   1          int32 delta;
-   37   1      
-   38   1          error = tar_val - act_val;
-   39   1          d_err = error - pid->err1;
-   40   1          dd_err = error - (int16)(2 * pid->err1) + pid->err2;
-   41   1      
-   42   1          delta = (pid->kp * (int32)d_err +
-   43   1                   pid->ki * (int32)error +
-   44   1                   pid->kd * (int32)dd_err) >> PID_Q_SHIFT;
-   45   1      
-   46   1          pid->out += delta;
-   47   1          if (pid->out > OUT_MAX) pid->out = OUT_MAX;
-   48   1          if (pid->out < OUT_MIN) pid->out = OUT_MIN;
-   49   1      
-   50   1          pid->err2 = pid->err1;
-   51   1          pid->err1 = error;
-   52   1      }
-   53          
-   54          /* 舵机 PID：根据中线偏差、偏差变化和曲率前馈计算舵机占空比。 */
-   55          void PID_servof(volatile PID_t *pid)
-   56          {
-C251 COMPILER V5.60.0,  pid                                                                15/07/26  19:17:45  PAGE 2   
+   25   1          if (value >= 0) {
+   26   2              return value >> PID_Q_SHIFT;
+   27   2          }
+   28   1          return -(int32)(((uint32)(-value)) >> PID_Q_SHIFT);
+   29   1      }
+   30          
+   31          /* 将 32 位计算结果限制到给定 int16 范围内。 */
+   32          int16 limit_int16(int32 x, int16 min_v, int16 max_v)
+   33          {
+   34   1          if (x > max_v) return max_v;
+   35   1          if (x < min_v) return min_v;
+   36   1          return (int16)x;
+   37   1      }
+   38          
+   39          /* 增量式 PID，用于左右电机速度闭环。 */
+   40          void Increment_PID(volatile PID_t *pid, int16 tar_val, int16 act_val)
+   41          {
+   42   1          int16 error;
+   43   1          int16 d_err;
+   44   1          int16 dd_err;
+   45   1          int32 delta;
+   46   1      
+   47   1          error = tar_val - act_val;
+   48   1          d_err = error - pid->err1;
+   49   1          dd_err = error - (int16)(2 * pid->err1) + pid->err2;
+   50   1      
+   51   1          delta = (pid->kp * (int32)d_err +
+   52   1                   pid->ki * (int32)error +
+   53   1                   pid->kd * (int32)dd_err) >> PID_Q_SHIFT;
+   54   1      
+   55   1          pid->out += delta;
+   56   1          if (pid->out > OUT_MAX) pid->out = OUT_MAX;
+C251 COMPILER V5.60.0,  pid                                                                17/07/26  22:33:46  PAGE 2   
 
-   57   1          uint8 ref;
-   58   1          uint8 near_ref;
-   59   1          int16 err;
-   60   1          int16 d_err;
-   61   1          int16 curve;
-   62   1          int16 abs_err;
-   63   1          int16 gyro_correction;
-   64   1          int32 out;
-   65   1          int32 duty;
-   66   1      
-   67   1          ref = controlReferenceLine;
-   68   1          if (ref >= SEARCH_IMAGE_H) {
-   69   2              ref = SEARCH_IMAGE_H - 1;
-   70   2          }
-   71   1      
-   72   1          near_ref = (uint8)(ref + 20);
-   73   1          if (near_ref >= SEARCH_IMAGE_H) {
-   74   2              near_ref = SEARCH_IMAGE_H - 1;
-   75   2          }
-   76   1      
-   77   1          err = (int16)mid_line[ref] - (int16)Mid_Col;
-   78   1          curve = (int16)mid_line[ref] - (int16)mid_line[near_ref];
-   79   1          d_err = err - pid->err1;
-   80   1          abs_err = abs16_local(err);
-   81   1      
-   82   1          out = pid->kp * (int32)err;
-   83   1          out += pid->kd * (int32)d_err;
-   84   1          out += pid->kf * (int32)curve;
-   85   1          out += pid->kp2 * (int32)err * (int32)abs_err;
-   86   1          out >>= PID_Q_SHIFT;
-   87   1      
-   88   1          gyro_correction = limit_int16(
-   89   1              (pid->kg * (int32)g_gyro_z_for_servo) / PID_Q_ONE,
-   90   1              -GYRO_SERVO_CORRECTION_LIMIT,
-   91   1              GYRO_SERVO_CORRECTION_LIMIT);
-   92   1          Gyro_Set_Servo_Correction(gyro_correction);
-   93   1          out -= gyro_correction;
-   94   1      
-   95   1          out = limit_int16(out, -MAX_TURN, MAX_TURN);
-   96   1      
-   97   1          duty = (int32)SERVO_DUTY_MID - out;
-   98   1          duty = limit_int16(duty, SERVO_DUTY_MIN, SERVO_DUTY_MAX);
-   99   1      
-  100   1          Out_servo = (uint16)duty;
-  101   1          pid->err2 = pid->err1;
-  102   1          pid->err1 = err;
-  103   1          pid->out = out;
-  104   1      }
-  105          
-  106          void PID_Set_Servo_Gyro_Gain(int16 gain_q10)
-  107          {
-  108   1          bit interrupt_state;
-  109   1      
-  110   1          interrupt_state = EA;
-  111   1          EA = 0;
-  112   1          servo_pidf.kg = gain_q10;
-  113   1          EA = interrupt_state;
-  114   1      }
-  115          
-  116          int16 PID_Get_Servo_Gyro_Gain(void)
-  117          {
-  118   1          bit interrupt_state;
-  119   1          int32 gain_q10;
-  120   1      
-  121   1          interrupt_state = EA;
-  122   1          EA = 0;
-C251 COMPILER V5.60.0,  pid                                                                15/07/26  19:17:45  PAGE 3   
+   57   1          if (pid->out < OUT_MIN) pid->out = OUT_MIN;
+   58   1      
+   59   1          pid->err2 = pid->err1;
+   60   1          pid->err1 = error;
+   61   1      }
+   62          
+   63          /* 舵机 PID：根据中线偏差、偏差变化和曲率前馈计算舵机占空比。 */
+   64          /*
+   65           * Steering PID with an explicit visual target column. Clamping the target
+   66           * here keeps every caller inside the image and leaves mid_line[] untouched.
+   67           */
+   68          void PID_servof_Target(volatile PID_t *pid, int16 target_col)
+   69          {
+   70   1          uint8 ref;
+   71   1          uint8 near_ref;
+   72   1          int16 err;
+   73   1          int16 d_err;
+   74   1          int16 curve;
+   75   1          int16 abs_err;
+   76   1          int16 gyro_correction;
+   77   1          int32 out;
+   78   1          int32 duty;
+   79   1      
+   80   1          ref = controlReferenceLine;
+   81   1          if (ref >= SEARCH_IMAGE_H) {
+   82   2              ref = SEARCH_IMAGE_H - 1;
+   83   2          }
+   84   1      
+   85   1          near_ref = (uint8)(ref + 20);
+   86   1          if (near_ref >= SEARCH_IMAGE_H) {
+   87   2              near_ref = SEARCH_IMAGE_H - 1;
+   88   2          }
+   89   1      
+   90   1          target_col = limit_int16(target_col, 0, SEARCH_IMAGE_W - 1);
+   91   1          err = (int16)mid_line[ref] - target_col;
+   92   1          curve = (int16)mid_line[ref] - (int16)mid_line[near_ref];
+   93   1          d_err = err - pid->err1;
+   94   1          abs_err = abs16_local(err);
+   95   1      
+   96   1          out = pid->kp * (int32)err;
+   97   1          out += pid->kd * (int32)d_err;
+   98   1          out += pid->kf * (int32)curve;
+   99   1          out += pid->kp2 * (int32)err * (int32)abs_err;
+  100   1          out >>= PID_Q_SHIFT;
+  101   1      
+  102   1          gyro_correction = limit_int16(
+  103   1              q10_divide_toward_zero(pid->kg * (int32)g_gyro_z_for_servo),
+  104   1              -GYRO_SERVO_CORRECTION_LIMIT,
+  105   1              GYRO_SERVO_CORRECTION_LIMIT);
+  106   1          Gyro_Set_Servo_Correction(gyro_correction);
+  107   1          out -= gyro_correction;
+  108   1      
+  109   1          out = limit_int16(out, -MAX_TURN, MAX_TURN);
+  110   1      
+  111   1          duty = (int32)SERVO_DUTY_MID - out;
+  112   1          duty = limit_int16(duty, SERVO_DUTY_MIN, SERVO_DUTY_MAX);
+  113   1      
+  114   1          Out_servo = (uint16)duty;
+  115   1          pid->err2 = pid->err1;
+  116   1          pid->err1 = err;
+  117   1          pid->out = out;
+  118   1      }
+  119          
+  120          /* Preserve the original vision-only PID entry point. */
+  121          void PID_servof(volatile PID_t *pid)
+  122          {
+C251 COMPILER V5.60.0,  pid                                                                17/07/26  22:33:46  PAGE 3   
 
-  123   1          gain_q10 = servo_pidf.kg;
-  124   1          EA = interrupt_state;
-  125   1      
-  126   1          return limit_int16(gain_q10, -32768, 32767);
-  127   1      }
+  123   1          PID_servof_Target(pid, Mid_Col);
+  124   1      }
+  125          
+  126          void PID_Set_Servo_Gyro_Gain(int16 gain_q10)
+  127          {
+  128   1          bit interrupt_state;
+  129   1      
+  130   1          interrupt_state = EA;
+  131   1          EA = 0;
+  132   1          servo_pidf.kg = gain_q10;
+  133   1          EA = interrupt_state;
+  134   1      }
+  135          
+  136          int16 PID_Get_Servo_Gyro_Gain(void)
+  137          {
+  138   1          bit interrupt_state;
+  139   1          int32 gain_q10;
+  140   1      
+  141   1          interrupt_state = EA;
+  142   1          EA = 0;
+  143   1          gain_q10 = servo_pidf.kg;
+  144   1          EA = interrupt_state;
+  145   1      
+  146   1          return limit_int16(gain_q10, -32768, 32767);
+  147   1      }
+  148          
+  149          /* Clear dynamic PID state without changing configured gains. */
+  150          void PID_Reset(volatile PID_t *pid)
+  151          {
+  152   1          bit interrupt_state;
+  153   1      
+  154   1          if (pid == NULL) {
+  155   2              return;
+  156   2          }
+  157   1      
+  158   1          interrupt_state = EA;
+  159   1          EA = 0;
+  160   1          pid->err1 = 0;
+  161   1          pid->err2 = 0;
+  162   1          pid->err_sum = 0;
+  163   1          pid->out = 0;
+  164   1          EA = interrupt_state;
+  165   1      }
 
 
 Module Information          Static   Overlayable
 ------------------------------------------------
   code size            =    ------     ------
-  ecode size           =      1436     ------
+  ecode size           =      1711     ------
   data size            =    ------     ------
   idata size           =    ------     ------
   pdata size           =    ------     ------
-  xdata size           =       168     ------
+  xdata size           =       182     ------
   xdata-const size     =    ------     ------
   edata size           =    ------     ------
-  bit size             =         2     ------
+  bit size             =         3     ------
   ebit size            =    ------     ------
   bitaddressable size  =    ------     ------
   ebitaddressable size =    ------     ------

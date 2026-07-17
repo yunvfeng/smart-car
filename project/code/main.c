@@ -12,9 +12,13 @@
 #include "servo.h"
 #include "laser.h"
 #include "key.h"
+#include "visual_avoidance.h"
 /* #include "ips_ui.h" */
 #include <stdio.h>
 
+/* PB3/PB4 are latched before launch: target detection / visual avoidance. */
+static uint8 target_detect_enabled = 0;
+static volatile uint8 visual_avoid_enabled = 0;
 
 /*
  * 运行方式：
@@ -31,10 +35,15 @@ static void Timer0_Callback(void)
     /* 中断里只放轻量控制任务，避免影响下一帧图像采集。 */
     Encoder_GetValue();
     Gyro_Update();
+    if (visual_avoid_enabled) {
+        VisualAvoid_ControlTick(encoder_data_l, encoder_data_r);
+    }
 
     Servo_Loop();
     Motor_Loop();
 
+    /* Visual avoidance never suppresses target detection or laser firing. */
+    Laser_Set_Inhibit(0u);
     Laser_Task();
 }
 
@@ -45,6 +54,8 @@ void main(void)
     uint8 assistant_debug_ready;
     uint8 wifi_assistant_started;
     uint8 car_started;
+    uint8 key1_last;
+    uint8 key1_now;
 
     clock_init(SYSTEM_CLOCK_96M);
     debug_init();
@@ -55,6 +66,7 @@ void main(void)
     laser_init();
     Key_Init();
     Gyro_Init();
+    VisualAvoid_Init();
 
     mt9v03x_init();
     mt9v03x_set_exposure_time(camera_exposure_time);
@@ -62,18 +74,32 @@ void main(void)
     assistant_debug_ready = 0;
     wifi_assistant_started = 0;
     car_started = 0;
+    key1_last = 1;
 
     /* Control timer starts after KEY1/PB2 is pressed. */
-		
 
     while (1) {
-        if (!car_started && !gpio_get_level(KEY1_PIN)) {
-            system_delay_ms(20);
-            if (!gpio_get_level(KEY1_PIN)) {
-                pit_ms_init(TIM0_PIT, CONTROL_PERIOD_MS, Timer0_Callback);
-                car_started = 1;
+        /* PB3 只在发车前锁存；按住或短按一次均可。 */
+        if (!car_started) {
+            if (!gpio_get_level(KEY2_PIN)) {
+                target_detect_enabled = 1;
+            }
+            if (!gpio_get_level(KEY3_PIN)) {
+                visual_avoid_enabled = 1;
             }
         }
+
+        key1_now = gpio_get_level(KEY1_PIN);
+        if (key1_last && !key1_now) {
+            system_delay_ms(20);
+            if (!gpio_get_level(KEY1_PIN)) {
+                if (!car_started) {
+                    pit_ms_init(TIM0_PIT, CONTROL_PERIOD_MS, Timer0_Callback);
+                    car_started = 1;
+                }
+            }
+        }
+        key1_last = gpio_get_level(KEY1_PIN);
 
         wifi_ready = 0;
         if (!gpio_get_level(SWITCH2_PIN)) {
@@ -104,10 +130,11 @@ void main(void)
                 Gyro_Update();
             }
 
-            Image_OldStyle_Process();
+            Image_OldStyle_Process(target_detect_enabled,
+                                   visual_avoid_enabled);
 
             if (wifi_ready) {
-                Assistant_Debug_On_Frame();
+                Assistant_Debug_On_Frame(visual_avoid_enabled);
             }
 
             /* 按下 SWITCH2 时显示调试画面。 */

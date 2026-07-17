@@ -73,7 +73,7 @@
 
 #define DL1B_XS_ENABLE              ( 1  )                                      // 是否启用 INT 引脚 启用则会自动更新数据
 #if DL1B_XS_ENABLE
-	#define DL1B_XS_PIN             ( IO_P64 )
+	#define DL1B_XS_PIN             ( IO_P66 )
 #endif
 
 #define DL1B_INT_ENABLE             ( 0  )                                      // 是否启用 INT 引脚 启用则会自动更新数据

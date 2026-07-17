@@ -1,0 +1,438 @@
+C251 COMPILER V5.60.0,  visual_avoidance                                                   17/07/26  22:33:46  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE visual_avoidance
+OBJECT MODULE PLACED IN .\out_file\visual_avoidance.obj
+COMPILER INVOKED BY: D:\keil_v5\C251\BIN\C251.EXE ..\code\visual_avoidance.c LARGE ROM(HUGE) WARNINGLEVEL(3) OPTIMIZE(0,
+                    -SIZE) BROWSE INCDIR(..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf
+                    -_driver;..\user;..\code;..\..\libraries\zf_components\stc32g_usb_lib;..\..\libraries\zf_components\seekfree_assistant) D
+                    -EBUG PRINT(.\out_file\visual_avoidance.lst) TABS(2) OBJECT(.\out_file\visual_avoidance.obj) 
+
+stmt  level    source
+
+    1          #include "visual_avoidance.h"
+    2          
+    3          #include "image.h"
+    4          #include "ring.h"
+    5          #include "servo.h"
+    6          #include "motor.h"
+    7          
+    8          #define VISUAL_AVOID_RING_NORM          0u
+    9          #define VISUAL_AVOID_LANE_MARGIN        8u
+   10          #define VISUAL_AVOID_CHECK_ROW_OFFSET   6u
+   11          #define VISUAL_AVOID_CHECK_ROW_MAX      110u
+   12          #define VISUAL_AVOID_MATCH_TOLERANCE    12u
+   13          #define VISUAL_AVOID_HISTORY_MASK       0x07u
+   14          #define VISUAL_AVOID_CLEAR_FRAMES       2u
+   15          
+   16          static volatile uint8 visual_avoid_state = VISUAL_AVOID_STATE_FOLLOW;
+   17          static volatile uint16 visual_avoid_travel = 0u;
+   18          static volatile uint8 visual_avoid_recenter_ticks = 0u;
+   19          static volatile uint8 visual_avoid_recenter_ready = 0u;
+   20          static volatile int8 visual_avoid_bias = 0;
+   21          static volatile uint8 visual_avoid_resume_cap = 0u;
+   22          
+   23          static uint8 visual_avoid_hit_history = 0u;
+   24          static uint8 visual_avoid_last_hit_age = 3u;
+   25          static uint8 visual_avoid_last_center = 0u;
+   26          static uint8 visual_avoid_last_bottom = 0u;
+   27          static volatile uint8 visual_avoid_clear_frames = 0u;
+   28          
+   29          static uint8 visual_avoid_debug_valid = 0u;
+   30          static uint8 visual_avoid_debug_left = 0u;
+   31          static uint8 visual_avoid_debug_right = 0u;
+   32          static uint8 visual_avoid_debug_bottom = 0u;
+   33          
+   34          static uint8 VisualAvoid_AbsDiffU8(uint8 a, uint8 b)
+   35          {
+   36   1          return (a >= b) ? (uint8)(a - b) : (uint8)(b - a);
+   37   1      }
+   38          
+   39          static uint8 VisualAvoid_CountHits(uint8 history)
+   40          {
+   41   1          uint8 count;
+   42   1      
+   43   1          count = 0u;
+   44   1          if (history & 0x01u) count++;
+   45   1          if (history & 0x02u) count++;
+   46   1          if (history & 0x04u) count++;
+   47   1          return count;
+   48   1      }
+   49          
+   50          static uint16 VisualAvoid_AbsEncoder(int16 value)
+   51          {
+   52   1          if (value < 0) {
+   53   2              /* Unsigned subtraction also handles the -32768 endpoint. */
+   54   2              return (uint16)(0u - (uint16)value);
+   55   2          }
+   56   1          return (uint16)value;
+C251 COMPILER V5.60.0,  visual_avoidance                                                   17/07/26  22:33:46  PAGE 2   
+
+   57   1      }
+   58          
+   59          static uint8 VisualAvoid_RawCandidateValid(const visual_avoid_candidate_t *candidate)
+   60          {
+   61   1          if (candidate == NULL || !candidate->valid) {
+   62   2              return 0u;
+   63   2          }
+   64   1          if (candidate->left >= candidate->right ||
+   65   1              candidate->right >= SEARCH_IMAGE_W ||
+   66   1              candidate->bottom_row >= SEARCH_IMAGE_H) {
+   67   2              return 0u;
+   68   2          }
+   69   1          return 1u;
+   70   1      }
+   71          
+   72          /* Lane edges improve side selection, but never veto an obstacle trigger. */
+   73          static uint8 VisualAvoid_GetLaneGaps(const visual_avoid_candidate_t *candidate,
+   74                                               uint16 *left_gap,
+   75                                               uint16 *right_gap)
+   76          {
+   77   1          uint8 check_row;
+   78   1          int16 lane_left;
+   79   1          int16 lane_right;
+   80   1      
+   81   1          if (!VisualAvoid_RawCandidateValid(candidate)) {
+   82   2              return 0u;
+   83   2          }
+   84   1      
+   85   1          check_row = (uint8)(candidate->bottom_row + VISUAL_AVOID_CHECK_ROW_OFFSET);
+   86   1          if (check_row > VISUAL_AVOID_CHECK_ROW_MAX) {
+   87   2              check_row = VISUAL_AVOID_CHECK_ROW_MAX;
+   88   2          }
+   89   1      
+   90   1          /* Search_line() owns edges only above its lost-row markers. */
+   91   1          if (check_row <= lost_left || check_row <= lost_right) {
+   92   2              return 0u;
+   93   2          }
+   94   1          /* The Search_line() defaults mean that no real lane edge was found. */
+   95   1          if (left_edge_line[check_row] == 0u ||
+   96   1              right_edge_line[check_row] == SEARCH_IMAGE_W - 1u) {
+   97   2              return 0u;
+   98   2          }
+   99   1      
+  100   1          lane_left = (int16)left_edge_line[check_row] + VISUAL_AVOID_LANE_MARGIN;
+  101   1          lane_right = (int16)right_edge_line[check_row] - VISUAL_AVOID_LANE_MARGIN;
+  102   1          if (lane_left >= lane_right ||
+  103   1              (int16)candidate->left < lane_left ||
+  104   1              (int16)candidate->right > lane_right) {
+  105   2              return 0u;
+  106   2          }
+  107   1      
+  108   1          if (left_gap != NULL) {
+  109   2              *left_gap = (uint16)((int16)candidate->left - lane_left);
+  110   2          }
+  111   1          if (right_gap != NULL) {
+  112   2              *right_gap = (uint16)(lane_right - (int16)candidate->right);
+  113   2          }
+  114   1          return 1u;
+  115   1      }
+  116          
+  117          static void VisualAvoid_StartBypass(int8 bias)
+  118          {
+  119   1          bit interrupt_state;
+  120   1      
+  121   1          /* Publish BYPASS only after steering and speed commands are installed. */
+  122   1          interrupt_state = EA;
+C251 COMPILER V5.60.0,  visual_avoidance                                                   17/07/26  22:33:46  PAGE 3   
+
+  123   1          EA = 0;
+  124   1          Servo_Set_Path_Bias((int16)bias);
+  125   1          Servo_Set_Mode(SERVO_MODE_PATH_BIAS);
+  126   1          Motor_Set_Safety_Command(MOTOR_SAFETY_CAP, VISUAL_AVOID_SPEED_CAP);
+  127   1      
+  128   1          visual_avoid_travel = 0u;
+  129   1          visual_avoid_recenter_ticks = 0u;
+  130   1          visual_avoid_recenter_ready = 0u;
+  131   1          visual_avoid_bias = bias;
+  132   1          visual_avoid_resume_cap = 0u;
+  133   1          visual_avoid_clear_frames = 0u;
+  134   1          visual_avoid_hit_history = 0u;
+  135   1          visual_avoid_last_hit_age = 3u;
+  136   1          visual_avoid_state = VISUAL_AVOID_STATE_BYPASS;
+  137   1          EA = interrupt_state;
+  138   1      }
+  139          
+  140          void VisualAvoid_Init(void)
+  141          {
+  142   1          bit interrupt_state;
+  143   1      
+  144   1          interrupt_state = EA;
+  145   1          EA = 0;
+  146   1          Servo_Set_Path_Bias(0);
+  147   1          Servo_Set_Mode(SERVO_MODE_VISION);
+  148   1          Motor_Set_Safety_Command(MOTOR_SAFETY_NORMAL, 0);
+  149   1      
+  150   1          visual_avoid_state = VISUAL_AVOID_STATE_FOLLOW;
+  151   1          visual_avoid_travel = 0u;
+  152   1          visual_avoid_recenter_ticks = 0u;
+  153   1          visual_avoid_recenter_ready = 0u;
+  154   1          visual_avoid_bias = 0;
+  155   1          visual_avoid_resume_cap = 0u;
+  156   1          visual_avoid_hit_history = 0u;
+  157   1          visual_avoid_last_hit_age = 3u;
+  158   1          visual_avoid_last_center = 0u;
+  159   1          visual_avoid_last_bottom = 0u;
+  160   1          visual_avoid_clear_frames = 0u;
+  161   1          visual_avoid_debug_valid = 0u;
+  162   1          visual_avoid_debug_left = 0u;
+  163   1          visual_avoid_debug_right = 0u;
+  164   1          visual_avoid_debug_bottom = 0u;
+  165   1          EA = interrupt_state;
+  166   1      }
+  167          
+  168          void VisualAvoid_OnFrame(const visual_avoid_candidate_t *candidate)
+  169          {
+  170   1          uint8 state;
+  171   1          uint8 valid;
+  172   1          uint8 lane_gaps_valid;
+  173   1          uint8 center;
+  174   1          uint16 left_gap;
+  175   1          uint16 right_gap;
+  176   1          int8 bypass_bias;
+  177   1      
+  178   1          center = 0u;
+  179   1          left_gap = 0u;
+  180   1          right_gap = 0u;
+  181   1          valid = VisualAvoid_RawCandidateValid(candidate);
+  182   1          visual_avoid_debug_valid = valid;
+  183   1          if (valid) {
+  184   2              visual_avoid_debug_left = candidate->left;
+  185   2              visual_avoid_debug_right = candidate->right;
+  186   2              visual_avoid_debug_bottom = candidate->bottom_row;
+  187   2              center = (uint8)(((uint16)candidate->left + candidate->right) >> 1);
+  188   2          }
+C251 COMPILER V5.60.0,  visual_avoidance                                                   17/07/26  22:33:46  PAGE 4   
+
+  189   1      
+  190   1          state = visual_avoid_state;
+  191   1          if (state == VISUAL_AVOID_STATE_RECENTER) {
+  192   2              if (valid) {
+  193   3                  visual_avoid_clear_frames = 0u;
+  194   3              } else if (visual_avoid_clear_frames < VISUAL_AVOID_CLEAR_FRAMES) {
+  195   3                  visual_avoid_clear_frames++;
+  196   3              }
+  197   2      
+  198   2              if (visual_avoid_recenter_ready &&
+  199   2                  visual_avoid_clear_frames >= VISUAL_AVOID_CLEAR_FRAMES) {
+  200   3                  visual_avoid_hit_history = 0u;
+  201   3                  visual_avoid_last_hit_age = 3u;
+  202   3                  visual_avoid_state = VISUAL_AVOID_STATE_FOLLOW;
+  203   3              }
+  204   2              return;
+  205   2          }
+  206   1      
+  207   1          if (state == VISUAL_AVOID_STATE_BYPASS) {
+  208   2              return;
+  209   2          }
+  210   1      
+  211   1          /* A far candidate remains visible in debug, but cannot enter confirmation. */
+  212   1          if (valid && candidate->bottom_row < VISUAL_AVOID_TRIGGER_ROW) {
+  213   2              valid = 0u;
+  214   2          }
+  215   1      
+  216   1          /* New candidates are accepted only while the ring state is NORM. */
+  217   1          if (current_step != VISUAL_AVOID_RING_NORM) {
+  218   2              visual_avoid_hit_history = 0u;
+  219   2              visual_avoid_last_hit_age = 3u;
+  220   2              return;
+  221   2          }
+  222   1      
+  223   1          if (!valid) {
+  224   2              visual_avoid_hit_history =
+  225   2                  (uint8)((visual_avoid_hit_history << 1) & VISUAL_AVOID_HISTORY_MASK);
+  226   2              if (visual_avoid_last_hit_age < 3u) {
+  227   3                  visual_avoid_last_hit_age++;
+  228   3              }
+  229   2              return;
+  230   2          }
+  231   1      
+  232   1          if (visual_avoid_hit_history != 0u &&
+  233   1              visual_avoid_last_hit_age < 3u &&
+  234   1              (VisualAvoid_AbsDiffU8(center, visual_avoid_last_center) >
+  235   1                   VISUAL_AVOID_MATCH_TOLERANCE ||
+  236   1               VisualAvoid_AbsDiffU8(candidate->bottom_row, visual_avoid_last_bottom) >
+  237   1                   VISUAL_AVOID_MATCH_TOLERANCE)) {
+  238   2              visual_avoid_hit_history = 0u;
+  239   2          }
+  240   1      
+  241   1          visual_avoid_hit_history =
+  242   1              (uint8)(((visual_avoid_hit_history << 1) | 0x01u) &
+  243   1                      VISUAL_AVOID_HISTORY_MASK);
+  244   1          visual_avoid_last_center = center;
+  245   1          visual_avoid_last_bottom = candidate->bottom_row;
+  246   1          visual_avoid_last_hit_age = 0u;
+  247   1      
+  248   1          if (VisualAvoid_CountHits(visual_avoid_hit_history) < 2u) {
+  249   2              return;
+  250   2          }
+  251   1      
+  252   1          lane_gaps_valid = VisualAvoid_GetLaneGaps(candidate, &left_gap, &right_gap);
+  253   1          if (lane_gaps_valid) {
+  254   2              /* A negative target-column bias moves the vehicle to the right. */
+C251 COMPILER V5.60.0,  visual_avoidance                                                   17/07/26  22:33:46  PAGE 5   
+
+  255   2              bypass_bias = (right_gap >= left_gap) ?
+  256   2                            (int8)-VISUAL_AVOID_PATH_BIAS_PX :
+  257   2                            (int8)VISUAL_AVOID_PATH_BIAS_PX;
+  258   2          } else {
+  259   2              /* With missing lane edges, simply pass on the side opposite the brick. */
+  260   2              bypass_bias = (center <= Mid_Col) ?
+  261   2                            (int8)-VISUAL_AVOID_PATH_BIAS_PX :
+  262   2                            (int8)VISUAL_AVOID_PATH_BIAS_PX;
+  263   2          }
+  264   1          /* The WiFi channel-5 hard stop always has priority over avoidance. */
+  265   1          if (Motor_Is_Force_Stopped()) {
+  266   2              return;
+  267   2          }
+  268   1          VisualAvoid_StartBypass(bypass_bias);
+  269   1      }
+  270          
+  271          void VisualAvoid_ControlTick(int16 encoder_l, int16 encoder_r)
+  272          {
+  273   1          uint16 encoder_l_abs;
+  274   1          uint16 encoder_r_abs;
+  275   1          uint16 delta;
+  276   1      
+  277   1          if (visual_avoid_state == VISUAL_AVOID_STATE_FOLLOW) {
+  278   2              return;
+  279   2          }
+  280   1      
+  281   1          if (Motor_Is_Force_Stopped()) {
+  282   2              if (visual_avoid_state == VISUAL_AVOID_STATE_BYPASS ||
+  283   2                  (visual_avoid_state == VISUAL_AVOID_STATE_RECENTER &&
+  284   2                   !visual_avoid_recenter_ready)) {
+  285   3                  visual_avoid_resume_cap = 1u;
+  286   3              }
+  287   2              return;
+  288   2          }
+  289   1      
+  290   1          if (visual_avoid_resume_cap) {
+  291   2              if (visual_avoid_state == VISUAL_AVOID_STATE_BYPASS ||
+  292   2                  (visual_avoid_state == VISUAL_AVOID_STATE_RECENTER &&
+  293   2                   !visual_avoid_recenter_ready)) {
+  294   3                  Motor_Set_Safety_Command(MOTOR_SAFETY_CAP, VISUAL_AVOID_SPEED_CAP);
+  295   3              }
+  296   2              visual_avoid_resume_cap = 0u;
+  297   2          }
+  298   1      
+  299   1          if (visual_avoid_state == VISUAL_AVOID_STATE_BYPASS) {
+  300   2              encoder_l_abs = VisualAvoid_AbsEncoder(encoder_l);
+  301   2              encoder_r_abs = VisualAvoid_AbsEncoder(encoder_r);
+  302   2              /* Split before addition so the uint16 sum cannot overflow. */
+  303   2              delta = (uint16)((encoder_l_abs >> 1) +
+  304   2                               (encoder_r_abs >> 1) +
+  305   2                               (((encoder_l_abs & 1u) + (encoder_r_abs & 1u)) >> 1));
+  306   2              if (delta >= (uint16)(VISUAL_AVOID_PASS_PULSES - visual_avoid_travel)) {
+  307   3                  visual_avoid_travel = VISUAL_AVOID_PASS_PULSES;
+  308   3              } else {
+  309   3                  visual_avoid_travel = (uint16)(visual_avoid_travel + delta);
+  310   3              }
+  311   2      
+  312   2              if (visual_avoid_travel >= VISUAL_AVOID_PASS_PULSES) {
+  313   3                  Servo_Set_Path_Bias(0);
+  314   3                  visual_avoid_bias = 0;
+  315   3                  visual_avoid_recenter_ticks = 0u;
+  316   3                  visual_avoid_recenter_ready = 0u;
+  317   3                  visual_avoid_clear_frames = 0u;
+  318   3                  visual_avoid_state = VISUAL_AVOID_STATE_RECENTER;
+  319   3              }
+  320   2              return;
+C251 COMPILER V5.60.0,  visual_avoidance                                                   17/07/26  22:33:46  PAGE 6   
+
+  321   2          }
+  322   1      
+  323   1          if (visual_avoid_state != VISUAL_AVOID_STATE_RECENTER ||
+  324   1              visual_avoid_recenter_ready) {
+  325   2              return;
+  326   2          }
+  327   1      
+  328   1          if (visual_avoid_recenter_ticks < VISUAL_AVOID_RECENTER_TICKS) {
+  329   2              visual_avoid_recenter_ticks++;
+  330   2          }
+  331   1          if (visual_avoid_recenter_ticks >= VISUAL_AVOID_RECENTER_TICKS) {
+  332   2              /* The 3 px/tick bias slew has now returned +/-30 to zero. */
+  333   2              Servo_Set_Mode(SERVO_MODE_VISION);
+  334   2              Motor_Set_Safety_Command(MOTOR_SAFETY_NORMAL, 0);
+  335   2              visual_avoid_recenter_ready = 1u;
+  336   2          }
+  337   1      }
+  338          
+  339          uint8 VisualAvoid_InhibitRing(void)
+  340          {
+  341   1          if (visual_avoid_state != VISUAL_AVOID_STATE_FOLLOW) {
+  342   2              return 1u;
+  343   2          }
+  344   1          /* A raw shape must never abort an actual ring already in progress. */
+  345   1          if (current_step != VISUAL_AVOID_RING_NORM) {
+  346   2              return 0u;
+  347   2          }
+  348   1          return (visual_avoid_hit_history != 0u) ? 1u : 0u;
+  349   1      }
+  350          
+  351          void VisualAvoid_GetDebug(uint8 *candidate_valid,
+  352                                    uint8 *left,
+  353                                    uint8 *right,
+  354                                    uint8 *bottom,
+  355                                    uint8 *state,
+  356                                    uint8 *pending_hit,
+  357                                    int8 *bias,
+  358                                    uint16 *travel)
+  359          {
+  360   1          bit interrupt_state;
+  361   1          uint8 valid_value;
+  362   1          uint8 left_value;
+  363   1          uint8 right_value;
+  364   1          uint8 bottom_value;
+  365   1          uint8 state_value;
+  366   1          uint8 pending_hit_value;
+  367   1          int8 bias_value;
+  368   1          uint16 travel_value;
+  369   1      
+  370   1          interrupt_state = EA;
+  371   1          EA = 0;
+  372   1          valid_value = visual_avoid_debug_valid;
+  373   1          left_value = visual_avoid_debug_left;
+  374   1          right_value = visual_avoid_debug_right;
+  375   1          bottom_value = visual_avoid_debug_bottom;
+  376   1          state_value = visual_avoid_state;
+  377   1          pending_hit_value = (visual_avoid_hit_history != 0u) ? 1u : 0u;
+  378   1          bias_value = visual_avoid_bias;
+  379   1          travel_value = visual_avoid_travel;
+  380   1          EA = interrupt_state;
+  381   1      
+  382   1          if (candidate_valid != NULL) *candidate_valid = valid_value;
+  383   1          if (left != NULL) *left = left_value;
+  384   1          if (right != NULL) *right = right_value;
+  385   1          if (bottom != NULL) *bottom = bottom_value;
+  386   1          if (state != NULL) *state = state_value;
+C251 COMPILER V5.60.0,  visual_avoidance                                                   17/07/26  22:33:46  PAGE 7   
+
+  387   1          if (pending_hit != NULL) *pending_hit = pending_hit_value;
+  388   1          if (bias != NULL) *bias = bias_value;
+  389   1          if (travel != NULL) *travel = travel_value;
+  390   1      }
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =    ------     ------
+  ecode size           =      2374     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =       108     ------
+  xdata-const size     =    ------     ------
+  edata size           =    ------     ------
+  bit size             =         3     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =        91     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

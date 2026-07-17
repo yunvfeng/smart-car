@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  gyro                                                               15/07/26  19:17:45  PAGE 1   
+C251 COMPILER V5.60.0,  gyro                                                               17/07/26  22:33:46  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE gyro
@@ -20,89 +20,97 @@ stmt  level    source
     8          
     9          volatile int16 g_gyro_z_for_servo = 0;
    10          
-   11          uint8 Gyro_Init(void)
+   11          static int32 divide_by_four_toward_zero(int32 value)
    12          {
-   13   1          uint16 i;
-   14   1          int32 sample_sum;
-   15   1      
-   16   1          gyro_ready = 0;
-   17   1          gyro_servo_correction = 0;
-   18   1          gyro_z_bias = 0;
-   19   1          gyro_z_filtered = 0;
-   20   1          g_gyro_z_for_servo = 0;
-   21   1      
-   22   1          if (imu660rb_init()) {
-   23   2              return 1;
-   24   2          }
-   25   1      
-   26   1          sample_sum = 0;
-   27   1          for (i = 0; i < GYRO_CALIBRATION_SAMPLES; i++) {
-   28   2              imu660rb_get_gyro();
-   29   2              sample_sum += imu660rb_gyro_z;
-   30   2              system_delay_ms(GYRO_CALIBRATION_DELAY_MS);
-   31   2          }
-   32   1      
-   33   1          gyro_z_bias = (int16)(sample_sum / (int32)GYRO_CALIBRATION_SAMPLES);
-   34   1          gyro_ready = 1;
-   35   1          return 0;
-   36   1      }
-   37          
-   38          void Gyro_Update(void)
-   39          {
-   40   1          int32 corrected;
-   41   1      
-   42   1          if (!gyro_ready) {
-   43   2              g_gyro_z_for_servo = 0;
-   44   2              gyro_servo_correction = 0;
-   45   2              return;
-   46   2          }
-   47   1      
-   48   1          imu660rb_get_gyro();
-   49   1          corrected = (int32)imu660rb_gyro_z - (int32)gyro_z_bias;
-   50   1          if (corrected > 32767L) {
-   51   2              corrected = 32767L;
-   52   2          } else if (corrected < -32768L) {
-   53   2              corrected = -32768L;
+   13   1          if (value >= 0) {
+   14   2              return value >> 2;
+   15   2          }
+   16   1          return -(int32)(((uint32)(-value)) >> 2);
+   17   1      }
+   18          
+   19          uint8 Gyro_Init(void)
+   20          {
+   21   1          uint16 i;
+   22   1          int32 sample_sum;
+   23   1      
+   24   1          gyro_ready = 0;
+   25   1          gyro_servo_correction = 0;
+   26   1          gyro_z_bias = 0;
+   27   1          gyro_z_filtered = 0;
+   28   1          g_gyro_z_for_servo = 0;
+   29   1      
+   30   1          if (imu660rb_init()) {
+   31   2              return 1;
+   32   2          }
+   33   1      
+   34   1          sample_sum = 0;
+   35   1          for (i = 0; i < GYRO_CALIBRATION_SAMPLES; i++) {
+   36   2              imu660rb_get_gyro();
+   37   2              sample_sum += imu660rb_gyro_z;
+   38   2              system_delay_ms(GYRO_CALIBRATION_DELAY_MS);
+   39   2          }
+   40   1      
+   41   1          gyro_z_bias = (int16)(sample_sum / (int32)GYRO_CALIBRATION_SAMPLES);
+   42   1          gyro_ready = 1;
+   43   1          return 0;
+   44   1      }
+   45          
+   46          void Gyro_Update(void)
+   47          {
+   48   1          int32 corrected;
+   49   1      
+   50   1          if (!gyro_ready) {
+   51   2              g_gyro_z_for_servo = 0;
+   52   2              gyro_servo_correction = 0;
+   53   2              return;
    54   2          }
    55   1      
-   56   1          gyro_z_filtered = (gyro_z_filtered * 3L + corrected) / 4L;
-C251 COMPILER V5.60.0,  gyro                                                               15/07/26  19:17:45  PAGE 2   
+   56   1          imu660rb_get_gyro();
+C251 COMPILER V5.60.0,  gyro                                                               17/07/26  22:33:46  PAGE 2   
 
-   57   1          g_gyro_z_for_servo = (int16)gyro_z_filtered;
-   58   1      }
-   59          
-   60          void Gyro_Set_Servo_Correction(int16 correction)
-   61          {
-   62   1          gyro_servo_correction = gyro_ready ? correction : 0;
-   63   1      }
-   64          
-   65          void Gyro_Get_Debug(uint8 *ready, int16 *filtered_z, int16 *correction)
-   66          {
-   67   1          bit interrupt_state;
-   68   1      
-   69   1          interrupt_state = EA;
-   70   1          EA = 0;
-   71   1          if (ready != NULL) {
-   72   2              *ready = gyro_ready;
-   73   2          }
-   74   1          if (filtered_z != NULL) {
-   75   2              *filtered_z = g_gyro_z_for_servo;
-   76   2          }
-   77   1          if (correction != NULL) {
-   78   2              *correction = gyro_servo_correction;
-   79   2          }
-   80   1          EA = interrupt_state;
-   81   1      }
+   57   1          corrected = (int32)imu660rb_gyro_z - (int32)gyro_z_bias;
+   58   1          if (corrected > 32767L) {
+   59   2              corrected = 32767L;
+   60   2          } else if (corrected < -32768L) {
+   61   2              corrected = -32768L;
+   62   2          }
+   63   1      
+   64   1          gyro_z_filtered = divide_by_four_toward_zero(gyro_z_filtered * 3L + corrected);
+   65   1          g_gyro_z_for_servo = (int16)gyro_z_filtered;
+   66   1      }
+   67          
+   68          void Gyro_Set_Servo_Correction(int16 correction)
+   69          {
+   70   1          gyro_servo_correction = gyro_ready ? correction : 0;
+   71   1      }
+   72          
+   73          void Gyro_Get_Debug(uint8 *ready, int16 *filtered_z, int16 *correction)
+   74          {
+   75   1          bit interrupt_state;
+   76   1      
+   77   1          interrupt_state = EA;
+   78   1          EA = 0;
+   79   1          if (ready != NULL) {
+   80   2              *ready = gyro_ready;
+   81   2          }
+   82   1          if (filtered_z != NULL) {
+   83   2              *filtered_z = g_gyro_z_for_servo;
+   84   2          }
+   85   1          if (correction != NULL) {
+   86   2              *correction = gyro_servo_correction;
+   87   2          }
+   88   1          EA = interrupt_state;
+   89   1      }
 
 
 Module Information          Static   Overlayable
 ------------------------------------------------
   code size            =    ------     ------
-  ecode size           =       553     ------
+  ecode size           =       645     ------
   data size            =    ------     ------
   idata size           =    ------     ------
   pdata size           =    ------     ------
-  xdata size           =        35     ------
+  xdata size           =        39     ------
   xdata-const size     =    ------     ------
   edata size           =    ------     ------
   bit size             =         1     ------

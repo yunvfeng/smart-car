@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  zf_device_wireless_uart                                            15/07/26  19:17:43  PAGE 1   
+C251 COMPILER V5.60.0,  zf_device_wireless_uart                                            17/07/26  22:33:43  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_device_wireless_uart
@@ -66,7 +66,7 @@ stmt  level    source
    49          #include "zf_common_debug.h"
    50          #include "zf_common_fifo.h"
    51          #include "zf_driver_delay.h"
-C251 COMPILER V5.60.0,  zf_device_wireless_uart                                            15/07/26  19:17:43  PAGE 2   
+C251 COMPILER V5.60.0,  zf_device_wireless_uart                                            17/07/26  22:33:43  PAGE 2   
 
    52          #include "zf_driver_gpio.h"
    53          #include "zf_driver_uart.h"
@@ -134,7 +134,7 @@ stmt  level    source
   110   1          zf_assert(NULL != buff);  // È·±£»º³åÇø·Ç¿Õ
   111   1      
   112   1          while (len && time_cnt < WIRELESS_UART_TIMEOUT_COUNT)
-C251 COMPILER V5.60.0,  zf_device_wireless_uart                                            15/07/26  19:17:43  PAGE 3   
+C251 COMPILER V5.60.0,  zf_device_wireless_uart                                            17/07/26  22:33:43  PAGE 3   
 
   113   1          {
   114   2              if (!gpio_get_level(WIRELESS_UART_RTS_PIN))  // RTSµÍµçÆ½£¬¿É·¢ËÍ
@@ -202,7 +202,7 @@ stmt  level    source
   171          //              ÔÙÓÉ wireless_module_uart_handler() º¯Êýµ÷ÓÃ±¾º¯Êý
   172          //-------------------------------------------------------------------------------------------------------
              -------------
-C251 COMPILER V5.60.0,  zf_device_wireless_uart                                            15/07/26  19:17:43  PAGE 4   
+C251 COMPILER V5.60.0,  zf_device_wireless_uart                                            17/07/26  22:33:43  PAGE 4   
 
   173          void wireless_uart_callback (uint8 uart_dat)
   174          {
@@ -270,7 +270,7 @@ stmt  level    source
                    
                    do
                    {
-C251 COMPILER V5.60.0,  zf_device_wireless_uart                                            15/07/26  19:17:43  PAGE 5   
+C251 COMPILER V5.60.0,  zf_device_wireless_uart                                            17/07/26  22:33:43  PAGE 5   
 
                        wireless_auto_baud_flag = WIRELESS_UART_AUTO_BAUD_RATE_START;
                        uart_write_byte(WIRELESS_UART_INDEX, wireless_auto_baud_data[0]);       // ·¢ËÍÌØ¶¨Êý¾Ý ÓÃÓÚÄ£¿é×
