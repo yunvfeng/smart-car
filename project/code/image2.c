@@ -1,6 +1,6 @@
 #include "image2.h"
 
-uint8 far base_image[MT9V03X_H][MT9V03X_W];
+#if IMAGE_OTSU_ENABLE
 uint8 Threshold = 128;
 static uint16 xdata s_otsu_hist[GrayScale];
 
@@ -115,6 +115,11 @@ uint8 otsuThreshold(uint8 *mt9v03x_image_first)
             best_score = 0;
 
             for (i = clip_min; i <= clip_max; i++) {
+                /* 空直方图桶不会改变累计量，也不可能产生新的最优阈值。 */
+                if (!s_otsu_hist[i]) {
+                    continue;
+                }
+
                 weight_bg += s_otsu_hist[i];
                 sum_bg += (uint32)i * (uint32)s_otsu_hist[i];
 
@@ -165,23 +170,4 @@ uint8 otsuThreshold(uint8 *mt9v03x_image_first)
     Threshold = threshold;
     return threshold;
 }
-
-/* 按指定阈值把 base_image 转成黑白图，主要用于调试或备用处理。 */
-void base_image_threshold(uint8 threshold)
-{
-    int i;
-    int j;
-    uint8 th_use;
-
-    if (threshold > 8) {
-        th_use = threshold - 8;
-    } else {
-        th_use = threshold;
-    }
-
-    for (i = 0; i < MT9V03X_H; i++) {
-        for (j = 0; j < MT9V03X_W; j++) {
-            base_image[i][j] = (base_image[i][j] < th_use) ? 0 : 255;
-        }
-    }
-}
+#endif

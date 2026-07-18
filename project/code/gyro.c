@@ -8,6 +8,14 @@ static int32 gyro_z_filtered = 0;
 
 volatile int16 g_gyro_z_for_servo = 0;
 
+static int32 divide_by_four_toward_zero(int32 value)
+{
+    if (value >= 0) {
+        return value >> 2;
+    }
+    return -(int32)(((uint32)(-value)) >> 2);
+}
+
 uint8 Gyro_Init(void)
 {
     uint16 i;
@@ -53,7 +61,7 @@ void Gyro_Update(void)
         corrected = -32768L;
     }
 
-    gyro_z_filtered = (gyro_z_filtered * 3L + corrected) / 4L;
+    gyro_z_filtered = divide_by_four_toward_zero(gyro_z_filtered * 3L + corrected);
     g_gyro_z_for_servo = (int16)gyro_z_filtered;
 }
 

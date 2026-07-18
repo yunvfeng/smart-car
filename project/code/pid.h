@@ -9,12 +9,12 @@
 #define PID_Q_SHIFT             10
 #define PID_Q_ONE               (1L << PID_Q_SHIFT)
 
-#define SERVO_KP_TURN_Q10       4500L
+#define SERVO_KP_TURN_Q10       4800L
 #define SERVO_KP_STRAIGHT_Q10   2000L
-#define SERVO_KD_Q10            200L
+#define SERVO_KD_Q10            400L
 #define SERVO_KF_Q10            200L
 #define SERVO_KP2_Q10           0L
-#define SERVO_KG_Q10            0L
+#define SERVO_KG_Q10            50L
 
 #define MOTOR_KP_Q10            1024L
 #define MOTOR_KI_Q10            150L
@@ -47,6 +47,10 @@ extern volatile PID_t servo_pidf;
 int16 limit_int16(int32 x, int16 min_v, int16 max_v);
 /* 根据中线误差计算舵机输出。 */
 void PID_servof(volatile PID_t *pid);
+/* Use a caller-supplied image target column without modifying mid_line[]. */
+void PID_servof_Target(volatile PID_t *pid, int16 target_col);
+/* Clear controller history and output while preserving configured gains. */
+void PID_Reset(volatile PID_t *pid);
 /* 原子设置/读取带符号的陀螺仪横摆阻尼增益（Q10）。 */
 void PID_Set_Servo_Gyro_Gain(int16 gain_q10);
 int16 PID_Get_Servo_Gyro_Gain(void);

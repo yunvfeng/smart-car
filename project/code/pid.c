@@ -19,6 +19,15 @@ static int16 abs16_local(int16 x)
     return (x < 0) ? (int16)(-x) : x;
 }
 
+/* Q10 除法按 C 的向零截断规则实现，避免 15 ms 中断中的 32 位软件除法。 */
+static int32 q10_divide_toward_zero(int32 value)
+{
+    if (value >= 0) {
+        return value >> PID_Q_SHIFT;
+    }
+    return -(int32)(((uint32)(-value)) >> PID_Q_SHIFT);
+}
+
 /* 将 32 位计算结果限制到给定 int16 范围内。 */
 int16 limit_int16(int32 x, int16 min_v, int16 max_v)
 {
@@ -52,7 +61,11 @@ void Increment_PID(volatile PID_t *pid, int16 tar_val, int16 act_val)
 }
 
 /* 舵机 PID：根据中线偏差、偏差变化和曲率前馈计算舵机占空比。 */
-void PID_servof(volatile PID_t *pid)
+/*
+ * Steering PID with an explicit visual target column. Clamping the target
+ * here keeps every caller inside the image and leaves mid_line[] untouched.
+ */
+void PID_servof_Target(volatile PID_t *pid, int16 target_col)
 {
     uint8 ref;
     uint8 near_ref;
@@ -74,7 +87,8 @@ void PID_servof(volatile PID_t *pid)
         near_ref = SEARCH_IMAGE_H - 1;
     }
 
-    err = (int16)mid_line[ref] - (int16)Mid_Col;
+    target_col = limit_int16(target_col, 0, SEARCH_IMAGE_W - 1);
+    err = (int16)mid_line[ref] - target_col;
     curve = (int16)mid_line[ref] - (int16)mid_line[near_ref];
     d_err = err - pid->err1;
     abs_err = abs16_local(err);
@@ -86,7 +100,7 @@ void PID_servof(volatile PID_t *pid)
     out >>= PID_Q_SHIFT;
 
     gyro_correction = limit_int16(
-        (pid->kg * (int32)g_gyro_z_for_servo) / PID_Q_ONE,
+        q10_divide_toward_zero(pid->kg * (int32)g_gyro_z_for_servo),
         -GYRO_SERVO_CORRECTION_LIMIT,
         GYRO_SERVO_CORRECTION_LIMIT);
     Gyro_Set_Servo_Correction(gyro_correction);
@@ -101,6 +115,12 @@ void PID_servof(volatile PID_t *pid)
     pid->err2 = pid->err1;
     pid->err1 = err;
     pid->out = out;
+}
+
+/* Preserve the original vision-only PID entry point. */
+void PID_servof(volatile PID_t *pid)
+{
+    PID_servof_Target(pid, Mid_Col);
 }
 
 void PID_Set_Servo_Gyro_Gain(int16 gain_q10)
@@ -124,4 +144,22 @@ int16 PID_Get_Servo_Gyro_Gain(void)
     EA = interrupt_state;
 
     return limit_int16(gain_q10, -32768, 32767);
+}
+
+/* Clear dynamic PID state without changing configured gains. */
+void PID_Reset(volatile PID_t *pid)
+{
+    bit interrupt_state;
+
+    if (pid == NULL) {
+        return;
+    }
+
+    interrupt_state = EA;
+    EA = 0;
+    pid->err1 = 0;
+    pid->err2 = 0;
+    pid->err_sum = 0;
+    pid->out = 0;
+    EA = interrupt_state;
 }

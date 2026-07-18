@@ -68,6 +68,9 @@ uint16 dl1b_distance_mm = 8192;
 	#define dl1b_transfer_8bit_array(tdata, tlen, rdata, rlen)      (iic_transfer_8bit_array(DL1B_IIC, DL1B_DEV_ADDR, (tdata), (tlen), (rdata), (rlen)))
 #endif
 
+/* dl1b_config_file sets GPIO_HV_MUX__CTRL bit 4: data ready is active low. */
+#define DL1B_DATA_READY_LEVEL     ( 0x00 )
+
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     返回以毫米为单位的范围读数
 // 参数说明     void
@@ -86,19 +89,13 @@ void dl1b_get_distance (void)
         data_buffer[1] = DL1B_GPIO__TIO_HV_STATUS & 0xFF;
         dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1);
         
-        if(data_buffer[2])
+        if(DL1B_DATA_READY_LEVEL == (data_buffer[2] & 0x01))
         {
-        
-            data_buffer[0] = DL1B_SYSTEM__INTERRUPT_CLEAR >> 8;
-            data_buffer[1] = DL1B_SYSTEM__INTERRUPT_CLEAR & 0xFF;
-            data_buffer[2] = 0x01;
-            dl1b_transfer_8bit_array(data_buffer, 3, data_buffer, 0);// clear Interrupt
-            
             data_buffer[0] = DL1B_RESULT__RANGE_STATUS >> 8;
             data_buffer[1] = DL1B_RESULT__RANGE_STATUS & 0xFF;
             dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1);
             
-            if(0x89 == data_buffer[2])
+            if(0x09 == (data_buffer[2] & 0x1F))
             {
                 data_buffer[0] = DL1B_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0 >> 8;
                 data_buffer[1] = DL1B_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0 & 0xFF;
@@ -122,6 +119,11 @@ void dl1b_get_distance (void)
                 dl1b_distance_mm = 8192;
                 dl1b_finsh_flag = 0;
             }
+
+            data_buffer[0] = DL1B_SYSTEM__INTERRUPT_CLEAR >> 8;
+            data_buffer[1] = DL1B_SYSTEM__INTERRUPT_CLEAR & 0xFF;
+            data_buffer[2] = 0x01;
+            dl1b_transfer_8bit_array(data_buffer, 3, data_buffer, 0);// clear Interrupt
         }
         else
         {
@@ -158,6 +160,10 @@ uint8 dl1b_init (void)
     uint8   data_buffer[2 + sizeof(dl1b_config_file)];
     uint16  time_out_count  = 0;
     
+    dl1b_init_flag = 0;
+    dl1b_distance_mm = 8192;
+    dl1b_finsh_flag = 0;
+
 #if (DL1B_USE_INTERFACE==SOFT_IIC)        
     soft_iic_init(&dl1b_iic_struct, DL1B_DEV_ADDR, DL1B_SOFT_IIC_DELAY, DL1B_SCL_PIN, DL1B_SDA_PIN);
 #elif (DL1B_USE_INTERFACE==HARDWARE_IIC)
@@ -216,6 +222,11 @@ uint8 dl1b_init (void)
             system_delay_ms(1);
         }
         
+        if(1 == return_state)
+        {
+            break;
+        }
+
         dl1b_init_flag = 1;
         
     #if DL1B_INT_ENABLE
@@ -227,5 +238,12 @@ uint8 dl1b_init (void)
     }
     while(0);
    
+    if(1 == return_state)
+    {
+        dl1b_init_flag = 0;
+        dl1b_distance_mm = 8192;
+        dl1b_finsh_flag = 0;
+    }
+
     return return_state;
 }

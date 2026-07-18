@@ -24,11 +24,11 @@
 #endif
 
 #ifndef ASSISTANT_DEBUG_IMAGE_DIV
-#define ASSISTANT_DEBUG_IMAGE_DIV       1u
+#define ASSISTANT_DEBUG_IMAGE_DIV       2u
 #endif
 
 #ifndef ASSISTANT_DEBUG_SCOPE_DIV
-#define ASSISTANT_DEBUG_SCOPE_DIV       1u
+#define ASSISTANT_DEBUG_SCOPE_DIV       5u
 #endif
 
 #ifndef ASSISTANT_DEBUG_BOUNDARY_ENABLE
@@ -45,7 +45,7 @@ typedef enum
     ASSISTANT_PARAM_SERVO_KD,
     ASSISTANT_PARAM_GYRO_KG,
     ASSISTANT_PARAM_MOTOR_KP,
-    ASSISTANT_PARAM_MOTOR_KI,
+    ASSISTANT_PARAM_MOTOR_STOP,
     ASSISTANT_PARAM_MIN_SPEED,
     ASSISTANT_PARAM_MAX_SPEED,
     ASSISTANT_PARAM_CAMERA_EXPOSURE
@@ -53,7 +53,7 @@ typedef enum
 
 void Assistant_Debug_Init(void);
 void Assistant_Debug_Task(void);
-void Assistant_Debug_On_Frame(void);
+void Assistant_Debug_On_Frame(uint8 tof_avoid_enabled);
 void Assistant_Debug_Send_Now(void);
 void Assistant_Debug_Timebase_Tick(void);
 uint16 Assistant_Debug_Timebase_Now(void);

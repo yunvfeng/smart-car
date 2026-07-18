@@ -1,19 +1,24 @@
 #include "ring.h"
 #include "servo.h"
 #include <stdlib.h>
+#include <string.h>
 
 #define FIRST_TO_NORMAL_CONFIRM_FRAMES 3u
 #define ENTER_TO_FIRST_CONFIRM_FRAMES  3u
 #define TURN_TO_IN_CONFIRM_FRAMES      3u
 #define IN_TO_OUT_MIN_FRAMES           20u
 #define IN_TO_OUT_CONFIRM_FRAMES       3u
-#define RING_IN_LEFT_TOP_COL           57u
-#define RING_OUT_LEFT_TOP_COL          30u
+#define LEFT_IN_AUTO_OUT_FRAMES        35u
+#define RING_IN_LEFT_TOP_COL           15u
+#define RING_OUT_LEFT_TOP_COL          10u
 #define RING_MIRROR_COL(col)           ((uint8)(SEARCH_IMAGE_W - 1u - (col)))
-#define RING_IN_RIGHT_TOP_COL          130u
-#define RING_OUT_RIGHT_TOP_COL         157u
-#define RIGHT_IN_AUTO_OUT_FRAMES       40u
-#define BACK_AUTO_EXIT_FRAMES          200u
+#define RING_IN_RIGHT_TOP_COL          172u
+#define RING_OUT_RIGHT_TOP_COL         177u
+#define RING_IN_OUT_BOTTOM_BASE_COL    94u
+#define RING_RIGHT_TURN_BOTTOM_COL     30u
+#define RING_BACK_TOP_ROW              40u
+#define RIGHT_IN_AUTO_OUT_FRAMES       35u
+#define BACK_AUTO_EXIT_FRAMES          100u
 #define RIGHT_RING_ENABLE              1u
 
 #define RING_STEP_PRE_MEET              0u
@@ -152,6 +157,21 @@ uint8 clamp_col_int16(int16 val)
     return (uint8)val;
 }
 
+/* Map the same-side raw lower corner around the configured IN/OUT base. */
+static uint8 Ring_Adjust_Bottom_Anchor(uint8 base_col, uint8 detected_col)
+{
+    int16 delta;
+    int16 anchor;
+
+    delta = (int16)base_col - (int16)detected_col;
+    if (delta >= 0) {
+        anchor = (int16)base_col + (delta >> 2);
+    } else {
+        anchor = (int16)base_col - ((-delta) >> 2);
+    }
+    return clamp_col_int16(anchor);
+}
+
 static void Ring_Fill_Line(uint8 start_row, uint8 end_row,
                            int16 start_col, int16 end_col, uint8 to_flag)
 {
@@ -196,6 +216,17 @@ static void Ring_Fill_Line(uint8 start_row, uint8 end_row,
             right_control_line[i] = clamp_col_int16(col);
         }
     }
+}
+
+/* IN/OUT only: keep the control line opposite the slanted fill at the image edge. */
+static void Ring_Keep_Left_Control_At_Edge(void)
+{
+    memset(left_control_line, 0, sizeof(left_control_line));
+}
+
+static void Ring_Keep_Right_Control_At_Edge(void)
+{
+    memset(right_control_line, SEARCH_IMAGE_W - 1, sizeof(right_control_line));
 }
 
 /*
@@ -601,12 +632,10 @@ void Ring_Ring_Ring(void)
     uint8 index;
     uint8 minn = SEARCH_IMAGE_W - 1;
 
-    if (cnt_over < IN_TO_OUT_MIN_FRAMES) {
-        cnt_over++;
-    }
+    Ring_Keep_Left_Control_At_Edge();
 
-    if (left_control_line[controlReferenceLine] > Mid_Col) {
-        left_control_line[controlReferenceLine] = 0;
+    if (cnt_over < LEFT_IN_AUTO_OUT_FRAMES) {
+        cnt_over++;
     }
 
     for (i = SEARCH_IMAGE_H - 1; i > PIXEL_OFFSET * 3; i -= PIXEL_OFFSET) {
@@ -622,12 +651,20 @@ void Ring_Ring_Ring(void)
         (((int16)right_edge_line[minPoint - PIXEL_OFFSET] - (int16)right_edge_line[minPoint] < 30 &&
          (int16)right_edge_line[minPoint + PIXEL_OFFSET] - (int16)right_edge_line[minPoint] < 30) ||
         minPoint < 40)) {
+        right_control_line[SEARCH_IMAGE_H - 1] =
+            Ring_Adjust_Bottom_Anchor(RING_IN_OUT_BOTTOM_BASE_COL,
+                                      left_edge_line[SEARCH_IMAGE_H - 1]);
         left_control_line[0] = RING_IN_LEFT_TOP_COL;
         right_control_line[0] = RING_IN_LEFT_TOP_COL;
         draw_line(0, SEARCH_IMAGE_H - 1, 1);
+        left_control_line[0] = 0;
     }
 
-    if (cnt_over >= IN_TO_OUT_MIN_FRAMES &&
+    /* Keep the visual exit, but never remain in left IN indefinitely. */
+    if (cnt_over >= LEFT_IN_AUTO_OUT_FRAMES) {
+        Out_flag = 1;
+        in_to_out_cnt = 0;
+    } else if (cnt_over >= IN_TO_OUT_MIN_FRAMES &&
         right_edge_line[50] > 180 &&
         right_edge_line[60] > 180 &&
 
@@ -644,9 +681,14 @@ void Ring_Ring_Ring(void)
 /* 出圆环阶段，继续补右控制线并判断是否可以开始回正。 */
 void Ring_Out(void)
 {
+    Ring_Keep_Left_Control_At_Edge();
+    right_control_line[SEARCH_IMAGE_H - 1] =
+        Ring_Adjust_Bottom_Anchor(RING_IN_OUT_BOTTOM_BASE_COL,
+                                  left_edge_line[SEARCH_IMAGE_H - 1]);
     left_control_line[0] = RING_OUT_LEFT_TOP_COL;
     right_control_line[0] = RING_OUT_LEFT_TOP_COL;
     draw_line(0, SEARCH_IMAGE_H - 1, 1);
+    left_control_line[0] = 0;
 
     if ((left_edge_line[30] > 16 ||
          left_edge_line[40] > 16 ||
@@ -654,6 +696,8 @@ void Ring_Out(void)
         right_edge_line[40] < 170 &&
         right_edge_line[50] < 170 &&
         right_edge_line[60] < 170 &&
+				right_edge_line[30] < right_edge_line[35] &&
+				right_edge_line[35] < right_edge_line[40] &&
 				right_edge_line[45] < right_edge_line[50] &&
 				right_edge_line[40] < right_edge_line[45] &&
 				right_edge_line[50] < right_edge_line[55]
@@ -664,25 +708,7 @@ void Ring_Out(void)
 /* 回正阶段，重新补左线，等左右边线恢复连续后结束圆环。 */
 void Ring_Straighten(void)
 {
-    uint8 i;
-    uint8 under;
-    uint8 mid;
-    uint8 top;
-    uint8 midPoint = 0;
-
-    for (i = SEARCH_IMAGE_H - 1 - PIXEL_OFFSET; i > PIXEL_OFFSET; i -= PIXEL_OFFSET) {
-        under = left_edge_line[i + PIXEL_OFFSET];
-        mid = left_edge_line[i];
-        top = left_edge_line[i - PIXEL_OFFSET];
-
-        if (mid >= under && mid >= top && mid > 30) {
-            midPoint = i;
-        }
-    }
-
-    if (midPoint) {
-        connect_point(SEARCH_IMAGE_H - 1, midPoint, 0);
-    }
+    connect_point(SEARCH_IMAGE_H - 1, RING_BACK_TOP_ROW, 0);
 
     if (isContinueLine(left_edge_line) && isContinueLine(right_edge_line) && left_edge_line[110] >= 5) {
         ring_over_flag = 1;
@@ -832,6 +858,9 @@ static void Ring_Turing_Right(void)
         return;
     }
 
+    if (left_control_line[SEARCH_IMAGE_H - 1] < RING_RIGHT_TURN_BOTTOM_COL) {
+        left_control_line[SEARCH_IMAGE_H - 1] = RING_RIGHT_TURN_BOTTOM_COL;
+    }
     draw_line(SEARCH_IMAGE_H - 1, rightTopPoint, 0);
 
     if (rightTopPoint >= controlReferenceLine - 30) {
@@ -841,14 +870,19 @@ static void Ring_Turing_Right(void)
 
 static void Ring_Ring_Ring_Right(void)
 {
+    Ring_Keep_Right_Control_At_Edge();
+
     if (cnt_over < RIGHT_IN_AUTO_OUT_FRAMES) {
         cnt_over++;
     }
 
-    left_control_line[SEARCH_IMAGE_H - 1] = 0;
+    left_control_line[SEARCH_IMAGE_H - 1] =
+        Ring_Adjust_Bottom_Anchor(RING_IN_OUT_BOTTOM_BASE_COL,
+                                  right_edge_line[SEARCH_IMAGE_H - 1]);
     left_control_line[0] = RING_IN_RIGHT_TOP_COL;
     right_control_line[0] = RING_IN_RIGHT_TOP_COL;
     draw_line(SEARCH_IMAGE_H - 1, 0, 0);
+    right_control_line[0] = SEARCH_IMAGE_W - 1;
 
     if (cnt_over >= RIGHT_IN_AUTO_OUT_FRAMES) {
         Out_flag = 1;
@@ -857,10 +891,14 @@ static void Ring_Ring_Ring_Right(void)
 
 static void Ring_Out_Right(void)
 {
-    left_control_line[SEARCH_IMAGE_H - 1] = 0;
+    Ring_Keep_Right_Control_At_Edge();
+    left_control_line[SEARCH_IMAGE_H - 1] =
+        Ring_Adjust_Bottom_Anchor(RING_IN_OUT_BOTTOM_BASE_COL,
+                                  right_edge_line[SEARCH_IMAGE_H - 1]);
     left_control_line[0] = RING_OUT_RIGHT_TOP_COL;
     right_control_line[0] = RING_OUT_RIGHT_TOP_COL;
     draw_line(SEARCH_IMAGE_H - 1, 0, 0);
+    right_control_line[0] = SEARCH_IMAGE_W - 1;
 
     if ((right_edge_line[30] < RING_MIRROR_COL(16u) ||
          right_edge_line[40] < RING_MIRROR_COL(16u) ||
@@ -868,6 +906,8 @@ static void Ring_Out_Right(void)
         left_edge_line[40] > RING_MIRROR_COL(170u) &&
         left_edge_line[50] > RING_MIRROR_COL(170u) &&
         left_edge_line[60] > RING_MIRROR_COL(170u) &&
+        left_edge_line[30] > left_edge_line[35] &&
+        left_edge_line[35] > left_edge_line[40] &&
         left_edge_line[45] > left_edge_line[50] &&
         left_edge_line[40] > left_edge_line[45] &&
         left_edge_line[50] > left_edge_line[55]) {
@@ -877,25 +917,7 @@ static void Ring_Out_Right(void)
 
 static void Ring_Straighten_Right(void)
 {
-    uint8 i;
-    uint8 under;
-    uint8 mid;
-    uint8 top;
-    uint8 midPoint = 0;
-
-    for (i = SEARCH_IMAGE_H - 1 - PIXEL_OFFSET; i > PIXEL_OFFSET; i -= PIXEL_OFFSET) {
-        under = right_edge_line[i + PIXEL_OFFSET];
-        mid = right_edge_line[i];
-        top = right_edge_line[i - PIXEL_OFFSET];
-
-        if (mid <= under && mid <= top && mid < RING_MIRROR_COL(30u)) {
-            midPoint = i;
-        }
-    }
-
-    if (midPoint) {
-        connect_point(SEARCH_IMAGE_H - 1, midPoint, 1);
-    }
+    connect_point(SEARCH_IMAGE_H - 1, RING_BACK_TOP_ROW, 1);
 
     if (isContinueLine(left_edge_line) && isContinueLine(right_edge_line) &&
         right_edge_line[110] <= RING_MIRROR_COL(5u)) {

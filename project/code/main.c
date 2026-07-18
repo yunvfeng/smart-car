@@ -12,9 +12,14 @@
 #include "servo.h"
 #include "laser.h"
 #include "key.h"
+#include "tof_avoidance.h"
 /* #include "ips_ui.h" */
 #include <stdio.h>
 
+/* PB3/PB4 are latched before launch: target detection / ToF avoidance. */
+static uint8 target_detect_enabled = 0;
+static volatile uint8 tof_avoid_enabled = 0;
+static volatile uint8 tof_avoid_ready = 0;
 
 /*
  * 运行方式：
@@ -31,10 +36,15 @@ static void Timer0_Callback(void)
     /* 中断里只放轻量控制任务，避免影响下一帧图像采集。 */
     Encoder_GetValue();
     Gyro_Update();
+    if (tof_avoid_ready) {
+        TofAvoid_ControlTick();
+    }
 
     Servo_Loop();
     Motor_Loop();
 
+    /* ToF avoidance never suppresses target detection or laser firing. */
+    Laser_Set_Inhibit(0u);
     Laser_Task();
 }
 
@@ -45,6 +55,10 @@ void main(void)
     uint8 assistant_debug_ready;
     uint8 wifi_assistant_started;
     uint8 car_started;
+    uint8 tof_init_attempted;
+    uint8 tof_poll_deferred;
+    uint8 key1_last;
+    uint8 key1_now;
 
     clock_init(SYSTEM_CLOCK_96M);
     debug_init();
@@ -62,18 +76,40 @@ void main(void)
     assistant_debug_ready = 0;
     wifi_assistant_started = 0;
     car_started = 0;
+    tof_init_attempted = 0;
+    tof_poll_deferred = 0;
+    key1_last = 1;
 
     /* Control timer starts after KEY1/PB2 is pressed. */
-		
 
     while (1) {
-        if (!car_started && !gpio_get_level(KEY1_PIN)) {
-            system_delay_ms(20);
-            if (!gpio_get_level(KEY1_PIN)) {
-                pit_ms_init(TIM0_PIT, CONTROL_PERIOD_MS, Timer0_Callback);
-                car_started = 1;
+        /* PB3 只在发车前锁存；按住或短按一次均可。 */
+        if (!car_started) {
+            if (!gpio_get_level(KEY2_PIN)) {
+                target_detect_enabled = 1;
+            }
+            if (!gpio_get_level(KEY3_PIN)) {
+                tof_avoid_enabled = 1;
             }
         }
+
+        key1_now = gpio_get_level(KEY1_PIN);
+        if (key1_last && !key1_now) {
+            system_delay_ms(20);
+            if (!gpio_get_level(KEY1_PIN)) {
+                if (!car_started) {
+                    if (tof_avoid_enabled && !tof_init_attempted) {
+                        tof_init_attempted = 1;
+                        if (!TofAvoid_Init()) {
+                            tof_avoid_ready = 1;
+                        }
+                    }
+                    pit_ms_init(TIM0_PIT, CONTROL_PERIOD_MS, Timer0_Callback);
+                    car_started = 1;
+                }
+            }
+        }
+        key1_last = gpio_get_level(KEY1_PIN);
 
         wifi_ready = 0;
         if (!gpio_get_level(SWITCH2_PIN)) {
@@ -104,10 +140,16 @@ void main(void)
                 Gyro_Update();
             }
 
-            Image_OldStyle_Process();
+            Image_OldStyle_Process(target_detect_enabled,
+                                   (tof_avoid_ready && TofAvoid_InhibitRing()));
+
+            if (tof_avoid_ready) {
+                /* ToF confirms presence; the completed vision frame selects left/right. */
+                TofAvoid_OnFrame();
+            }
 
             if (wifi_ready) {
-                Assistant_Debug_On_Frame();
+                Assistant_Debug_On_Frame(tof_avoid_enabled);
             }
 
             /* 按下 SWITCH2 时显示调试画面。 */
@@ -116,6 +158,16 @@ void main(void)
                 IPS_Show_Image_And_Line(0, 0);
             }
             */
+        }
+
+        /* Let one pending camera frame go first, then force the due ToF slot. */
+        if (tof_avoid_ready) {
+            if (mt9v03x_finish_flag && !tof_poll_deferred) {
+                tof_poll_deferred = 1;
+            } else {
+                TofAvoid_ServiceMain();
+                tof_poll_deferred = 0;
+            }
         }
     }
 }

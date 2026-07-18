@@ -22,6 +22,8 @@
 #define WHITE_MAX_OFFSET               24u
 #define REFERENCE_COL_MIN              0u
 #define REFERENCE_COL_MAX              (SEARCH_IMAGE_W - 1u)
+#define REFERENCE_COL_STEP             4u
+#define REFERENCE_SAMPLE_STEP          2u
 #define ZEBRA_ROW_TOP                  50u
 #define ZEBRA_ROW_BOTTOM               100u
 #define ZEBRA_ROW_STEP                 4u
@@ -32,18 +34,13 @@
 #define ZEBRA_COL_TRANSITIONS          4u
 #define ZEBRA_COL_HITS                 3u
 #define ZEBRA_DETECT_ENABLE            0u
-#define IMAGE_COPY_ENABLE              0u
-#define TARGET_DETECT_ENABLE           1u
-
-/* 当前帧备份，调试显示或后续处理可以直接看这份图。 */
-uint8 far image_copy[MT9V03X_H][MT9V03X_W];
+#define TARGET_FIND_FRAME_DIV          2u
 
 uint8 reference_point;
 uint8 white_max_point;
 uint8 white_min_point;
 
-uint8 refenence_col_line[SEARCH_IMAGE_H];
-uint8 reference_contrast_ratio = 120;
+uint8 reference_contrast_ratio = 32;
 uint8 reference_col;
 
 uint8 left_edge_line[SEARCH_IMAGE_H];
@@ -57,9 +54,7 @@ uint8 cross_flag = 0;
 uint8 zebra_flag = 0;
 uint16 encoder_enter = 0;
 uint8 th = 0;
-int32 err_sum = 0;
-
-uint16 camera_exposure_time = 35;
+uint16 camera_exposure_time = 110;
 uint8 camera_init_brightness = 0;
 static uint8 reflect_point = REFLECT_BASE_POINT;
 
@@ -77,12 +72,6 @@ static uint16 limit_u16(uint16 x, uint16 min_v, uint16 max_v)
     if (x < min_v) return min_v;
     if (x > max_v) return max_v;
     return x;
-}
-
-/* 判断像素是否过亮，过亮点通常按反光处理。 */
-static uint8 is_reflect_pixel(uint8 pix)
-{
-    return pix >= reflect_point;
 }
 
 /* 根据当前白色阈值更新反光过滤阈值。 */
@@ -328,15 +317,6 @@ void Camera_Auto_Exposure_Init(void)
     mt9v03x_finish_flag = 0;
 }
 
-/* 计算两个灰度值之间的对比度，数值越大表示边缘越明显。 */
-uint16 get_contrast(uint8 temp1, uint8 temp2)
-{
-    int16 diff;
-    diff = (int16)temp1 - (int16)temp2;
-    if (diff < 0) diff = -diff;
-    return (uint16)((uint32)diff * 200u / ((uint16)temp1 + (uint16)temp2 + 1u));
-}
-
 static uint8 contrast_over_threshold(uint8 temp1, uint8 temp2, uint8 threshold)
 {
     uint16 diff;
@@ -364,25 +344,27 @@ void get_reference_point(const uint8 *image)
     uint32 sum;
     uint8 pix;
     uint8 reference_min;
+    uint8 reflect_limit;
 
     p = image + (SEARCH_IMAGE_H - REFRENCE_ROW) * SEARCH_IMAGE_W;
     count = REFRENCE_ROW * SEARCH_IMAGE_W;
     valid_count = 0;
     sum = 0;
+    reflect_limit = reflect_point;
 
-    for (i = 0; i < count; i++) {
+    for (i = 0; i < count; i += REFERENCE_SAMPLE_STEP) {
         pix = *(p + i);
-        if (!is_reflect_pixel(pix)) {
+        if (pix < reflect_limit) {
             sum += pix;
             valid_count++;
         }
     }
 
     if (!valid_count) {
-        for (i = 0; i < count; i++) {
+        for (i = 0; i < count; i += REFERENCE_SAMPLE_STEP) {
             sum += *(p + i);
         }
-        valid_count = count;
+        valid_count = count / REFERENCE_SAMPLE_STEP;
     }
 
     reference_point = (uint8)(sum / valid_count);
@@ -410,41 +392,47 @@ void Search_reference_col(const uint8 *image)
     uint8 row;
     uint8 temp1;
     uint8 temp2;
-    uint8 i;
     uint8 globe_remote;
     uint8 globe_remote_min;
+    uint8 reflect_limit;
+    uint8 white_min;
+    uint8 white_max;
+    uint8 contrast_ratio;
     uint16 row_step;
     const uint8 *row_ptr;
+    const uint8 *bottom_ptr;
 
     globe_remote_min = SEARCH_IMAGE_H;
     reference_col = SEARCH_IMAGE_W / 2;
     row_step = (uint16)PIXEL_OFFSET * SEARCH_IMAGE_W;
-
-    for (col = REFERENCE_COL_MIN; col <= REFERENCE_COL_MAX; col += PIXEL_OFFSET) {
+    bottom_ptr = image + (uint16)(SEARCH_IMAGE_H - 1u) * SEARCH_IMAGE_W;
+    reflect_limit = reflect_point;
+    white_min = white_min_point;
+    white_max = white_max_point;
+    contrast_ratio = reference_contrast_ratio;
+    for (col = REFERENCE_COL_MIN; col <= REFERENCE_COL_MAX; col += REFERENCE_COL_STEP) {
         globe_remote = SEARCH_IMAGE_H;
-        row_ptr = image + (uint16)(SEARCH_IMAGE_H - 1u) * SEARCH_IMAGE_W + col;
+        row_ptr = bottom_ptr + col;
 
         for (row = SEARCH_IMAGE_H - 1; row > PIXEL_OFFSET; row -= PIXEL_OFFSET) {
             temp1 = *row_ptr;
             temp2 = *(row_ptr - row_step);
 
-            if (is_reflect_pixel(temp1) || is_reflect_pixel(temp2)) {
+            if (temp1 >= reflect_limit || temp2 >= reflect_limit) {
                 row_ptr -= row_step;
                 continue;
             }
 
-            if (temp2 > white_max_point) {
+            if (temp2 > white_max) {
                 row_ptr -= row_step;
                 continue;
-            } else if (temp1 < white_min_point) {
-                if (globe_remote > row) {
-                    globe_remote = row;
-                }
+            } else if (temp1 < white_min) {
+                globe_remote = row;
                 break;
             }
 
-            if (row == STOP_ROW ||
-                contrast_over_threshold(temp1, temp2, reference_contrast_ratio)) {
+            /* 119 起按 2 递减不会等于 STOP_ROW(8)，省去恒假的判断。 */
+            if (contrast_over_threshold(temp1, temp2, contrast_ratio)) {
                 globe_remote = row;
                 break;
             }
@@ -455,11 +443,12 @@ void Search_reference_col(const uint8 *image)
         if (globe_remote < globe_remote_min) {
             globe_remote_min = globe_remote;
             reference_col = col;
-        }
-    }
 
-    for (i = 0; i < SEARCH_IMAGE_H; i++) {
-        refenence_col_line[i] = reference_col;
+            /* 第 3 行已是当前扫描序列的最小可能值，后续列不可能更优。 */
+            if (globe_remote_min <= PIXEL_OFFSET + 1u) {
+                break;
+            }
+        }
     }
 }
 
@@ -476,13 +465,15 @@ void Search_line(const uint8 *image)
     uint8 right_start_col;
     uint8 left_end_col;
     uint8 right_end_col;
-    uint8 right_min_col;
-
     uint8 search_time;
     uint8 temp1;
     uint8 temp2;
     uint8 left_stop;
     uint8 right_stop;
+    uint8 reflect_limit;
+    uint8 white_min;
+    uint8 white_max;
+    uint8 contrast_ratio;
     uint8 col;
     uint8 row;
 
@@ -491,9 +482,13 @@ void Search_line(const uint8 *image)
     row_min = STOP_ROW;
     col_max = SEARCH_IMAGE_W - 1;
     col_min = 0;
+    reflect_limit = reflect_point;
+    white_min = white_min_point;
+    white_max = white_max_point;
+    contrast_ratio = reference_contrast_ratio;
 
     left_start_col  = reference_col;
-    right_start_col = (uint8)limit_i16((int16)reference_col, 0, col_max);
+    right_start_col = reference_col;
     left_end_col    = col_min;
     right_end_col   = col_max;
 
@@ -521,11 +516,11 @@ void Search_line(const uint8 *image)
                     temp1 = *(p + col);
                     temp2 = *(p + col - PIXEL_OFFSET);
 
-                    if (is_reflect_pixel(temp1) || is_reflect_pixel(temp2)) {
+                    if (temp1 >= reflect_limit || temp2 >= reflect_limit) {
                         continue;
                     }
 
-                    if (temp1 < white_min_point &&
+                    if (temp1 < white_min &&
                         col == left_start_col &&
                         left_start_col == reference_col) {
                         left_stop = 1;
@@ -536,17 +531,17 @@ void Search_line(const uint8 *image)
                         break;
                     }
 
-                    if (temp1 < white_min_point) {
+                    if (temp1 < white_min) {
                         left_edge_line[row] = col;
                         break;
                     }
 
-                    if (temp2 > white_max_point) {
+                    if (temp2 > white_max) {
                         continue;
                     }
 
                     if (col == col_min ||
-                        contrast_over_threshold(temp1, temp2, reference_contrast_ratio)) {
+                        contrast_over_threshold(temp1, temp2, contrast_ratio)) {
                         left_edge_line[row] = col;
                         left_start_col = (uint8)limit_i16((int16)col + SEARCH_RANGE, col, col_max);
                         left_end_col   = (uint8)limit_i16((int16)col - SEARCH_RANGE, col_min, col);
@@ -558,21 +553,10 @@ void Search_line(const uint8 *image)
         }
 
         if (!right_stop) {
-            /*
-             * 右线始终从参考列右侧搜索，并且不得落到当前左线左侧。
-             * 上一行的局部搜索窗可以跟随弯道，但不允许窗口越过这条下界。
-             */
-            right_min_col = (uint8)limit_i16((int16)left_edge_line[row] + PIXEL_OFFSET,
-                                              reference_col,
-                                              col_max);
-            if (right_start_col < right_min_col) {
-                right_start_col = right_min_col;
-            }
-
             search_time = 2;
             do {
                 if (search_time == 1) {
-                    right_start_col = right_min_col;
+                    right_start_col = reference_col;
                     right_end_col = col_max;
                 }
                 search_time--;
@@ -581,11 +565,11 @@ void Search_line(const uint8 *image)
                     temp1 = *(p + col);
                     temp2 = *(p + col + PIXEL_OFFSET);
 
-                    if (is_reflect_pixel(temp1) || is_reflect_pixel(temp2)) {
+                    if (temp1 >= reflect_limit || temp2 >= reflect_limit) {
                         continue;
                     }
 
-                    if (temp1 < white_min_point &&
+                    if (temp1 < white_min &&
                         col == right_start_col &&
                         right_start_col == reference_col) {
                         right_stop = 1;
@@ -598,26 +582,20 @@ void Search_line(const uint8 *image)
                         break;
                     }
 
-                    if (temp1 < white_min_point) {
-                        /*
-                         * 局部窗口内的黑点先触发从 right_min_col 的复搜。
-                         * 只有复搜仍找到时才落点，避免保留局部误点。
-                         */
-                        if (search_time == 0) {
-                            right_edge_line[row] = col;
-                        }
+                    if (temp1 < white_min) {
+                        right_edge_line[row] = col;
                         break;
                     }
 
-                    if (temp2 > white_max_point) {
+                    if (temp2 > white_max) {
                         continue;
                     }
 
                     if (col >= col_max - PIXEL_OFFSET ||
-                        contrast_over_threshold(temp1, temp2, reference_contrast_ratio)) {
+                        contrast_over_threshold(temp1, temp2, contrast_ratio)) {
                         right_edge_line[row] = col;
                         right_start_col = (uint8)limit_i16((int16)col - SEARCH_RANGE,
-                                                           right_min_col,
+                                                           col_min,
                                                            col);
                         right_end_col   = (uint8)limit_i16((int16)col + SEARCH_RANGE, col, col_max);
                         search_time = 0;
@@ -634,16 +612,6 @@ void Search_line(const uint8 *image)
 
     insert_val();
 
-    /* 插值后再做一次几何保护，右线不允许与左线交叉。 */
-    for (row = row_max; row >= row_min; row--) {
-        if (right_edge_line[row] <= left_edge_line[row]) {
-            right_edge_line[row] = col_max;
-        }
-        if (row == row_min) {
-            break;
-        }
-    }
-
     memcpy(left_control_line, left_edge_line, sizeof(left_edge_line));
     memcpy(right_control_line, right_edge_line, sizeof(right_edge_line));
 }
@@ -652,25 +620,22 @@ void Search_line(const uint8 *image)
 void insert_val(void)
 {
     uint8 i;
-    uint8 j;
     uint8 front_p;
     uint8 cur_p;
-    uint8 step;
+    uint16 sum;
+
+#if PIXEL_OFFSET != 2
+#error insert_val is specialized for PIXEL_OFFSET == 2
+#endif
 
     front_p = left_edge_line[SEARCH_IMAGE_H - 1];
     for (i = SEARCH_IMAGE_H - PIXEL_OFFSET - 1; i >= STOP_ROW; i -= PIXEL_OFFSET) {
         cur_p = left_edge_line[i];
+        sum = (uint16)front_p + (uint16)cur_p;
         if (cur_p >= front_p) {
-            step = (uint8)((cur_p - front_p + PIXEL_OFFSET - 1) / PIXEL_OFFSET);
-            for (j = 1; j < PIXEL_OFFSET; j++) {
-                left_edge_line[i - j + PIXEL_OFFSET] = front_p + step * j;
-            }
-        } else {
-            step = (uint8)((front_p - cur_p + PIXEL_OFFSET - 1) / PIXEL_OFFSET);
-            for (j = 1; j < PIXEL_OFFSET; j++) {
-                left_edge_line[i - j + PIXEL_OFFSET] = front_p - step * j;
-            }
+            sum++;
         }
+        left_edge_line[i + 1u] = (uint8)(sum >> 1);
         front_p = cur_p;
 
         if (i < STOP_ROW + PIXEL_OFFSET) {
@@ -681,17 +646,11 @@ void insert_val(void)
     front_p = right_edge_line[SEARCH_IMAGE_H - 1];
     for (i = SEARCH_IMAGE_H - PIXEL_OFFSET - 1; i >= STOP_ROW; i -= PIXEL_OFFSET) {
         cur_p = right_edge_line[i];
+        sum = (uint16)front_p + (uint16)cur_p;
         if (cur_p >= front_p) {
-            step = (uint8)((cur_p - front_p + PIXEL_OFFSET - 1) / PIXEL_OFFSET);
-            for (j = 1; j < PIXEL_OFFSET; j++) {
-                right_edge_line[i - j + PIXEL_OFFSET] = front_p + step * j;
-            }
-        } else {
-            step = (uint8)((front_p - cur_p + PIXEL_OFFSET - 1) / PIXEL_OFFSET);
-            for (j = 1; j < PIXEL_OFFSET; j++) {
-                right_edge_line[i - j + PIXEL_OFFSET] = front_p - step * j;
-            }
+            sum++;
         }
+        right_edge_line[i + 1u] = (uint8)(sum >> 1);
         front_p = cur_p;
 
         if (i < STOP_ROW + PIXEL_OFFSET) {
@@ -709,61 +668,21 @@ void Fitted_Midline(void)
     }
 }
 
-/* 分段计算中线平均位置，给速度规划和舵机控制提供整体偏移。 */
-void Error_sum(void)
-{
-    uint8 i;
-    int32 err1 = 0;
-    int32 err2 = 0;
-    int32 err3 = 0;
-
-    for (i = 8; i < 28; i++) {
-        err1 += mid_line[i];
-    }
-    err1 /= 20;
-
-    for (i = 28; i < 88; i++) {
-        err2 += mid_line[i];
-    }
-    err2 /= 60;
-
-    for (i = 89; i < 111; i++) {
-        err3 += mid_line[i];
-    }
-    err3 /= 22;
-
-    err_sum = (err1 * 20 + err2 * 30 + err3 * 60) / 100;
-}
-
-/* 根据左右边线是否连续，切换直道和转弯时的舵机 P 参数。 */
-void straightAccelerate(void)
-{
-    uint8 isContinue_left;
-    uint8 isContinue_right;
-
-    isContinue_left = isContinueLine(left_edge_line);
-    isContinue_right = isContinueLine(right_edge_line);
-
-    if (isContinue_left && isContinue_right) {
-        servo_pidf.kp = SERVO_KP_STRAIGHT_Q10;
-    } else {
-        servo_pidf.kp = SERVO_KP_TURN_Q10;
-    }
-}
-
 /* 单帧图像处理总入口：阈值、寻线、圆环、中线和目标识别都在这里更新。 */
-void Image_OldStyle_Process(void)
+void Image_OldStyle_Process(uint8 target_detect_enable,
+                            uint8 inhibit_ring)
 {
     const uint8 *img;
+#if IMAGE_OTSU_ENABLE
     static uint8 otsu_frame_count = 0;
-
-#if IMAGE_COPY_ENABLE
-    memcpy(image_copy, mt9v03x_image, sizeof(image_copy));
 #endif
+    static uint8 target_find_frame_count = 0;
+    static uint8 avoidance_was_inhibiting = 0;
+    uint8 avoidance_inhibiting;
 
     img = &mt9v03x_image[0][0];
 
-    /* 光照阈值变化远慢于边线，每隔几帧更新可减少直方图和除法开销。 */
+#if IMAGE_OTSU_ENABLE
     if (!otsu_frame_count) {
         th = otsuThreshold((uint8 *)img);
     }
@@ -771,33 +690,52 @@ void Image_OldStyle_Process(void)
     if (otsu_frame_count >= OTSU_FRAME_DIV) {
         otsu_frame_count = 0;
     }
+#else
+    /* 固定曝光下直接使用底部参考区，取消直方图和 32 位除法峰值。 */
+    th = 0;
+#endif
     get_reference_point(img);
     Search_reference_col(img);
     Search_line(img);
 
-    /* 圆环路段边线会断开或跳变，这里统一交给 Ring() 补线。 */
+    /* 避障期间保留原始寻线，但不允许圆环状态继续转移。 */
+    avoidance_inhibiting = inhibit_ring ? 1u : 0u;
     zebra_flag = 0;
-    Ring();
+    if (avoidance_inhibiting) {
+        if (!avoidance_was_inhibiting) {
+            Ring_Over();
+        }
+    } else {
+        Ring();
+    }
+    avoidance_was_inhibiting = avoidance_inhibiting;
 
     Fitted_Midline();
 
-    /* 识别到目标后，tar_flag 会在 15 ms 中断里控制激光开关。 */
+    /* 关闭检测或进入特殊路段时立即清掉旧目标，不能留到下一检测帧。 */
     tar_th = white_min_point;
-    pre_find_flag = 0;
-    pre_find_offset = 0;
-    tar_flag = 0;
-    aim_ready_flag = 0;
-    center_offset = 0;
-    top_d = 0;
-    under_d = 0;
-    l_d = 0;
-    r_d = 0;
-    debug_stage = 0;
-
-#if TARGET_DETECT_ENABLE
-    if (current_step >= 2) {
+    if (!target_detect_enable || current_step >= 2) {
+        target_find_frame_count = 0;
+        pre_find_flag = 0;
+        pre_find_offset = 0;
+        tar_flag = 0;
+        aim_ready_flag = 0;
+        center_offset = 0;
+        top_d = 0;
+        under_d = 0;
+        l_d = 0;
+        r_d = 0;
+        debug_stage = 0;
         return;
     }
-    Target_find();
-#endif
+
+    /* 靶点结果在跳过帧保留，避免 15 ms 激光任务看到隔帧闪烁。 */
+    if (!target_find_frame_count) {
+        Pre_Scan();
+        Target_find(pre_find_offset);
+    }
+    target_find_frame_count++;
+    if (target_find_frame_count >= TARGET_FIND_FRAME_DIV) {
+        target_find_frame_count = 0;
+    }
 }

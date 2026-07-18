@@ -11,6 +11,13 @@ extern volatile int16 target_speed_r;
 extern volatile int16 motor_pwm_l;
 extern volatile int16 motor_pwm_r;
 
+typedef enum
+{
+    MOTOR_SAFETY_NORMAL = 0,
+    MOTOR_SAFETY_CAP,
+    MOTOR_SAFETY_STOP
+} motor_safety_mode_enum;
+
 /* 左右电机接线。 */
 #define DIR_L              IO_P52
 #define PWM_L              PWMD_CH1_P50
@@ -20,7 +27,7 @@ extern volatile int16 motor_pwm_r;
 
 #define MOTOR_FREQ         17000
 #define MOTOR_MAX_LIMIT    7500
-#define MOTOR_MIN_EFFECTIVE_PWM  1500
+#define MOTOR_MIN_EFFECTIVE_PWM  2500
 #define MOTOR_PWM_RISE_STEP      250
 #define MOTOR_PWM_FALL_STEP      400
 
@@ -33,12 +40,13 @@ extern volatile int16 motor_pwm_r;
 #define ENCODER_DIR_DIR_2      PWMC_ENCODER_CH2P_P42
 
 /* 这里的速度单位是 15 ms 内读到的编码器脉冲数。 */
-#define MAX_SPEED          180
-#define MAX_SPEED_TUNE_MAX 220
-#define MIN_SPEED          172
+#define MAX_SPEED          300
+#define MAX_SPEED_TUNE_MAX 700
+#define MIN_SPEED          222
 #define BASE_TARGET_SPEED  175
 #define WHEEL_TARGET_MIN   165
 #define TURN_DIFF_MAX      8
+#define MOTOR_SPEED_GATE_MARGIN  80
 
 /* 运行时最低目标速度，可通过 WiFi 调参修改。 */
 extern volatile int16 min_speed;
@@ -47,6 +55,12 @@ extern volatile int16 max_speed;
 /* 原子更新或读取 WiFi 使用的最低/最高目标速度。 */
 void Motor_Set_Speed_Range(int16 speed_min, int16 speed_max);
 void Motor_Get_Speed_Range(int16 *speed_min, int16 *speed_max);
+/* Atomically select normal, speed-capped, or hard-stop operation. */
+void Motor_Set_Safety_Command(motor_safety_mode_enum mode, int16 cap);
+/* Read whether the independent manual hard-stop command is currently latched. */
+uint8 Motor_Is_Force_Stopped(void);
+/* Latch STOP, clear both PI controllers, and write zero PWM immediately. */
+void Motor_Force_Stop_Reset(void);
 
 /* 初始化电机 PWM 和方向引脚。 */
 void Motor_Init(void);
