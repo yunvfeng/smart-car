@@ -20,7 +20,7 @@ extern uint8 key_anlysis2;
 extern uint8 key_anlysis3;
 
 /* 圆环状态机入口，每帧调用一次。 */
-void Ring(void);
+void Ring(uint8 visual_avoid_enable);
 /* 在控制线之间补一条斜线。 */
 void draw_line(uint8 left_point, uint8 right_point, uint8 to_flag);
 /* 连接同一侧控制线上的上下两个点。 */

@@ -1,5 +1,6 @@
 #include "ring.h"
 #include "servo.h"
+#include "visual_avoidance.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -12,9 +13,10 @@
 #define RING_IN_LEFT_TOP_COL           15u
 #define RING_OUT_LEFT_TOP_COL          10u
 #define RING_MIRROR_COL(col)           ((uint8)(SEARCH_IMAGE_W - 1u - (col)))
-#define RING_IN_RIGHT_TOP_COL          172u
-#define RING_OUT_RIGHT_TOP_COL         177u
-#define RING_IN_OUT_BOTTOM_BASE_COL    94u
+#define RING_IN_RIGHT_TOP_COL          170u
+#define RING_OUT_RIGHT_TOP_COL         170u
+#define RING_LEFT_IN_OUT_BOTTOM_BASE_COL   141u
+#define RING_RIGHT_IN_OUT_BOTTOM_BASE_COL  10u
 #define RING_RIGHT_TURN_BOTTOM_COL     30u
 #define RING_BACK_TOP_ROW              40u
 #define RIGHT_IN_AUTO_OUT_FRAMES       35u
@@ -233,8 +235,10 @@ static void Ring_Keep_Right_Control_At_Edge(void)
  * 圆环状态机入口。
  * 左右分发只在这里完成一次，避免先调用“通用函数”，再在函数内部二次跳转到右环函数。
  */
-void Ring(void)
+void Ring(uint8 visual_avoid_enable)
 {
+    uint8 avoid_result;
+
     /* 除预判阶段外，必须且只能锁定一个圆环方向。 */
     if (current_step != RING_STEP_PRE_MEET) {
         if (((ring_l != 0u) + (ring_r != 0u)) != 1u) {
@@ -251,6 +255,16 @@ void Ring(void)
         break;
 
     case RING_STEP_FIRST_MEETING:
+        /* Obstacles and rings share PRE_MEET; FIRST must reject obstacles first. */
+        avoid_result = VisualAvoid_ProcessFrame(visual_avoid_enable);
+        if (avoid_result == VISUAL_AVOID_RESULT_HOLD) {
+            break;
+        }
+        if (avoid_result == VISUAL_AVOID_RESULT_DONE) {
+            Ring_Over();
+            break;
+        }
+
         if (ring_r) {
             Ring_First_meeting_Right();
         } else {
@@ -504,7 +518,7 @@ void Ring_First_meeting(void)
         return;
     }
 
-    for (i = turnPoint - 4; i > 4; i -= 4) {
+    for (i = turnPoint - 4; i >= STOP_ROW + 4u; i -= 4) {
         under = left_edge_line[i + 4];
         mid = left_edge_line[i];
         top = left_edge_line[i - 4];
@@ -652,7 +666,7 @@ void Ring_Ring_Ring(void)
          (int16)right_edge_line[minPoint + PIXEL_OFFSET] - (int16)right_edge_line[minPoint] < 30) ||
         minPoint < 40)) {
         right_control_line[SEARCH_IMAGE_H - 1] =
-            Ring_Adjust_Bottom_Anchor(RING_IN_OUT_BOTTOM_BASE_COL,
+            Ring_Adjust_Bottom_Anchor(RING_LEFT_IN_OUT_BOTTOM_BASE_COL,
                                       left_edge_line[SEARCH_IMAGE_H - 1]);
         left_control_line[0] = RING_IN_LEFT_TOP_COL;
         right_control_line[0] = RING_IN_LEFT_TOP_COL;
@@ -683,7 +697,7 @@ void Ring_Out(void)
 {
     Ring_Keep_Left_Control_At_Edge();
     right_control_line[SEARCH_IMAGE_H - 1] =
-        Ring_Adjust_Bottom_Anchor(RING_IN_OUT_BOTTOM_BASE_COL,
+        Ring_Adjust_Bottom_Anchor(RING_LEFT_IN_OUT_BOTTOM_BASE_COL,
                                   left_edge_line[SEARCH_IMAGE_H - 1]);
     left_control_line[0] = RING_OUT_LEFT_TOP_COL;
     right_control_line[0] = RING_OUT_LEFT_TOP_COL;
@@ -740,7 +754,7 @@ static void Ring_First_meeting_Right(void)
         return;
     }
 
-    for (i = turnPoint - 4; i > 4; i -= 4) {
+    for (i = turnPoint - 4; i >= STOP_ROW + 4u; i -= 4) {
         under = right_edge_line[i + 4];
         mid = right_edge_line[i];
         top = right_edge_line[i - 4];
@@ -877,7 +891,7 @@ static void Ring_Ring_Ring_Right(void)
     }
 
     left_control_line[SEARCH_IMAGE_H - 1] =
-        Ring_Adjust_Bottom_Anchor(RING_IN_OUT_BOTTOM_BASE_COL,
+        Ring_Adjust_Bottom_Anchor(RING_RIGHT_IN_OUT_BOTTOM_BASE_COL,
                                   right_edge_line[SEARCH_IMAGE_H - 1]);
     left_control_line[0] = RING_IN_RIGHT_TOP_COL;
     right_control_line[0] = RING_IN_RIGHT_TOP_COL;
@@ -893,7 +907,7 @@ static void Ring_Out_Right(void)
 {
     Ring_Keep_Right_Control_At_Edge();
     left_control_line[SEARCH_IMAGE_H - 1] =
-        Ring_Adjust_Bottom_Anchor(RING_IN_OUT_BOTTOM_BASE_COL,
+        Ring_Adjust_Bottom_Anchor(RING_RIGHT_IN_OUT_BOTTOM_BASE_COL,
                                   right_edge_line[SEARCH_IMAGE_H - 1]);
     left_control_line[0] = RING_OUT_RIGHT_TOP_COL;
     right_control_line[0] = RING_OUT_RIGHT_TOP_COL;

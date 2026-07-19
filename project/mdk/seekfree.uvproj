@@ -635,11 +635,6 @@
               <FilePath>..\..\libraries\zf_device\zf_device_dl1a.h</FilePath>
             </File>
             <File>
-              <FileName>zf_device_dl1b.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\libraries\zf_device\zf_device_dl1b.h</FilePath>
-            </File>
-            <File>
               <FileName>zf_device_wireless_uart.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\libraries\zf_device\zf_device_wireless_uart.c</FilePath>
@@ -653,11 +648,6 @@
               <FileName>zf_device_dl1a.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\libraries\zf_device\zf_device_dl1a.c</FilePath>
-            </File>
-            <File>
-              <FileName>zf_device_dl1b.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\libraries\zf_device\zf_device_dl1b.c</FilePath>
             </File>
             <File>
               <FileName>zf_device_imu660rb.c</FileName>
@@ -880,14 +870,14 @@
               <FilePath>..\code\servo.h</FilePath>
             </File>
             <File>
-              <FileName>tof_avoidance.c</FileName>
+              <FileName>visual_avoidance.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\code\tof_avoidance.c</FilePath>
+              <FilePath>..\code\visual_avoidance.c</FilePath>
             </File>
             <File>
-              <FileName>tof_avoidance.h</FileName>
+              <FileName>visual_avoidance.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\code\tof_avoidance.h</FilePath>
+              <FilePath>..\code\visual_avoidance.h</FilePath>
             </File>
             <File>
               <FileName>assistant_debug.c</FileName>

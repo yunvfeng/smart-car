@@ -60,12 +60,66 @@
 static uint8 dl1b_init_flag = 0;
 uint8 dl1b_finsh_flag = 0;
 uint16 dl1b_distance_mm = 8192;
+uint8 dl1b_data_ready_flag = 0;
+uint8 dl1b_communication_ok = 0;
 
 #if (DL1B_USE_INTERFACE==SOFT_IIC) 
 	static soft_iic_info_struct dl1b_iic_struct;
-	#define dl1b_transfer_8bit_array(tdata, tlen, rdata, rlen)      (soft_iic_transfer_8bit_array(&dl1b_iic_struct, (tdata), (tlen), (rdata), (rlen)))
+	void soft_iic_start (soft_iic_info_struct *soft_iic_obj);
+	void soft_iic_stop (soft_iic_info_struct *soft_iic_obj);
+	uint8 soft_iic_send_data (soft_iic_info_struct *soft_iic_obj, const uint8 dat);
+	uint8 soft_iic_read_data (soft_iic_info_struct *soft_iic_obj, uint8 ack);
+	static uint8 dl1b_transfer_8bit_array_checked (const uint8 *write_data,
+	                                                uint16 write_len,
+	                                                uint8 *read_data,
+	                                                uint16 read_len)
+	{
+		soft_iic_start(&dl1b_iic_struct);
+		if(!soft_iic_send_data(&dl1b_iic_struct, dl1b_iic_struct.addr << 1))
+		{
+			soft_iic_stop(&dl1b_iic_struct);
+			return 0;
+		}
+		while(write_len --)
+		{
+			if(!soft_iic_send_data(&dl1b_iic_struct, *write_data ++))
+			{
+				soft_iic_stop(&dl1b_iic_struct);
+				return 0;
+			}
+		}
+
+		if(read_len)
+		{
+			soft_iic_start(&dl1b_iic_struct);
+			if(!soft_iic_send_data(&dl1b_iic_struct,
+			                       (dl1b_iic_struct.addr << 1) | 0x01))
+			{
+				soft_iic_stop(&dl1b_iic_struct);
+				return 0;
+			}
+			while(read_len --)
+			{
+				*read_data ++ = soft_iic_read_data(&dl1b_iic_struct,
+				                                   read_len == 0);
+			}
+		}
+		soft_iic_stop(&dl1b_iic_struct);
+		return 1;
+	}
+	#define dl1b_transfer_8bit_array(tdata, tlen, rdata, rlen)      (dl1b_transfer_8bit_array_checked((tdata), (tlen), (rdata), (rlen)))
 #elif (DL1B_USE_INTERFACE==HARDWARE_IIC)
-	#define dl1b_transfer_8bit_array(tdata, tlen, rdata, rlen)      (iic_transfer_8bit_array(DL1B_IIC, DL1B_DEV_ADDR, (tdata), (tlen), (rdata), (rlen)))
+	static uint8 dl1b_transfer_8bit_array_checked (const uint8 *write_data,
+	                                                uint16 write_len,
+	                                                uint8 *read_data,
+	                                                uint16 read_len)
+	{
+		iic_transfer_8bit_array(DL1B_IIC, DL1B_DEV_ADDR,
+		                         write_data, write_len,
+		                         read_data, read_len);
+		return 1;
+	}
+	#define dl1b_transfer_8bit_array(tdata, tlen, rdata, rlen)      (dl1b_transfer_8bit_array_checked((tdata), (tlen), (rdata), (rlen)))
 #endif
 
 /* dl1b_config_file sets GPIO_HV_MUX__CTRL bit 4: data ready is active low. */
@@ -80,6 +134,13 @@ uint16 dl1b_distance_mm = 8192;
 //-------------------------------------------------------------------------------------------------------------------
 void dl1b_get_distance (void)
 {
+    uint8 clear_buffer[3];
+    uint8 result_read_ok = 1;
+
+    dl1b_finsh_flag = 0;
+    dl1b_data_ready_flag = 0;
+    dl1b_communication_ok = 0;
+
     if(dl1b_init_flag)
     {
         uint8 data_buffer[3];
@@ -87,31 +148,46 @@ void dl1b_get_distance (void)
         
         data_buffer[0] = DL1B_GPIO__TIO_HV_STATUS >> 8;
         data_buffer[1] = DL1B_GPIO__TIO_HV_STATUS & 0xFF;
-        dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1);
+        if(!dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1))
+        {
+            dl1b_distance_mm = 8192;
+            return;
+        }
         
         if(DL1B_DATA_READY_LEVEL == (data_buffer[2] & 0x01))
         {
+            dl1b_data_ready_flag = 1;
             data_buffer[0] = DL1B_RESULT__RANGE_STATUS >> 8;
             data_buffer[1] = DL1B_RESULT__RANGE_STATUS & 0xFF;
-            dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1);
+            if(!dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1))
+            {
+                dl1b_distance_mm = 8192;
+                result_read_ok = 0;
+            }
             
-            if(0x09 == (data_buffer[2] & 0x1F))
+            else if(0x09 == (data_buffer[2] & 0x1F))
             {
                 data_buffer[0] = DL1B_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0 >> 8;
                 data_buffer[1] = DL1B_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0 & 0xFF;
-                dl1b_transfer_8bit_array(data_buffer, 2, data_buffer, 2);
-                dl1b_distance_temp = data_buffer[0];
-                dl1b_distance_temp = (dl1b_distance_temp << 8) | data_buffer[1];
-                
-                if(dl1b_distance_temp > 4000 || dl1b_distance_temp < 0)
+                if(!dl1b_transfer_8bit_array(data_buffer, 2, data_buffer, 2))
                 {
                     dl1b_distance_mm = 8192;
-                    dl1b_finsh_flag = 0;
+                    result_read_ok = 0;
                 }
                 else
                 {
-                    dl1b_distance_mm = dl1b_distance_temp;
-                    dl1b_finsh_flag = 1;
+                    dl1b_distance_temp = data_buffer[0];
+                    dl1b_distance_temp = (dl1b_distance_temp << 8) | data_buffer[1];
+
+                    if(dl1b_distance_temp > 4000 || dl1b_distance_temp < 0)
+                    {
+                        dl1b_distance_mm = 8192;
+                    }
+                    else
+                    {
+                        dl1b_distance_mm = dl1b_distance_temp;
+                        dl1b_finsh_flag = 1;
+                    }
                 }
             }
             else
@@ -120,15 +196,25 @@ void dl1b_get_distance (void)
                 dl1b_finsh_flag = 0;
             }
 
-            data_buffer[0] = DL1B_SYSTEM__INTERRUPT_CLEAR >> 8;
-            data_buffer[1] = DL1B_SYSTEM__INTERRUPT_CLEAR & 0xFF;
-            data_buffer[2] = 0x01;
-            dl1b_transfer_8bit_array(data_buffer, 3, data_buffer, 0);// clear Interrupt
+            clear_buffer[0] = DL1B_SYSTEM__INTERRUPT_CLEAR >> 8;
+            clear_buffer[1] = DL1B_SYSTEM__INTERRUPT_CLEAR & 0xFF;
+            clear_buffer[2] = 0x01;
+            if(!dl1b_transfer_8bit_array(clear_buffer, 3, clear_buffer, 0))
+            {
+                /* A failed clear leaves the result latch stuck; retry once. */
+                if(!dl1b_transfer_8bit_array(clear_buffer, 3, clear_buffer, 0))
+                {
+                    dl1b_distance_mm = 8192;
+                    dl1b_finsh_flag = 0;
+                    return;
+                }
+            }
+            dl1b_communication_ok = result_read_ok;
         }
         else
         {
             dl1b_distance_mm = 8192;
-            dl1b_finsh_flag = 0;
+            dl1b_communication_ok = 1;
         }
     }
 }
@@ -163,6 +249,8 @@ uint8 dl1b_init (void)
     dl1b_init_flag = 0;
     dl1b_distance_mm = 8192;
     dl1b_finsh_flag = 0;
+    dl1b_data_ready_flag = 0;
+    dl1b_communication_ok = 0;
 
 #if (DL1B_USE_INTERFACE==SOFT_IIC)        
     soft_iic_init(&dl1b_iic_struct, DL1B_DEV_ADDR, DL1B_SOFT_IIC_DELAY, DL1B_SCL_PIN, DL1B_SDA_PIN);
@@ -187,7 +275,11 @@ uint8 dl1b_init (void)
         
         data_buffer[0] = DL1B_FIRMWARE__SYSTEM_STATUS >> 8;
         data_buffer[1] = DL1B_FIRMWARE__SYSTEM_STATUS & 0xFF;
-        dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1);
+        if(!dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1))
+        {
+            return_state = 1;
+            break;
+        }
         return_state = (0x01 == (data_buffer[2] & 0x01)) ? (0) : (1);
         
         if(1 == return_state)
@@ -199,13 +291,21 @@ uint8 dl1b_init (void)
         data_buffer[1] = DL1B_I2C_SLAVE__DEVICE_ADDRESS & 0xFF;
         
         memcpy(&data_buffer[2], (uint8 *)dl1b_config_file, sizeof(dl1b_config_file));
-        dl1b_transfer_8bit_array(data_buffer, 2 + sizeof(dl1b_config_file), data_buffer, 0);
+        if(!dl1b_transfer_8bit_array(data_buffer, 2 + sizeof(dl1b_config_file), data_buffer, 0))
+        {
+            return_state = 1;
+            break;
+        }
         
         while(1)
         {
             data_buffer[0] = DL1B_GPIO__TIO_HV_STATUS >> 8;
             data_buffer[1] = DL1B_GPIO__TIO_HV_STATUS & 0xFF;
-            dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1);
+            if(!dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1))
+            {
+                return_state = 1;
+                break;
+            }
             
             if(0x00 == (data_buffer[2] & 0x01))
             {
@@ -228,6 +328,7 @@ uint8 dl1b_init (void)
         }
 
         dl1b_init_flag = 1;
+        dl1b_communication_ok = 1;
         
     #if DL1B_INT_ENABLE
         exti_init(DL1B_INT_PIN, EXTI_TRIGGER_FALLING);
@@ -243,6 +344,8 @@ uint8 dl1b_init (void)
         dl1b_init_flag = 0;
         dl1b_distance_mm = 8192;
         dl1b_finsh_flag = 0;
+        dl1b_data_ready_flag = 0;
+        dl1b_communication_ok = 0;
     }
 
     return return_state;

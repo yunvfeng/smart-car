@@ -8,7 +8,7 @@
 #include "motor.h"
 #include "pid.h"
 #include "ring.h"
-#include "tof_avoidance.h"
+#include "visual_avoidance.h"
 
 #define ASSISTANT_PARAM_MIN_CHANNEL     1u
 #define ASSISTANT_PARAM_MAX_CHANNEL     SEEKFREE_ASSISTANT_SET_PARAMETR_COUNT
@@ -20,7 +20,8 @@
 
 static uint8 assistant_image_cnt = 0;
 static uint8 assistant_scope_cnt = 0;
-static uint8 assistant_tof_avoid_enabled = 0;
+static uint8 assistant_visual_avoid_enabled = 0;
+static uint8 assistant_launch_request = 0;
 static volatile uint16 assistant_time_100us = 0;
 static volatile uint16 assistant_image_process_time_100us = 0;
 
@@ -40,18 +41,14 @@ static const char *Assistant_Ring_State_Name(void)
     }
 }
 
-static const char *Assistant_Tof_Avoid_State_Name(uint8 enabled,
-                                                   uint8 valid,
-                                                   uint8 state)
+static const char *Assistant_Visual_Avoid_State_Name(uint8 enabled,
+                                                      uint8 detected,
+                                                      uint8 active)
 {
     if (!enabled) return "OFF";
-    if (!valid) return "INV";
-    switch (state) {
-    case TOF_AVOID_STATE_FOLLOW: return "FOL";
-    case TOF_AVOID_STATE_AVOID: return "AVD";
-    default:
-        return "ERR";
-    }
+    if (active) return "AVD";
+    if (detected) return "DET";
+    return "SCN";
 }
 
 static void Assistant_Draw_Image_Point(uint8 x, uint8 y, uint8 gray)
@@ -79,7 +76,10 @@ static void Assistant_Draw_Image_Char(uint8 x, uint8 y, char dat)
         temp = ascii_font_8x16[dat - 32][row];
         p = &mt9v03x_image[y + row][x];
         for (col = 0; col < 8; col++) {
-            *p++ = (temp & 0x01) ? 255 : 0;
+            if (temp & 0x01) {
+                *p = 255;
+            }
+            p++;
             temp >>= 1;
         }
     }
@@ -112,19 +112,20 @@ static void Assistant_Draw_Target_Cross(void)
 static void Assistant_Draw_Status_Overlay(void)
 {
     uint8 x;
-    uint8 tof_valid;
-    uint8 avoid_state;
+    uint8 obstacle_detected;
+    uint8 avoid_active;
 
-    TofAvoid_GetDebug(&tof_valid, NULL, &avoid_state, NULL, NULL);
+    VisualAvoid_GetDebug(&obstacle_detected, &avoid_active,
+                         NULL, NULL, NULL);
 
     x = Assistant_Draw_Image_String(2u, 2u, "R:");
     Assistant_Draw_Image_String(x, 2u, Assistant_Ring_State_Name());
-    x = Assistant_Draw_Image_String(2u, 18u, "T:");
+    x = Assistant_Draw_Image_String(2u, 18u, "V:");
     Assistant_Draw_Image_String(x, 18u,
-                                Assistant_Tof_Avoid_State_Name(
-                                    assistant_tof_avoid_enabled,
-                                    tof_valid,
-                                    avoid_state));
+                                Assistant_Visual_Avoid_State_Name(
+                                    assistant_visual_avoid_enabled,
+                                    obstacle_detected,
+                                    avoid_active));
     Assistant_Draw_Target_Cross();
 }
 #endif
@@ -182,7 +183,8 @@ static void Assistant_Load_Default_Params(void)
         (float)PID_Get_Servo_Gyro_Gain();
     seekfree_assistant_parameter[ASSISTANT_PARAM_MOTOR_KP - 1] =
         (float)pid_lf.kp;
-    seekfree_assistant_parameter[ASSISTANT_PARAM_MOTOR_STOP - 1] = 1.0f;
+    seekfree_assistant_parameter[ASSISTANT_PARAM_MOTOR_STOP - 1] =
+        Motor_Is_Force_Stopped() ? 2.0f : 1.0f;
     seekfree_assistant_parameter[ASSISTANT_PARAM_MIN_SPEED - 1] =
         (float)speed_min;
     seekfree_assistant_parameter[ASSISTANT_PARAM_MAX_SPEED - 1] =
@@ -231,15 +233,20 @@ static void Assistant_Apply_Param(uint8 channel, float value)
         if (fixed_value == 2) {
             interrupt_state = EA;
             EA = 0;
+            assistant_launch_request = 0u;
             Motor_Set_Safety_Command(MOTOR_SAFETY_STOP, 0);
             EA = interrupt_state;
             seekfree_assistant_parameter[ASSISTANT_PARAM_MOTOR_STOP - 1] = 2.0f;
-        } else {
+        } else if (fixed_value == 0 || fixed_value == 1) {
             interrupt_state = EA;
             EA = 0;
             Motor_Set_Safety_Command(MOTOR_SAFETY_NORMAL, 0);
+            assistant_launch_request = 1u;
             EA = interrupt_state;
             seekfree_assistant_parameter[ASSISTANT_PARAM_MOTOR_STOP - 1] = 1.0f;
+        } else {
+            seekfree_assistant_parameter[ASSISTANT_PARAM_MOTOR_STOP - 1] =
+                Motor_Is_Force_Stopped() ? 2.0f : 1.0f;
         }
         break;
 
@@ -301,12 +308,12 @@ static void Assistant_Send_Scope(void)
     int16 mid_error;
     int16 servo_error;
     int16 gyro_z;
-    uint16 tof_distance_mm;
+    uint8 obstacle_lower_row;
 
     mid_error = (int16)mid_line[controlReferenceLine] - (int16)Mid_Col;
     servo_error = (int16)Out_servo - (int16)SERVO_DUTY_MID;
     Gyro_Get_Debug(NULL, &gyro_z, NULL);
-    TofAvoid_GetDebug(NULL, &tof_distance_mm, NULL, NULL, NULL);
+    VisualAvoid_GetDebug(NULL, NULL, NULL, &obstacle_lower_row, NULL);
 
     seekfree_assistant_oscilloscope_data.channel_num = SEEKFREE_ASSISTANT_SET_OSCILLOSCOPE_COUNT;
     seekfree_assistant_oscilloscope_data.dat[0] = (float)mid_error;
@@ -314,7 +321,7 @@ static void Assistant_Send_Scope(void)
     seekfree_assistant_oscilloscope_data.dat[2] = (float)encoder_data_l;
     seekfree_assistant_oscilloscope_data.dat[3] = (float)encoder_data_r;
     seekfree_assistant_oscilloscope_data.dat[4] = (float)gyro_z;
-    seekfree_assistant_oscilloscope_data.dat[5] = (float)tof_distance_mm;
+    seekfree_assistant_oscilloscope_data.dat[5] = (float)obstacle_lower_row;
     seekfree_assistant_oscilloscope_data.dat[6] = (float)motor_pwm_l;
     seekfree_assistant_oscilloscope_data.dat[7] = (float)motor_pwm_r;
 
@@ -361,9 +368,9 @@ void Assistant_Debug_Task(void)
 #endif
 }
 
-void Assistant_Debug_On_Frame(uint8 tof_avoid_enabled)
+void Assistant_Debug_On_Frame(uint8 visual_avoid_enabled)
 {
-    assistant_tof_avoid_enabled = tof_avoid_enabled ? 1u : 0u;
+    assistant_visual_avoid_enabled = visual_avoid_enabled ? 1u : 0u;
     Assistant_Debug_Task();
 
 #if ASSISTANT_DEBUG_SCOPE_ENABLE
@@ -377,6 +384,19 @@ void Assistant_Debug_On_Frame(uint8 tof_avoid_enabled)
         Assistant_Send_Camera();
     }
 #endif
+}
+
+uint8 Assistant_Debug_Take_Launch_Request(void)
+{
+    uint8 request;
+    bit interrupt_state;
+
+    interrupt_state = EA;
+    EA = 0;
+    request = assistant_launch_request;
+    assistant_launch_request = 0u;
+    EA = interrupt_state;
+    return request;
 }
 
 void Assistant_Debug_Send_Now(void)
@@ -414,9 +434,14 @@ void Assistant_Debug_Task(void)
 {
 }
 
-void Assistant_Debug_On_Frame(uint8 tof_avoid_enabled)
+void Assistant_Debug_On_Frame(uint8 visual_avoid_enabled)
 {
-    (void)tof_avoid_enabled;
+    (void)visual_avoid_enabled;
+}
+
+uint8 Assistant_Debug_Take_Launch_Request(void)
+{
+    return 0u;
 }
 
 void Assistant_Debug_Send_Now(void)

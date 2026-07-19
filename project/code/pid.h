@@ -9,14 +9,14 @@
 #define PID_Q_SHIFT             10
 #define PID_Q_ONE               (1L << PID_Q_SHIFT)
 
-#define SERVO_KP_TURN_Q10       4800L
+#define SERVO_KP_TURN_Q10       6575L
 #define SERVO_KP_STRAIGHT_Q10   2000L
-#define SERVO_KD_Q10            400L
+#define SERVO_KD_Q10            498L
 #define SERVO_KF_Q10            200L
 #define SERVO_KP2_Q10           0L
-#define SERVO_KG_Q10            50L
+#define SERVO_KG_Q10            22L
 
-#define MOTOR_KP_Q10            1024L
+#define MOTOR_KP_Q10            654L
 #define MOTOR_KI_Q10            150L
 #define MOTOR_KD_Q10            0L
 

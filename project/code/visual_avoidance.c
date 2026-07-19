@@ -3,388 +3,444 @@
 #include "image.h"
 #include "ring.h"
 #include "servo.h"
-#include "motor.h"
 
-#define VISUAL_AVOID_RING_NORM          0u
-#define VISUAL_AVOID_LANE_MARGIN        8u
-#define VISUAL_AVOID_CHECK_ROW_OFFSET   6u
-#define VISUAL_AVOID_CHECK_ROW_MAX      110u
-#define VISUAL_AVOID_MATCH_TOLERANCE    12u
-#define VISUAL_AVOID_HISTORY_MASK       0x07u
-#define VISUAL_AVOID_CLEAR_FRAMES       2u
+#define VISUAL_AVOID_STATE_SCAN             0u
+#define VISUAL_AVOID_STATE_ACTIVE           1u
+#define VISUAL_AVOID_STATE_RECENTER         2u
 
-static volatile uint8 visual_avoid_state = VISUAL_AVOID_STATE_FOLLOW;
+#define VISUAL_AVOID_EXACT_BOTTOM_ROW       109u
+#define VISUAL_AVOID_COARSE_FIRST_ROW       107u
+#define VISUAL_AVOID_COARSE_STEP            4u
+#define VISUAL_AVOID_COARSE_TOP_ROW         27u
+#define VISUAL_AVOID_LOWER_COARSE_JUMP_PX   8
+#define VISUAL_AVOID_UPPER_COARSE_JUMP_PX   6
+#define VISUAL_AVOID_RIGHT_STEP_MAX         4
+#define VISUAL_AVOID_VERTICAL_ROWS_MIN      8u
+#define VISUAL_AVOID_VERTICAL_ROWS_MAX      40u
+#define VISUAL_AVOID_LANE_WIDTH_MIN         20u
+
+#define VISUAL_AVOID_POINT_VALID(row, left, right)                         \
+    ((row) > lost_left && (row) > lost_right &&                            \
+     (left) != 0u && (right) != SEARCH_IMAGE_W - 1u &&                     \
+     (left) < (right) && (uint8)((right) - (left)) >= VISUAL_AVOID_LANE_WIDTH_MIN)
+
+static volatile uint8 visual_avoid_state = VISUAL_AVOID_STATE_SCAN;
+static volatile uint8 visual_avoid_done = 0u;
 static volatile uint16 visual_avoid_travel = 0u;
 static volatile uint8 visual_avoid_recenter_ticks = 0u;
-static volatile uint8 visual_avoid_recenter_ready = 0u;
-static volatile int8 visual_avoid_bias = 0;
-static volatile uint8 visual_avoid_resume_cap = 0u;
 
-static uint8 visual_avoid_hit_history = 0u;
-static uint8 visual_avoid_last_hit_age = 3u;
-static uint8 visual_avoid_last_center = 0u;
-static uint8 visual_avoid_last_bottom = 0u;
-static volatile uint8 visual_avoid_clear_frames = 0u;
+static uint8 visual_avoid_detected = 0u;
+static uint8 visual_avoid_upper_row = 0u;
+static uint8 visual_avoid_lower_row = 0u;
+static uint8 visual_avoid_lower_col = 0u;
 
-static uint8 visual_avoid_debug_valid = 0u;
-static uint8 visual_avoid_debug_left = 0u;
-static uint8 visual_avoid_debug_right = 0u;
-static uint8 visual_avoid_debug_bottom = 0u;
-
-static uint8 VisualAvoid_AbsDiffU8(uint8 a, uint8 b)
+/* Return 1 for wide-to-narrow, -1 for narrow-to-wide, otherwise 0. */
+static int8 VisualAvoid_ClassifyPair(uint8 left_below,
+                                    uint8 right_below,
+                                    uint8 left_above,
+                                    uint8 right_above)
 {
-    return (a >= b) ? (uint8)(a - b) : (uint8)(b - a);
+    int16 left_step;
+    int16 right_step;
+    int16 width_below;
+    int16 width_above;
+
+    left_step = (int16)left_above - (int16)left_below;
+    right_step = (int16)right_above - (int16)right_below;
+    if (right_step < -VISUAL_AVOID_RIGHT_STEP_MAX ||
+        right_step > VISUAL_AVOID_RIGHT_STEP_MAX) {
+        return 0;
+    }
+
+    width_below = (int16)right_below - (int16)left_below;
+    width_above = (int16)right_above - (int16)left_above;
+    if (left_step >= VISUAL_AVOID_WIDTH_JUMP_PX &&
+        width_below - width_above >= VISUAL_AVOID_WIDTH_JUMP_PX) {
+        return 1;
+    }
+    if (left_step <= -VISUAL_AVOID_UPPER_JUMP_PX &&
+        width_above - width_below >= VISUAL_AVOID_UPPER_JUMP_PX) {
+        return -1;
+    }
+    return 0;
 }
 
-static uint8 VisualAvoid_CountHits(uint8 history)
+/* Refine one four-row coarse interval with its skipped raw Search_line point. */
+static uint8 VisualAvoid_RefineJump(uint8 below_row,
+                                    uint8 left_below,
+                                    uint8 right_below,
+                                    uint8 left_above,
+                                    uint8 right_above,
+                                    int8 wanted,
+                                    uint8 *corner_row,
+                                    uint8 *corner_col)
 {
-    uint8 count;
+    uint8 middle_row;
+    uint8 left_middle;
+    uint8 right_middle;
+    int8 jump;
 
-    count = 0u;
-    if (history & 0x01u) count++;
-    if (history & 0x02u) count++;
-    if (history & 0x04u) count++;
-    return count;
+    middle_row = (uint8)(below_row - PIXEL_OFFSET);
+    left_middle = left_edge_line[middle_row];
+    right_middle = right_edge_line[middle_row];
+    if (!VISUAL_AVOID_POINT_VALID(middle_row, left_middle, right_middle)) {
+        return 0u;
+    }
+
+    jump = VisualAvoid_ClassifyPair(left_below, right_below,
+                                    left_middle, right_middle);
+    if (jump == wanted) {
+        if (wanted > 0) {
+            *corner_row = middle_row;
+            *corner_col = left_middle;
+        } else {
+            *corner_row = below_row;
+            *corner_col = left_below;
+        }
+        return 1u;
+    }
+
+    jump = VisualAvoid_ClassifyPair(left_middle, right_middle,
+                                    left_above, right_above);
+    if (jump == wanted) {
+        if (wanted > 0) {
+            *corner_row = (uint8)(below_row - VISUAL_AVOID_COARSE_STEP);
+            *corner_col = left_above;
+        } else {
+            *corner_row = middle_row;
+            *corner_col = left_middle;
+        }
+        return 1u;
+    }
+    return 0u;
+}
+
+/* Check only raw points skipped by the four-row coarse scan. */
+static uint8 VisualAvoid_VerticalValid(uint8 lower_row,
+                                       uint8 upper_row,
+                                       uint8 lower_col,
+                                       uint8 upper_col,
+                                       uint8 coarse_min,
+                                       uint8 coarse_max)
+{
+    int16 row;
+    int16 corner_diff;
+    uint8 left;
+    uint8 right;
+    uint8 vertical_min;
+    uint8 vertical_max;
+
+    if (lower_row <= upper_row) {
+        return 0u;
+    }
+    if ((uint8)(lower_row - upper_row) < VISUAL_AVOID_VERTICAL_ROWS_MIN ||
+        (uint8)(lower_row - upper_row) > VISUAL_AVOID_VERTICAL_ROWS_MAX) {
+        return 0u;
+    }
+
+    corner_diff = (int16)upper_col - (int16)lower_col;
+    if (corner_diff <= -VISUAL_AVOID_LEFT_POINT_DIFF_PX ||
+        corner_diff >= VISUAL_AVOID_LEFT_POINT_DIFF_PX) {
+        return 0u;
+    }
+
+    vertical_min = coarse_min;
+    vertical_max = coarse_max;
+    if (upper_col < vertical_min) vertical_min = upper_col;
+    if (upper_col > vertical_max) vertical_max = upper_col;
+    if ((uint8)(vertical_max - vertical_min) >= VISUAL_AVOID_LEFT_POINT_DIFF_PX) {
+        return 0u;
+    }
+
+    /* Coarse rows are 3 mod 4.  Scan only the interleaved 1 mod 4 rows. */
+    if ((lower_row & 0x03u) == (VISUAL_AVOID_COARSE_FIRST_ROW & 0x03u)) {
+        row = (int16)lower_row - PIXEL_OFFSET;
+    } else {
+        row = (int16)lower_row - VISUAL_AVOID_COARSE_STEP;
+    }
+
+    while (row > (int16)upper_row) {
+        left = left_edge_line[(uint8)row];
+        right = right_edge_line[(uint8)row];
+        if (!VISUAL_AVOID_POINT_VALID((uint8)row, left, right)) {
+            return 0u;
+        }
+        if (left < vertical_min) vertical_min = left;
+        if (left > vertical_max) vertical_max = left;
+        if ((uint8)(vertical_max - vertical_min) >=
+            VISUAL_AVOID_LEFT_POINT_DIFF_PX) {
+            return 0u;
+        }
+        row -= VISUAL_AVOID_COARSE_STEP;
+    }
+    return 1u;
+}
+
+/*
+ * Coarse scan only raw odd rows.  Four-row candidates are refined back to
+ * the original two-row jump rules, so normal frames load each edge row once.
+ */
+static uint8 VisualAvoid_Detect(uint8 *upper_row_out,
+                               uint8 *lower_row_out,
+                               uint8 *lower_col_out)
+{
+    uint8 below_row;
+    uint8 above_row;
+    uint8 left_below;
+    uint8 right_below;
+    uint8 left_above;
+    uint8 right_above;
+    uint8 corner_row;
+    uint8 corner_col;
+    uint8 lower_row;
+    uint8 lower_col;
+    uint8 vertical_min;
+    uint8 vertical_max;
+    uint8 stage;
+    int16 coarse_left_step;
+
+    stage = 0u;
+    lower_row = 0u;
+    lower_col = 0u;
+    vertical_min = 0u;
+    vertical_max = 0u;
+
+    below_row = VISUAL_AVOID_EXACT_BOTTOM_ROW;
+    above_row = VISUAL_AVOID_COARSE_FIRST_ROW;
+    left_below = left_edge_line[below_row];
+    right_below = right_edge_line[below_row];
+    left_above = left_edge_line[above_row];
+    right_above = right_edge_line[above_row];
+
+    if (VISUAL_AVOID_POINT_VALID(below_row, left_below, right_below) &&
+        VISUAL_AVOID_POINT_VALID(above_row, left_above, right_above) &&
+        VisualAvoid_ClassifyPair(left_below, right_below,
+                                 left_above, right_above) > 0) {
+        lower_row = above_row;
+        lower_col = left_above;
+        vertical_min = lower_col;
+        vertical_max = lower_col;
+        stage = 1u;
+    }
+
+    below_row = above_row;
+    left_below = left_above;
+    right_below = right_above;
+    above_row = (uint8)(below_row - VISUAL_AVOID_COARSE_STEP);
+
+    while (1) {
+        left_above = left_edge_line[above_row];
+        right_above = right_edge_line[above_row];
+
+        if (!VISUAL_AVOID_POINT_VALID(below_row, left_below, right_below) ||
+            !VISUAL_AVOID_POINT_VALID(above_row, left_above, right_above)) {
+            stage = 0u;
+        } else {
+            coarse_left_step = (int16)left_above - (int16)left_below;
+
+            if (!stage) {
+                if (coarse_left_step >= VISUAL_AVOID_LOWER_COARSE_JUMP_PX &&
+                    VisualAvoid_RefineJump(below_row,
+                                           left_below, right_below,
+                                           left_above, right_above,
+                                           1, &corner_row, &corner_col)) {
+                    lower_row = corner_row;
+                    lower_col = corner_col;
+                    vertical_min = corner_col;
+                    vertical_max = corner_col;
+                    if (left_above < vertical_min) vertical_min = left_above;
+                    if (left_above > vertical_max) vertical_max = left_above;
+                    stage = 1u;
+                }
+            } else {
+                if (coarse_left_step <= -VISUAL_AVOID_UPPER_COARSE_JUMP_PX &&
+                    VisualAvoid_RefineJump(below_row,
+                                           left_below, right_below,
+                                           left_above, right_above,
+                                           -1, &corner_row, &corner_col)) {
+                    if (VisualAvoid_VerticalValid(lower_row, corner_row,
+                                                  lower_col, corner_col,
+                                                  vertical_min, vertical_max)) {
+                        *upper_row_out = corner_row;
+                        *lower_row_out = lower_row;
+                        *lower_col_out = lower_col;
+                        return 1u;
+                    }
+                    stage = 0u;
+                } else {
+                    if (left_above < vertical_min) vertical_min = left_above;
+                    if (left_above > vertical_max) vertical_max = left_above;
+                    if ((uint8)(vertical_max - vertical_min) >=
+                            VISUAL_AVOID_LEFT_POINT_DIFF_PX ||
+                        (uint8)(lower_row - above_row) >
+                            VISUAL_AVOID_VERTICAL_ROWS_MAX) {
+                        stage = 0u;
+                    }
+                }
+            }
+        }
+
+        if (above_row <= VISUAL_AVOID_COARSE_TOP_ROW) {
+            break;
+        }
+        below_row = above_row;
+        left_below = left_above;
+        right_below = right_above;
+        above_row = (uint8)(above_row - VISUAL_AVOID_COARSE_STEP);
+    }
+    return 0u;
 }
 
 static uint16 VisualAvoid_AbsEncoder(int16 value)
 {
     if (value < 0) {
-        /* Unsigned subtraction also handles the -32768 endpoint. */
         return (uint16)(0u - (uint16)value);
     }
     return (uint16)value;
 }
 
-static uint8 VisualAvoid_RawCandidateValid(const visual_avoid_candidate_t *candidate)
-{
-    if (candidate == NULL || !candidate->valid) {
-        return 0u;
-    }
-    if (candidate->left >= candidate->right ||
-        candidate->right >= SEARCH_IMAGE_W ||
-        candidate->bottom_row >= SEARCH_IMAGE_H) {
-        return 0u;
-    }
-    return 1u;
-}
-
-/* Lane edges improve side selection, but never veto an obstacle trigger. */
-static uint8 VisualAvoid_GetLaneGaps(const visual_avoid_candidate_t *candidate,
-                                     uint16 *left_gap,
-                                     uint16 *right_gap)
-{
-    uint8 check_row;
-    int16 lane_left;
-    int16 lane_right;
-
-    if (!VisualAvoid_RawCandidateValid(candidate)) {
-        return 0u;
-    }
-
-    check_row = (uint8)(candidate->bottom_row + VISUAL_AVOID_CHECK_ROW_OFFSET);
-    if (check_row > VISUAL_AVOID_CHECK_ROW_MAX) {
-        check_row = VISUAL_AVOID_CHECK_ROW_MAX;
-    }
-
-    /* Search_line() owns edges only above its lost-row markers. */
-    if (check_row <= lost_left || check_row <= lost_right) {
-        return 0u;
-    }
-    /* The Search_line() defaults mean that no real lane edge was found. */
-    if (left_edge_line[check_row] == 0u ||
-        right_edge_line[check_row] == SEARCH_IMAGE_W - 1u) {
-        return 0u;
-    }
-
-    lane_left = (int16)left_edge_line[check_row] + VISUAL_AVOID_LANE_MARGIN;
-    lane_right = (int16)right_edge_line[check_row] - VISUAL_AVOID_LANE_MARGIN;
-    if (lane_left >= lane_right ||
-        (int16)candidate->left < lane_left ||
-        (int16)candidate->right > lane_right) {
-        return 0u;
-    }
-
-    if (left_gap != NULL) {
-        *left_gap = (uint16)((int16)candidate->left - lane_left);
-    }
-    if (right_gap != NULL) {
-        *right_gap = (uint16)(lane_right - (int16)candidate->right);
-    }
-    return 1u;
-}
-
-static void VisualAvoid_StartBypass(int8 bias)
+static void VisualAvoid_ResetRuntime(void)
 {
     bit interrupt_state;
 
-    /* Publish BYPASS only after steering and speed commands are installed. */
     interrupt_state = EA;
     EA = 0;
-    Servo_Set_Path_Bias((int16)bias);
-    Servo_Set_Mode(SERVO_MODE_PATH_BIAS);
-    Motor_Set_Safety_Command(MOTOR_SAFETY_CAP, VISUAL_AVOID_SPEED_CAP);
-
+    visual_avoid_state = VISUAL_AVOID_STATE_SCAN;
+    visual_avoid_done = 0u;
     visual_avoid_travel = 0u;
     visual_avoid_recenter_ticks = 0u;
-    visual_avoid_recenter_ready = 0u;
-    visual_avoid_bias = bias;
-    visual_avoid_resume_cap = 0u;
-    visual_avoid_clear_frames = 0u;
-    visual_avoid_hit_history = 0u;
-    visual_avoid_last_hit_age = 3u;
-    visual_avoid_state = VISUAL_AVOID_STATE_BYPASS;
     EA = interrupt_state;
 }
 
 void VisualAvoid_Init(void)
 {
+    Servo_Set_Path_Bias(0);
+    Servo_Set_Mode(SERVO_MODE_VISION);
+    VisualAvoid_ResetRuntime();
+
+    visual_avoid_detected = 0u;
+    visual_avoid_upper_row = 0u;
+    visual_avoid_lower_row = 0u;
+    visual_avoid_lower_col = 0u;
+}
+
+uint8 VisualAvoid_ProcessFrame(uint8 enable)
+{
     bit interrupt_state;
+    uint8 state;
+    uint8 done;
+    uint8 upper_row;
+    uint8 lower_row;
+    uint8 lower_col;
+
+    state = visual_avoid_state;
+    done = visual_avoid_done;
+
+    if (done) {
+        Servo_Set_Mode(SERVO_MODE_VISION);
+        VisualAvoid_ResetRuntime();
+        visual_avoid_detected = 0u;
+        visual_avoid_upper_row = 0u;
+        visual_avoid_lower_row = 0u;
+        visual_avoid_lower_col = 0u;
+        return VISUAL_AVOID_RESULT_DONE;
+    }
+
+    if (state != VISUAL_AVOID_STATE_SCAN) {
+        return VISUAL_AVOID_RESULT_HOLD;
+    }
+
+    if (!enable) {
+        return VISUAL_AVOID_RESULT_NONE;
+    }
+
+    visual_avoid_detected = 0u;
+    visual_avoid_upper_row = 0u;
+    visual_avoid_lower_row = 0u;
+    visual_avoid_lower_col = 0u;
+
+    /* Only a left-side PRE_MEET can match this left-edge obstacle shape. */
+    if (!ring_l || ring_r ||
+        !VisualAvoid_Detect(&upper_row, &lower_row, &lower_col)) {
+        return VISUAL_AVOID_RESULT_NONE;
+    }
+
+    visual_avoid_detected = 1u;
+    visual_avoid_upper_row = upper_row;
+    visual_avoid_lower_row = lower_row;
+    visual_avoid_lower_col = lower_col;
+
+    Servo_Set_Path_Bias(VISUAL_AVOID_RIGHT_BIAS_PX);
+    Servo_Set_Mode(SERVO_MODE_PATH_BIAS);
 
     interrupt_state = EA;
     EA = 0;
-    Servo_Set_Path_Bias(0);
-    Servo_Set_Mode(SERVO_MODE_VISION);
-    Motor_Set_Safety_Command(MOTOR_SAFETY_NORMAL, 0);
-
-    visual_avoid_state = VISUAL_AVOID_STATE_FOLLOW;
     visual_avoid_travel = 0u;
     visual_avoid_recenter_ticks = 0u;
-    visual_avoid_recenter_ready = 0u;
-    visual_avoid_bias = 0;
-    visual_avoid_resume_cap = 0u;
-    visual_avoid_hit_history = 0u;
-    visual_avoid_last_hit_age = 3u;
-    visual_avoid_last_center = 0u;
-    visual_avoid_last_bottom = 0u;
-    visual_avoid_clear_frames = 0u;
-    visual_avoid_debug_valid = 0u;
-    visual_avoid_debug_left = 0u;
-    visual_avoid_debug_right = 0u;
-    visual_avoid_debug_bottom = 0u;
+    visual_avoid_done = 0u;
+    visual_avoid_state = VISUAL_AVOID_STATE_ACTIVE;
     EA = interrupt_state;
-}
-
-void VisualAvoid_OnFrame(const visual_avoid_candidate_t *candidate)
-{
-    uint8 state;
-    uint8 valid;
-    uint8 lane_gaps_valid;
-    uint8 center;
-    uint16 left_gap;
-    uint16 right_gap;
-    int8 bypass_bias;
-
-    center = 0u;
-    left_gap = 0u;
-    right_gap = 0u;
-    valid = VisualAvoid_RawCandidateValid(candidate);
-    visual_avoid_debug_valid = valid;
-    if (valid) {
-        visual_avoid_debug_left = candidate->left;
-        visual_avoid_debug_right = candidate->right;
-        visual_avoid_debug_bottom = candidate->bottom_row;
-        center = (uint8)(((uint16)candidate->left + candidate->right) >> 1);
-    }
-
-    state = visual_avoid_state;
-    if (state == VISUAL_AVOID_STATE_RECENTER) {
-        if (valid) {
-            visual_avoid_clear_frames = 0u;
-        } else if (visual_avoid_clear_frames < VISUAL_AVOID_CLEAR_FRAMES) {
-            visual_avoid_clear_frames++;
-        }
-
-        if (visual_avoid_recenter_ready &&
-            visual_avoid_clear_frames >= VISUAL_AVOID_CLEAR_FRAMES) {
-            visual_avoid_hit_history = 0u;
-            visual_avoid_last_hit_age = 3u;
-            visual_avoid_state = VISUAL_AVOID_STATE_FOLLOW;
-        }
-        return;
-    }
-
-    if (state == VISUAL_AVOID_STATE_BYPASS) {
-        return;
-    }
-
-    /* A far candidate remains visible in debug, but cannot enter confirmation. */
-    if (valid && candidate->bottom_row < VISUAL_AVOID_TRIGGER_ROW) {
-        valid = 0u;
-    }
-
-    /* New candidates are accepted only while the ring state is NORM. */
-    if (current_step != VISUAL_AVOID_RING_NORM) {
-        visual_avoid_hit_history = 0u;
-        visual_avoid_last_hit_age = 3u;
-        return;
-    }
-
-    if (!valid) {
-        visual_avoid_hit_history =
-            (uint8)((visual_avoid_hit_history << 1) & VISUAL_AVOID_HISTORY_MASK);
-        if (visual_avoid_last_hit_age < 3u) {
-            visual_avoid_last_hit_age++;
-        }
-        return;
-    }
-
-    if (visual_avoid_hit_history != 0u &&
-        visual_avoid_last_hit_age < 3u &&
-        (VisualAvoid_AbsDiffU8(center, visual_avoid_last_center) >
-             VISUAL_AVOID_MATCH_TOLERANCE ||
-         VisualAvoid_AbsDiffU8(candidate->bottom_row, visual_avoid_last_bottom) >
-             VISUAL_AVOID_MATCH_TOLERANCE)) {
-        visual_avoid_hit_history = 0u;
-    }
-
-    visual_avoid_hit_history =
-        (uint8)(((visual_avoid_hit_history << 1) | 0x01u) &
-                VISUAL_AVOID_HISTORY_MASK);
-    visual_avoid_last_center = center;
-    visual_avoid_last_bottom = candidate->bottom_row;
-    visual_avoid_last_hit_age = 0u;
-
-    if (VisualAvoid_CountHits(visual_avoid_hit_history) < 2u) {
-        return;
-    }
-
-    lane_gaps_valid = VisualAvoid_GetLaneGaps(candidate, &left_gap, &right_gap);
-    if (lane_gaps_valid) {
-        /* A negative target-column bias moves the vehicle to the right. */
-        bypass_bias = (right_gap >= left_gap) ?
-                      (int8)-VISUAL_AVOID_PATH_BIAS_PX :
-                      (int8)VISUAL_AVOID_PATH_BIAS_PX;
-    } else {
-        /* With missing lane edges, simply pass on the side opposite the brick. */
-        bypass_bias = (center <= Mid_Col) ?
-                      (int8)-VISUAL_AVOID_PATH_BIAS_PX :
-                      (int8)VISUAL_AVOID_PATH_BIAS_PX;
-    }
-    /* The WiFi channel-5 hard stop always has priority over avoidance. */
-    if (Motor_Is_Force_Stopped()) {
-        return;
-    }
-    VisualAvoid_StartBypass(bypass_bias);
+    return VISUAL_AVOID_RESULT_HOLD;
 }
 
 void VisualAvoid_ControlTick(int16 encoder_l, int16 encoder_r)
 {
+    uint8 state;
     uint16 encoder_l_abs;
     uint16 encoder_r_abs;
     uint16 delta;
+    uint16 travel;
 
-    if (visual_avoid_state == VISUAL_AVOID_STATE_FOLLOW) {
+    if (visual_avoid_done) {
         return;
     }
 
-    if (Motor_Is_Force_Stopped()) {
-        if (visual_avoid_state == VISUAL_AVOID_STATE_BYPASS ||
-            (visual_avoid_state == VISUAL_AVOID_STATE_RECENTER &&
-             !visual_avoid_recenter_ready)) {
-            visual_avoid_resume_cap = 1u;
-        }
-        return;
-    }
-
-    if (visual_avoid_resume_cap) {
-        if (visual_avoid_state == VISUAL_AVOID_STATE_BYPASS ||
-            (visual_avoid_state == VISUAL_AVOID_STATE_RECENTER &&
-             !visual_avoid_recenter_ready)) {
-            Motor_Set_Safety_Command(MOTOR_SAFETY_CAP, VISUAL_AVOID_SPEED_CAP);
-        }
-        visual_avoid_resume_cap = 0u;
-    }
-
-    if (visual_avoid_state == VISUAL_AVOID_STATE_BYPASS) {
+    state = visual_avoid_state;
+    if (state == VISUAL_AVOID_STATE_ACTIVE) {
         encoder_l_abs = VisualAvoid_AbsEncoder(encoder_l);
         encoder_r_abs = VisualAvoid_AbsEncoder(encoder_r);
-        /* Split before addition so the uint16 sum cannot overflow. */
         delta = (uint16)((encoder_l_abs >> 1) +
                          (encoder_r_abs >> 1) +
-                         (((encoder_l_abs & 1u) + (encoder_r_abs & 1u)) >> 1));
-        if (delta >= (uint16)(VISUAL_AVOID_PASS_PULSES - visual_avoid_travel)) {
+                         (((encoder_l_abs & 1u) +
+                           (encoder_r_abs & 1u)) >> 1));
+        travel = visual_avoid_travel;
+
+        if (delta >= (uint16)(VISUAL_AVOID_PASS_PULSES - travel)) {
             visual_avoid_travel = VISUAL_AVOID_PASS_PULSES;
-        } else {
-            visual_avoid_travel = (uint16)(visual_avoid_travel + delta);
-        }
-
-        if (visual_avoid_travel >= VISUAL_AVOID_PASS_PULSES) {
+            /* This control cycle's Servo_Loop is the first recenter step. */
+            visual_avoid_recenter_ticks = 1u;
             Servo_Set_Path_Bias(0);
-            visual_avoid_bias = 0;
-            visual_avoid_recenter_ticks = 0u;
-            visual_avoid_recenter_ready = 0u;
-            visual_avoid_clear_frames = 0u;
             visual_avoid_state = VISUAL_AVOID_STATE_RECENTER;
+        } else {
+            visual_avoid_travel = (uint16)(travel + delta);
         }
         return;
     }
 
-    if (visual_avoid_state != VISUAL_AVOID_STATE_RECENTER ||
-        visual_avoid_recenter_ready) {
-        return;
-    }
-
-    if (visual_avoid_recenter_ticks < VISUAL_AVOID_RECENTER_TICKS) {
-        visual_avoid_recenter_ticks++;
-    }
-    if (visual_avoid_recenter_ticks >= VISUAL_AVOID_RECENTER_TICKS) {
-        /* The 3 px/tick bias slew has now returned +/-30 to zero. */
-        Servo_Set_Mode(SERVO_MODE_VISION);
-        Motor_Set_Safety_Command(MOTOR_SAFETY_NORMAL, 0);
-        visual_avoid_recenter_ready = 1u;
+    if (state == VISUAL_AVOID_STATE_RECENTER) {
+        if (visual_avoid_recenter_ticks < VISUAL_AVOID_RECENTER_TICKS) {
+            visual_avoid_recenter_ticks++;
+        }
+        if (visual_avoid_recenter_ticks >= VISUAL_AVOID_RECENTER_TICKS) {
+            visual_avoid_done = 1u;
+        }
     }
 }
 
-uint8 VisualAvoid_InhibitRing(void)
+void VisualAvoid_GetDebug(uint8 *detected,
+                          uint8 *active,
+                          uint8 *upper_row,
+                          uint8 *lower_row,
+                          uint8 *lower_col)
 {
-    if (visual_avoid_state != VISUAL_AVOID_STATE_FOLLOW) {
-        return 1u;
+    uint8 state;
+
+    state = visual_avoid_state;
+    if (detected != NULL) *detected = visual_avoid_detected;
+    if (active != NULL) {
+        *active = (state != VISUAL_AVOID_STATE_SCAN) ? 1u : 0u;
     }
-    /* A raw shape must never abort an actual ring already in progress. */
-    if (current_step != VISUAL_AVOID_RING_NORM) {
-        return 0u;
-    }
-    return (visual_avoid_hit_history != 0u) ? 1u : 0u;
-}
-
-void VisualAvoid_GetDebug(uint8 *candidate_valid,
-                          uint8 *left,
-                          uint8 *right,
-                          uint8 *bottom,
-                          uint8 *state,
-                          uint8 *pending_hit,
-                          int8 *bias,
-                          uint16 *travel)
-{
-    bit interrupt_state;
-    uint8 valid_value;
-    uint8 left_value;
-    uint8 right_value;
-    uint8 bottom_value;
-    uint8 state_value;
-    uint8 pending_hit_value;
-    int8 bias_value;
-    uint16 travel_value;
-
-    interrupt_state = EA;
-    EA = 0;
-    valid_value = visual_avoid_debug_valid;
-    left_value = visual_avoid_debug_left;
-    right_value = visual_avoid_debug_right;
-    bottom_value = visual_avoid_debug_bottom;
-    state_value = visual_avoid_state;
-    pending_hit_value = (visual_avoid_hit_history != 0u) ? 1u : 0u;
-    bias_value = visual_avoid_bias;
-    travel_value = visual_avoid_travel;
-    EA = interrupt_state;
-
-    if (candidate_valid != NULL) *candidate_valid = valid_value;
-    if (left != NULL) *left = left_value;
-    if (right != NULL) *right = right_value;
-    if (bottom != NULL) *bottom = bottom_value;
-    if (state != NULL) *state = state_value;
-    if (pending_hit != NULL) *pending_hit = pending_hit_value;
-    if (bias != NULL) *bias = bias_value;
-    if (travel != NULL) *travel = travel_value;
+    if (upper_row != NULL) *upper_row = visual_avoid_upper_row;
+    if (lower_row != NULL) *lower_row = visual_avoid_lower_row;
+    if (lower_col != NULL) *lower_col = visual_avoid_lower_col;
 }

@@ -22,8 +22,8 @@
 #define WHITE_MAX_OFFSET               24u
 #define REFERENCE_COL_MIN              0u
 #define REFERENCE_COL_MAX              (SEARCH_IMAGE_W - 1u)
-#define REFERENCE_COL_STEP             4u
-#define REFERENCE_SAMPLE_STEP          2u
+#define REFERENCE_COL_STEP             8u
+#define REFERENCE_SAMPLE_STEP          4u
 #define ZEBRA_ROW_TOP                  50u
 #define ZEBRA_ROW_BOTTOM               100u
 #define ZEBRA_ROW_STEP                 4u
@@ -40,7 +40,7 @@ uint8 reference_point;
 uint8 white_max_point;
 uint8 white_min_point;
 
-uint8 reference_contrast_ratio = 32;
+uint8 reference_contrast_ratio = 120;
 uint8 reference_col;
 
 uint8 left_edge_line[SEARCH_IMAGE_H];
@@ -465,6 +465,7 @@ void Search_line(const uint8 *image)
     uint8 right_start_col;
     uint8 left_end_col;
     uint8 right_end_col;
+    uint8 right_min_col;
     uint8 search_time;
     uint8 temp1;
     uint8 temp2;
@@ -553,10 +554,23 @@ void Search_line(const uint8 *image)
         }
 
         if (!right_stop) {
+            /*
+             * Keep the right search on the right side of both the reference
+             * column and the detected left edge.  Without this lower bound,
+             * a lost right edge can make the local window lock onto an
+             * internal dark mark and follow it toward the upper-left corner.
+             */
+            right_min_col = (uint8)limit_i16((int16)left_edge_line[row] + PIXEL_OFFSET,
+                                              reference_col,
+                                              col_max);
+            if (right_start_col < right_min_col) {
+                right_start_col = right_min_col;
+            }
+
             search_time = 2;
             do {
                 if (search_time == 1) {
-                    right_start_col = reference_col;
+                    right_start_col = right_min_col;
                     right_end_col = col_max;
                 }
                 search_time--;
@@ -583,7 +597,15 @@ void Search_line(const uint8 *image)
                     }
 
                     if (temp1 < white_min) {
-                        right_edge_line[row] = col;
+                        /*
+                         * A black point found only by the tracked local
+                         * window is not trusted.  Retry once from the safe
+                         * lower bound; accept it only if the full right-side
+                         * search finds it again.
+                         */
+                        if (search_time == 0) {
+                            right_edge_line[row] = col;
+                        }
                         break;
                     }
 
@@ -595,7 +617,7 @@ void Search_line(const uint8 *image)
                         contrast_over_threshold(temp1, temp2, contrast_ratio)) {
                         right_edge_line[row] = col;
                         right_start_col = (uint8)limit_i16((int16)col - SEARCH_RANGE,
-                                                           col_min,
+                                                           right_min_col,
                                                            col);
                         right_end_col   = (uint8)limit_i16((int16)col + SEARCH_RANGE, col, col_max);
                         search_time = 0;
@@ -670,15 +692,13 @@ void Fitted_Midline(void)
 
 /* 单帧图像处理总入口：阈值、寻线、圆环、中线和目标识别都在这里更新。 */
 void Image_OldStyle_Process(uint8 target_detect_enable,
-                            uint8 inhibit_ring)
+                            uint8 visual_avoid_enable)
 {
     const uint8 *img;
 #if IMAGE_OTSU_ENABLE
     static uint8 otsu_frame_count = 0;
 #endif
     static uint8 target_find_frame_count = 0;
-    static uint8 avoidance_was_inhibiting = 0;
-    uint8 avoidance_inhibiting;
 
     img = &mt9v03x_image[0][0];
 
@@ -698,17 +718,8 @@ void Image_OldStyle_Process(uint8 target_detect_enable,
     Search_reference_col(img);
     Search_line(img);
 
-    /* 避障期间保留原始寻线，但不允许圆环状态继续转移。 */
-    avoidance_inhibiting = inhibit_ring ? 1u : 0u;
     zebra_flag = 0;
-    if (avoidance_inhibiting) {
-        if (!avoidance_was_inhibiting) {
-            Ring_Over();
-        }
-    } else {
-        Ring();
-    }
-    avoidance_was_inhibiting = avoidance_inhibiting;
+    Ring(visual_avoid_enable);
 
     Fitted_Midline();
 

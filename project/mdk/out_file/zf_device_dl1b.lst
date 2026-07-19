@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  zf_device_dl1b                                                     15/07/26  19:17:43  PAGE 1   
+C251 COMPILER V5.60.0,  zf_device_dl1b                                                     18/07/26  18:43:09  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_device_dl1b
@@ -66,7 +66,7 @@ stmt  level    source
    50          #include "zf_driver_exti.h"
    51          #include "zf_driver_soft_iic.h"
    52          
-C251 COMPILER V5.60.0,  zf_device_dl1b                                                     15/07/26  19:17:43  PAGE 2   
+C251 COMPILER V5.60.0,  zf_device_dl1b                                                     18/07/26  18:43:09  PAGE 2   
 
    53          #include "zf_device_dl1b.h"
    54          #include "zf_device_config.h"
@@ -78,201 +78,324 @@ stmt  level    source
    60          static uint8 dl1b_init_flag = 0;
    61          uint8 dl1b_finsh_flag = 0;
    62          uint16 dl1b_distance_mm = 8192;
-   63          
-   64          #if (DL1B_USE_INTERFACE==SOFT_IIC) 
-   65            static soft_iic_info_struct dl1b_iic_struct;
-   66            #define dl1b_transfer_8bit_array(tdata, tlen, rdata, rlen)      (soft_iic_transfer_8bit_array(&dl1b_iic_
-             -struct, (tdata), (tlen), (rdata), (rlen)))
-   67          #elif (DL1B_USE_INTERFACE==HARDWARE_IIC)
-                 #define dl1b_transfer_8bit_array(tdata, tlen, rdata, rlen)      (iic_transfer_8bit_array(DL1B_IIC, DL1B_
-             -DEV_ADDR, (tdata), (tlen), (rdata), (rlen)))
-               #endif
-   70          
-   71          //-------------------------------------------------------------------------------------------------------
-             -------------
-   72          // 函数简介     返回以毫米为单位的范围读数
-   73          // 参数说明     void
-   74          // 返回参数     void
-   75          // 使用示例     dl1b_get_distance();
-   76          // 备注信息     在开始单次射程测量后也调用此函数
-   77          //-------------------------------------------------------------------------------------------------------
-             -------------
-   78          void dl1b_get_distance (void)
-   79          {
-   80   1          if(dl1b_init_flag)
-   81   1          {
-   82   2              uint8 data_buffer[3];
-   83   2              int16 dl1b_distance_temp = 0;
-   84   2              
-   85   2              data_buffer[0] = DL1B_GPIO__TIO_HV_STATUS >> 8;
-   86   2              data_buffer[1] = DL1B_GPIO__TIO_HV_STATUS & 0xFF;
-   87   2              dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1);
-   88   2              
-   89   2              if(data_buffer[2])
-   90   2              {
-   91   3              
-   92   3                  data_buffer[0] = DL1B_SYSTEM__INTERRUPT_CLEAR >> 8;
-   93   3                  data_buffer[1] = DL1B_SYSTEM__INTERRUPT_CLEAR & 0xFF;
-   94   3                  data_buffer[2] = 0x01;
-   95   3                  dl1b_transfer_8bit_array(data_buffer, 3, data_buffer, 0);// clear Interrupt
-   96   3                  
-   97   3                  data_buffer[0] = DL1B_RESULT__RANGE_STATUS >> 8;
-   98   3                  data_buffer[1] = DL1B_RESULT__RANGE_STATUS & 0xFF;
-   99   3                  dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1);
-  100   3                  
-  101   3                  if(0x89 == data_buffer[2])
-  102   3                  {
-  103   4                      data_buffer[0] = DL1B_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0 >> 8;
-  104   4                      data_buffer[1] = DL1B_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0 & 0xFF;
-  105   4                      dl1b_transfer_8bit_array(data_buffer, 2, data_buffer, 2);
-  106   4                      dl1b_distance_temp = data_buffer[0];
-  107   4                      dl1b_distance_temp = (dl1b_distance_temp << 8) | data_buffer[1];
-  108   4                      
-  109   4                      if(dl1b_distance_temp > 4000 || dl1b_distance_temp < 0)
-  110   4                      {
-  111   5                          dl1b_distance_mm = 8192;
-  112   5                          dl1b_finsh_flag = 0;
-  113   5                      }
-  114   4                      else
-C251 COMPILER V5.60.0,  zf_device_dl1b                                                     15/07/26  19:17:43  PAGE 3   
+   63          uint8 dl1b_data_ready_flag = 0;
+   64          uint8 dl1b_communication_ok = 0;
+   65          
+   66          #if (DL1B_USE_INTERFACE==SOFT_IIC) 
+   67            static soft_iic_info_struct dl1b_iic_struct;
+   68            void soft_iic_start (soft_iic_info_struct *soft_iic_obj);
+   69            void soft_iic_stop (soft_iic_info_struct *soft_iic_obj);
+   70            uint8 soft_iic_send_data (soft_iic_info_struct *soft_iic_obj, const uint8 dat);
+   71            uint8 soft_iic_read_data (soft_iic_info_struct *soft_iic_obj, uint8 ack);
+   72            static uint8 dl1b_transfer_8bit_array_checked (const uint8 *write_data,
+   73                                                            uint16 write_len,
+   74                                                            uint8 *read_data,
+   75                                                            uint16 read_len)
+   76            {
+   77   1          soft_iic_start(&dl1b_iic_struct);
+   78   1          if(!soft_iic_send_data(&dl1b_iic_struct, dl1b_iic_struct.addr << 1))
+   79   1          {
+   80   2            soft_iic_stop(&dl1b_iic_struct);
+   81   2            return 0;
+   82   2          }
+   83   1          while(write_len --)
+   84   1          {
+   85   2            if(!soft_iic_send_data(&dl1b_iic_struct, *write_data ++))
+   86   2            {
+   87   3              soft_iic_stop(&dl1b_iic_struct);
+   88   3              return 0;
+   89   3            }
+   90   2          }
+   91   1      
+   92   1          if(read_len)
+   93   1          {
+   94   2            soft_iic_start(&dl1b_iic_struct);
+   95   2            if(!soft_iic_send_data(&dl1b_iic_struct,
+   96   2                                   (dl1b_iic_struct.addr << 1) | 0x01))
+   97   2            {
+   98   3              soft_iic_stop(&dl1b_iic_struct);
+   99   3              return 0;
+  100   3            }
+  101   2            while(read_len --)
+  102   2            {
+  103   3              *read_data ++ = soft_iic_read_data(&dl1b_iic_struct,
+  104   3                                                 read_len == 0);
+  105   3            }
+  106   2          }
+  107   1          soft_iic_stop(&dl1b_iic_struct);
+  108   1          return 1;
+  109   1        }
+  110            #define dl1b_transfer_8bit_array(tdata, tlen, rdata, rlen)      (dl1b_transfer_8bit_array_checked((tdata
+             -), (tlen), (rdata), (rlen)))
+  111          #elif (DL1B_USE_INTERFACE==HARDWARE_IIC)
+                 static uint8 dl1b_transfer_8bit_array_checked (const uint8 *write_data,
+                                                                 uint16 write_len,
+                                                                 uint8 *read_data,
+                                                                 uint16 read_len)
+                 {
+                   iic_transfer_8bit_array(DL1B_IIC, DL1B_DEV_ADDR,
+C251 COMPILER V5.60.0,  zf_device_dl1b                                                     18/07/26  18:43:09  PAGE 3   
 
-  115   4                      {
-  116   5                          dl1b_distance_mm = dl1b_distance_temp;
-  117   5                          dl1b_finsh_flag = 1;
-  118   5                      }
-  119   4                  }
-  120   3                  else
-  121   3                  {
-  122   4                      dl1b_distance_mm = 8192;
-  123   4                      dl1b_finsh_flag = 0;
-  124   4                  }
-  125   3              }
-  126   2              else
-  127   2              {
-  128   3                  dl1b_distance_mm = 8192;
-  129   3                  dl1b_finsh_flag = 0;
-  130   3              }
-  131   2          }
-  132   1      }
-  133          
+                                            write_data, write_len,
+                                            read_data, read_len);
+                   return 1;
+                 }
+                 #define dl1b_transfer_8bit_array(tdata, tlen, rdata, rlen)      (dl1b_transfer_8bit_array_checked((tdata
+             -), (tlen), (rdata), (rlen)))
+               #endif
+  124          
+  125          /* dl1b_config_file sets GPIO_HV_MUX__CTRL bit 4: data ready is active low. */
+  126          #define DL1B_DATA_READY_LEVEL     ( 0x00 )
+  127          
+  128          //-------------------------------------------------------------------------------------------------------
+             -------------
+  129          // 函数简介     返回以毫米为单位的范围读数
+  130          // 参数说明     void
+  131          // 返回参数     void
+  132          // 使用示例     dl1b_get_distance();
+  133          // 备注信息     在开始单次射程测量后也调用此函数
   134          //-------------------------------------------------------------------------------------------------------
              -------------
-  135          // 函数简介     DL1B INT 中断响应处理函数
-  136          // 参数说明     void
-  137          // 返回参数     void
-  138          // 使用示例     dl1b_int_handler();
-  139          // 备注信息     本函数需要在 DL1B_INT_PIN 对应的外部中断处理函数中调用
-  140          //-------------------------------------------------------------------------------------------------------
+  135          void dl1b_get_distance (void)
+  136          {
+  137   1          uint8 clear_buffer[3];
+  138   1          uint8 result_read_ok = 1;
+  139   1      
+  140   1          dl1b_finsh_flag = 0;
+  141   1          dl1b_data_ready_flag = 0;
+  142   1          dl1b_communication_ok = 0;
+  143   1      
+  144   1          if(dl1b_init_flag)
+  145   1          {
+  146   2              uint8 data_buffer[3];
+  147   2              int16 dl1b_distance_temp = 0;
+  148   2              
+  149   2              data_buffer[0] = DL1B_GPIO__TIO_HV_STATUS >> 8;
+  150   2              data_buffer[1] = DL1B_GPIO__TIO_HV_STATUS & 0xFF;
+  151   2              if(!dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1))
+  152   2              {
+  153   3                  dl1b_distance_mm = 8192;
+  154   3                  return;
+  155   3              }
+  156   2              
+  157   2              if(DL1B_DATA_READY_LEVEL == (data_buffer[2] & 0x01))
+  158   2              {
+  159   3                  dl1b_data_ready_flag = 1;
+  160   3                  data_buffer[0] = DL1B_RESULT__RANGE_STATUS >> 8;
+  161   3                  data_buffer[1] = DL1B_RESULT__RANGE_STATUS & 0xFF;
+  162   3                  if(!dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1))
+  163   3                  {
+  164   4                      dl1b_distance_mm = 8192;
+  165   4                      result_read_ok = 0;
+  166   4                  }
+  167   3                  
+  168   3                  else if(0x09 == (data_buffer[2] & 0x1F))
+  169   3                  {
+  170   4                      data_buffer[0] = DL1B_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0 >> 8;
+  171   4                      data_buffer[1] = DL1B_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0 & 0xFF;
+  172   4                      if(!dl1b_transfer_8bit_array(data_buffer, 2, data_buffer, 2))
+  173   4                      {
+  174   5                          dl1b_distance_mm = 8192;
+  175   5                          result_read_ok = 0;
+  176   5                      }
+  177   4                      else
+  178   4                      {
+  179   5                          dl1b_distance_temp = data_buffer[0];
+  180   5                          dl1b_distance_temp = (dl1b_distance_temp << 8) | data_buffer[1];
+C251 COMPILER V5.60.0,  zf_device_dl1b                                                     18/07/26  18:43:09  PAGE 4   
+
+  181   5      
+  182   5                          if(dl1b_distance_temp > 4000 || dl1b_distance_temp < 0)
+  183   5                          {
+  184   6                              dl1b_distance_mm = 8192;
+  185   6                          }
+  186   5                          else
+  187   5                          {
+  188   6                              dl1b_distance_mm = dl1b_distance_temp;
+  189   6                              dl1b_finsh_flag = 1;
+  190   6                          }
+  191   5                      }
+  192   4                  }
+  193   3                  else
+  194   3                  {
+  195   4                      dl1b_distance_mm = 8192;
+  196   4                      dl1b_finsh_flag = 0;
+  197   4                  }
+  198   3      
+  199   3                  clear_buffer[0] = DL1B_SYSTEM__INTERRUPT_CLEAR >> 8;
+  200   3                  clear_buffer[1] = DL1B_SYSTEM__INTERRUPT_CLEAR & 0xFF;
+  201   3                  clear_buffer[2] = 0x01;
+  202   3                  if(!dl1b_transfer_8bit_array(clear_buffer, 3, clear_buffer, 0))
+  203   3                  {
+  204   4                      /* A failed clear leaves the result latch stuck; retry once. */
+  205   4                      if(!dl1b_transfer_8bit_array(clear_buffer, 3, clear_buffer, 0))
+  206   4                      {
+  207   5                          dl1b_distance_mm = 8192;
+  208   5                          dl1b_finsh_flag = 0;
+  209   5                          return;
+  210   5                      }
+  211   4                  }
+  212   3                  dl1b_communication_ok = result_read_ok;
+  213   3              }
+  214   2              else
+  215   2              {
+  216   3                  dl1b_distance_mm = 8192;
+  217   3                  dl1b_communication_ok = 1;
+  218   3              }
+  219   2          }
+  220   1      }
+  221          
+  222          //-------------------------------------------------------------------------------------------------------
              -------------
-  141          void dl1b_int_handler (void)
-  142          {
-  143   1      #if DL1B_INT_ENABLE
+  223          // 函数简介     DL1B INT 中断响应处理函数
+  224          // 参数说明     void
+  225          // 返回参数     void
+  226          // 使用示例     dl1b_int_handler();
+  227          // 备注信息     本函数需要在 DL1B_INT_PIN 对应的外部中断处理函数中调用
+  228          //-------------------------------------------------------------------------------------------------------
+             -------------
+  229          void dl1b_int_handler (void)
+  230          {
+  231   1      #if DL1B_INT_ENABLE
                    dl1b_get_distance();
                #endif
-  146   1      }
-  147          
-  148          //-------------------------------------------------------------------------------------------------------
+  234   1      }
+  235          
+  236          //-------------------------------------------------------------------------------------------------------
              -------------
-  149          // 函数简介     初始化 DL1B
-  150          // 参数说明     void
-  151          // 返回参数     uint8           1-初始化失败 0-初始化成功
-  152          // 使用示例     dl1b_init();
-  153          // 备注信息
-  154          //-------------------------------------------------------------------------------------------------------
+  237          // 函数简介     初始化 DL1B
+  238          // 参数说明     void
+  239          // 返回参数     uint8           1-初始化失败 0-初始化成功
+  240          // 使用示例     dl1b_init();
+  241          // 备注信息
+  242          //-------------------------------------------------------------------------------------------------------
              -------------
-  155          uint8 dl1b_init (void)
-  156          {
-  157   1          uint8   return_state    = 0;
-  158   1          uint8   data_buffer[2 + sizeof(dl1b_config_file)];
-  159   1          uint16  time_out_count  = 0;
-  160   1          
-  161   1      #if (DL1B_USE_INTERFACE==SOFT_IIC)        
-  162   1          soft_iic_init(&dl1b_iic_struct, DL1B_DEV_ADDR, DL1B_SOFT_IIC_DELAY, DL1B_SCL_PIN, DL1B_SDA_PIN);
-  163   1      #elif (DL1B_USE_INTERFACE==HARDWARE_IIC)
+C251 COMPILER V5.60.0,  zf_device_dl1b                                                     18/07/26  18:43:09  PAGE 5   
+
+  243          uint8 dl1b_init (void)
+  244          {
+  245   1          uint8   return_state    = 0;
+  246   1          uint8   data_buffer[2 + sizeof(dl1b_config_file)];
+  247   1          uint16  time_out_count  = 0;
+  248   1          
+  249   1          dl1b_init_flag = 0;
+  250   1          dl1b_distance_mm = 8192;
+  251   1          dl1b_finsh_flag = 0;
+  252   1          dl1b_data_ready_flag = 0;
+  253   1          dl1b_communication_ok = 0;
+  254   1      
+  255   1      #if (DL1B_USE_INTERFACE==SOFT_IIC)        
+  256   1          soft_iic_init(&dl1b_iic_struct, DL1B_DEV_ADDR, DL1B_SOFT_IIC_DELAY, DL1B_SCL_PIN, DL1B_SDA_PIN);
+  257   1      #elif (DL1B_USE_INTERFACE==HARDWARE_IIC)
                    iic_init(DL1B_IIC, DL1B_DEV_ADDR, DL1B_IIC_SPEED, DL1B_SCL_PIN, DL1B_SDA_PIN);
                #endif
-  166   1          
-  167   1      #if DL1B_XS_ENABLE
-  168   1          gpio_init(DL1B_XS_PIN, GPO, GPIO_HIGH, GPO_PUSH_PULL);
-  169   1      #endif
-  170   1          
-  171   1          do
-  172   1          {
-  173   2          
-  174   2      #if DL1B_XS_ENABLE
-  175   2              system_delay_ms(50);
-  176   2              gpio_low(DL1B_XS_PIN);
-C251 COMPILER V5.60.0,  zf_device_dl1b                                                     15/07/26  19:17:43  PAGE 4   
+  260   1          
+  261   1      #if DL1B_XS_ENABLE
+  262   1          gpio_init(DL1B_XS_PIN, GPO, GPIO_HIGH, GPO_PUSH_PULL);
+  263   1      #endif
+  264   1          
+  265   1          do
+  266   1          {
+  267   2          
+  268   2      #if DL1B_XS_ENABLE
+  269   2              system_delay_ms(50);
+  270   2              gpio_low(DL1B_XS_PIN);
+  271   2              system_delay_ms(10);
+  272   2              gpio_high(DL1B_XS_PIN);
+  273   2              system_delay_ms(50);
+  274   2      #endif
+  275   2              
+  276   2              data_buffer[0] = DL1B_FIRMWARE__SYSTEM_STATUS >> 8;
+  277   2              data_buffer[1] = DL1B_FIRMWARE__SYSTEM_STATUS & 0xFF;
+  278   2              if(!dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1))
+  279   2              {
+  280   3                  return_state = 1;
+  281   3                  break;
+  282   3              }
+  283   2              return_state = (0x01 == (data_buffer[2] & 0x01)) ? (0) : (1);
+  284   2              
+  285   2              if(1 == return_state)
+  286   2              {
+  287   3                  break;
+  288   3              }
+  289   2              
+  290   2              data_buffer[0] = DL1B_I2C_SLAVE__DEVICE_ADDRESS >> 8;
+  291   2              data_buffer[1] = DL1B_I2C_SLAVE__DEVICE_ADDRESS & 0xFF;
+  292   2              
+  293   2              memcpy(&data_buffer[2], (uint8 *)dl1b_config_file, sizeof(dl1b_config_file));
+  294   2              if(!dl1b_transfer_8bit_array(data_buffer, 2 + sizeof(dl1b_config_file), data_buffer, 0))
+  295   2              {
+  296   3                  return_state = 1;
+  297   3                  break;
+  298   3              }
+  299   2              
+  300   2              while(1)
+  301   2              {
+  302   3                  data_buffer[0] = DL1B_GPIO__TIO_HV_STATUS >> 8;
+  303   3                  data_buffer[1] = DL1B_GPIO__TIO_HV_STATUS & 0xFF;
+  304   3                  if(!dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1))
+  305   3                  {
+  306   4                      return_state = 1;
+  307   4                      break;
+  308   4                  }
+C251 COMPILER V5.60.0,  zf_device_dl1b                                                     18/07/26  18:43:09  PAGE 6   
 
-  177   2              system_delay_ms(10);
-  178   2              gpio_high(DL1B_XS_PIN);
-  179   2              system_delay_ms(50);
-  180   2      #endif
-  181   2              
-  182   2              data_buffer[0] = DL1B_FIRMWARE__SYSTEM_STATUS >> 8;
-  183   2              data_buffer[1] = DL1B_FIRMWARE__SYSTEM_STATUS & 0xFF;
-  184   2              dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1);
-  185   2              return_state = (0x01 == (data_buffer[2] & 0x01)) ? (0) : (1);
-  186   2              
-  187   2              if(1 == return_state)
-  188   2              {
-  189   3                  break;
-  190   3              }
-  191   2              
-  192   2              data_buffer[0] = DL1B_I2C_SLAVE__DEVICE_ADDRESS >> 8;
-  193   2              data_buffer[1] = DL1B_I2C_SLAVE__DEVICE_ADDRESS & 0xFF;
-  194   2              
-  195   2              memcpy(&data_buffer[2], (uint8 *)dl1b_config_file, sizeof(dl1b_config_file));
-  196   2              dl1b_transfer_8bit_array(data_buffer, 2 + sizeof(dl1b_config_file), data_buffer, 0);
-  197   2              
-  198   2              while(1)
-  199   2              {
-  200   3                  data_buffer[0] = DL1B_GPIO__TIO_HV_STATUS >> 8;
-  201   3                  data_buffer[1] = DL1B_GPIO__TIO_HV_STATUS & 0xFF;
-  202   3                  dl1b_transfer_8bit_array(data_buffer, 2, &data_buffer[2], 1);
-  203   3                  
-  204   3                  if(0x00 == (data_buffer[2] & 0x01))
-  205   3                  {
-  206   4                      time_out_count = 0;
-  207   4                      break;
-  208   4                  }
-  209   3                  
-  210   3                  if(DL1B_TIMEOUT_COUNT < time_out_count ++)
-  211   3                  {
-  212   4                      return_state = 1;
-  213   4                      break;
-  214   4                  }
-  215   3                  
-  216   3                  system_delay_ms(1);
-  217   3              }
-  218   2              
-  219   2              dl1b_init_flag = 1;
-  220   2              
-  221   2          #if DL1B_INT_ENABLE
+  309   3                  
+  310   3                  if(0x00 == (data_buffer[2] & 0x01))
+  311   3                  {
+  312   4                      time_out_count = 0;
+  313   4                      break;
+  314   4                  }
+  315   3                  
+  316   3                  if(DL1B_TIMEOUT_COUNT < time_out_count ++)
+  317   3                  {
+  318   4                      return_state = 1;
+  319   4                      break;
+  320   4                  }
+  321   3                  
+  322   3                  system_delay_ms(1);
+  323   3              }
+  324   2              
+  325   2              if(1 == return_state)
+  326   2              {
+  327   3                  break;
+  328   3              }
+  329   2      
+  330   2              dl1b_init_flag = 1;
+  331   2              dl1b_communication_ok = 1;
+  332   2              
+  333   2          #if DL1B_INT_ENABLE
                        exti_init(DL1B_INT_PIN, EXTI_TRIGGER_FALLING);
                        dl1b_int_handler();
                        dl1b_finsh_flag = 0;
                    #endif
-  226   2              set_tof_type(TOF_DL1B, dl1b_int_handler);
-  227   2          }
-  228   1          while(0);
-  229   1         
-  230   1          return return_state;
-  231   1      }
+  338   2              set_tof_type(TOF_DL1B, dl1b_int_handler);
+  339   2          }
+  340   1          while(0);
+  341   1         
+  342   1          if(1 == return_state)
+  343   1          {
+  344   2              dl1b_init_flag = 0;
+  345   2              dl1b_distance_mm = 8192;
+  346   2              dl1b_finsh_flag = 0;
+  347   2              dl1b_data_ready_flag = 0;
+  348   2              dl1b_communication_ok = 0;
+  349   2          }
+  350   1      
+  351   1          return return_state;
+  352   1      }
 
 
 Module Information          Static   Overlayable
 ------------------------------------------------
   code size            =    ------     ------
-  ecode size           =      1058     ------
+  ecode size           =      1468     ------
   data size            =    ------     ------
   idata size           =    ------     ------
   pdata size           =    ------     ------
-  xdata size           =       158     ------
+  xdata size           =       176     ------
   xdata-const size     =    ------     ------
   edata size           =    ------     ------
-C251 COMPILER V5.60.0,  zf_device_dl1b                                                     15/07/26  19:17:43  PAGE 5   
-
   bit size             =    ------     ------
   ebit size            =    ------     ------
   bitaddressable size  =    ------     ------
@@ -280,7 +403,7 @@ Module Information          Static   Overlayable
   far data size        =    ------     ------
   huge data size       =    ------     ------
   const size           =    ------     ------
-  hconst size          =        19     ------
+  hconst size          =        31     ------
 End of Module Information.
 
 

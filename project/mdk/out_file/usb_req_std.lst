@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  usb_req_std                                                        15/07/26  19:17:44  PAGE 1   
+C251 COMPILER V5.60.0,  usb_req_std                                                        19/07/26  16:06:02  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE usb_req_std
@@ -66,7 +66,7 @@ stmt  level    source
    54   2              usb_synch_frame();
    55   2              break;
    56   2          default:
-C251 COMPILER V5.60.0,  usb_req_std                                                        15/07/26  19:17:44  PAGE 2   
+C251 COMPILER V5.60.0,  usb_req_std                                                        19/07/26  16:06:02  PAGE 2   
 
    57   2              usb_setup_stall();
    58   2              return;
@@ -134,7 +134,7 @@ stmt  level    source
   120   4                  case EP2_IN:
   121   4      #endif
   122   4      #ifdef EN_EP3IN
-C251 COMPILER V5.60.0,  usb_req_std                                                        15/07/26  19:17:44  PAGE 3   
+C251 COMPILER V5.60.0,  usb_req_std                                                        19/07/26  16:06:02  PAGE 3   
 
                            case EP3_IN:
                #endif
@@ -202,7 +202,7 @@ stmt  level    source
   184   1      }
   185          
   186          void usb_clear_feature()
-C251 COMPILER V5.60.0,  usb_req_std                                                        15/07/26  19:17:44  PAGE 4   
+C251 COMPILER V5.60.0,  usb_req_std                                                        19/07/26  16:06:02  PAGE 4   
 
   187          {
   188   1          BYTE ep;
@@ -270,7 +270,7 @@ stmt  level    source
   248   2          default:
   249   2              usb_setup_stall();
   250   2              return;
-C251 COMPILER V5.60.0,  usb_req_std                                                        15/07/26  19:17:44  PAGE 5   
+C251 COMPILER V5.60.0,  usb_req_std                                                        19/07/26  16:06:02  PAGE 5   
 
   251   2          }
   252   1      
@@ -338,7 +338,7 @@ stmt  level    source
   312   2              OutEpState |= (1 << ep);
   313   2              usb_write_reg(INDEX, ep);
   314   2              usb_write_reg(OUTCSR1, OUTSDSTL);
-C251 COMPILER V5.60.0,  usb_req_std                                                        15/07/26  19:17:44  PAGE 6   
+C251 COMPILER V5.60.0,  usb_req_std                                                        19/07/26  16:06:02  PAGE 6   
 
   315   2              usb_write_reg(INDEX, 0);
   316   2              break;
@@ -406,7 +406,7 @@ stmt  level    source
   378   3                  Ep0State.wSize = sizeof(LANGIDDESC);
   379   3                  break;
   380   3              case 1:
-C251 COMPILER V5.60.0,  usb_req_std                                                        15/07/26  19:17:44  PAGE 7   
+C251 COMPILER V5.60.0,  usb_req_std                                                        19/07/26  16:06:02  PAGE 7   
 
   381   3                  Ep0State.pData = MANUFACTDESC;
   382   3                  Ep0State.wSize = sizeof(MANUFACTDESC);
@@ -474,7 +474,7 @@ stmt  level    source
   444   1              (Setup.wIndexL != 0) ||
   445   1              (Setup.wLength != 0))
   446   1          {
-C251 COMPILER V5.60.0,  usb_req_std                                                        15/07/26  19:17:44  PAGE 8   
+C251 COMPILER V5.60.0,  usb_req_std                                                        19/07/26  16:06:02  PAGE 8   
 
   447   2              usb_setup_stall();
   448   2              return;
@@ -542,7 +542,7 @@ stmt  level    source
   510   2              DeviceState = DEVSTATE_ADDRESS;
   511   2              InEpState = 0xff;
   512   2              OutEpState = 0xff;
-C251 COMPILER V5.60.0,  usb_req_std                                                        15/07/26  19:17:44  PAGE 9   
+C251 COMPILER V5.60.0,  usb_req_std                                                        19/07/26  16:06:02  PAGE 9   
 
   513   2          }
   514   1      

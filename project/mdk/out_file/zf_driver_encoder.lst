@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  zf_driver_encoder                                                  15/07/26  19:17:42  PAGE 1   
+C251 COMPILER V5.60.0,  zf_driver_encoder                                                  19/07/26  16:06:00  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_driver_encoder
@@ -66,7 +66,7 @@ stmt  level    source
    52          
    53          //-------------------------------------------------------------------------------------------------------
              -------------
-C251 COMPILER V5.60.0,  zf_driver_encoder                                                  15/07/26  19:17:42  PAGE 2   
+C251 COMPILER V5.60.0,  zf_driver_encoder                                                  19/07/26  16:06:00  PAGE 2   
 
    54          // 函数简介     定时器编码器解码取值
    55          // 参数说明     timer_ch      定时器枚举体
@@ -134,7 +134,7 @@ stmt  level    source
   115          // 使用示例    encoder_clear_count(TIM1_ENCODER)  //清除定时器1采集到的编码器数据
   116          //-------------------------------------------------------------------------------------------------------
              -------------
-C251 COMPILER V5.60.0,  zf_driver_encoder                                                  15/07/26  19:17:42  PAGE 3   
+C251 COMPILER V5.60.0,  zf_driver_encoder                                                  19/07/26  16:06:00  PAGE 3   
 
   117          void encoder_clear_count(encoder_index_enum encoder_n)
   118          {
@@ -202,7 +202,7 @@ stmt  level    source
   177   2              case TIM2_ENCODER:  T2L=0;  T2H=0;  AUXR|=0x18; break;
   178   2              case TIM3_ENCODER:  T3L=0;  T3H=0;  T4T3M|=0x0c; break;
   179   2              case TIM4_ENCODER:  T4L=0;  T4H=0;  T4T3M|=0xc0; break;
-C251 COMPILER V5.60.0,  zf_driver_encoder                                                  15/07/26  19:17:42  PAGE 4   
+C251 COMPILER V5.60.0,  zf_driver_encoder                                                  19/07/26  16:06:00  PAGE 4   
 
   180   2              case TIM5_ENCODER:  T5L=0;  T5H=0;  T6T5M|=0x0c; break;
   181   2              case TIM6_ENCODER:  T6L=0;  T6H=0;  T6T5M|=0xc0; break;
@@ -270,7 +270,7 @@ stmt  level    source
              -------------
   239          void encoder_quad_init(encoder_index_enum encoder_n, encoder_channel_enum ch1_pin, encoder_channel_enum c
              -h2_pin)
-C251 COMPILER V5.60.0,  zf_driver_encoder                                                  15/07/26  19:17:42  PAGE 5   
+C251 COMPILER V5.60.0,  zf_driver_encoder                                                  19/07/26  16:06:00  PAGE 5   
 
   240          {
   241   1          // 如果程序在输出了断言信息 并且提示出错位置在这里
@@ -338,7 +338,7 @@ stmt  level    source
   300          //-------------------------------------------------------------------------------------------------------
              -------------
   301          void encoder_dir_init(uint16 encoder_n, uint16 lsb_pin, uint16 dir_pin)
-C251 COMPILER V5.60.0,  zf_driver_encoder                                                  15/07/26  19:17:42  PAGE 6   
+C251 COMPILER V5.60.0,  zf_driver_encoder                                                  19/07/26  16:06:00  PAGE 6   
 
   302          {
   303   1          if(encoder_n >= TIM0_ENCODER)

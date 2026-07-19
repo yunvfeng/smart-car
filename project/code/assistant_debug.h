@@ -53,7 +53,8 @@ typedef enum
 
 void Assistant_Debug_Init(void);
 void Assistant_Debug_Task(void);
-void Assistant_Debug_On_Frame(uint8 tof_avoid_enabled);
+void Assistant_Debug_On_Frame(uint8 visual_avoid_enabled);
+uint8 Assistant_Debug_Take_Launch_Request(void);
 void Assistant_Debug_Send_Now(void);
 void Assistant_Debug_Timebase_Tick(void);
 uint16 Assistant_Debug_Timebase_Now(void);

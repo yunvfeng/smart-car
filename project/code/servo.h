@@ -12,7 +12,7 @@
 #define SERVO_DUTY_MAX   1040
 #define SERVO_CENTER     SERVO_DUTY_MID
 #define MAX_TURN         ((SERVO_DUTY_MAX - SERVO_DUTY_MIN) / 2)
-#define SERVO_PATH_BIAS_STEP_PER_TICK  3
+#define SERVO_PATH_BIAS_STEP_PER_TICK  6
 
 /* 188 宽图像的中心列是 94，主要用第 80 行中线控制舵机。 */
 #define controlReferenceLine 80

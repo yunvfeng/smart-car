@@ -12,14 +12,12 @@
 #include "servo.h"
 #include "laser.h"
 #include "key.h"
-#include "tof_avoidance.h"
+#include "visual_avoidance.h"
 /* #include "ips_ui.h" */
 #include <stdio.h>
 
-/* PB3/PB4 are latched before launch: target detection / ToF avoidance. */
+/* PB3 is latched before launch; visual avoidance is always enabled. */
 static uint8 target_detect_enabled = 0;
-static volatile uint8 tof_avoid_enabled = 0;
-static volatile uint8 tof_avoid_ready = 0;
 
 /*
  * 运行方式：
@@ -35,15 +33,13 @@ static void Timer0_Callback(void)
 {
     /* 中断里只放轻量控制任务，避免影响下一帧图像采集。 */
     Encoder_GetValue();
+    VisualAvoid_ControlTick(encoder_data_l, encoder_data_r);
     Gyro_Update();
-    if (tof_avoid_ready) {
-        TofAvoid_ControlTick();
-    }
 
     Servo_Loop();
     Motor_Loop();
 
-    /* ToF avoidance never suppresses target detection or laser firing. */
+    /* Visual avoidance never suppresses target detection or laser firing. */
     Laser_Set_Inhibit(0u);
     Laser_Task();
 }
@@ -55,8 +51,6 @@ void main(void)
     uint8 assistant_debug_ready;
     uint8 wifi_assistant_started;
     uint8 car_started;
-    uint8 tof_init_attempted;
-    uint8 tof_poll_deferred;
     uint8 key1_last;
     uint8 key1_now;
 
@@ -69,6 +63,7 @@ void main(void)
     laser_init();
     Key_Init();
     Gyro_Init();
+    VisualAvoid_Init();
 
     mt9v03x_init();
     mt9v03x_set_exposure_time(camera_exposure_time);
@@ -76,8 +71,6 @@ void main(void)
     assistant_debug_ready = 0;
     wifi_assistant_started = 0;
     car_started = 0;
-    tof_init_attempted = 0;
-    tof_poll_deferred = 0;
     key1_last = 1;
 
     /* Control timer starts after KEY1/PB2 is pressed. */
@@ -88,9 +81,6 @@ void main(void)
             if (!gpio_get_level(KEY2_PIN)) {
                 target_detect_enabled = 1;
             }
-            if (!gpio_get_level(KEY3_PIN)) {
-                tof_avoid_enabled = 1;
-            }
         }
 
         key1_now = gpio_get_level(KEY1_PIN);
@@ -98,12 +88,6 @@ void main(void)
             system_delay_ms(20);
             if (!gpio_get_level(KEY1_PIN)) {
                 if (!car_started) {
-                    if (tof_avoid_enabled && !tof_init_attempted) {
-                        tof_init_attempted = 1;
-                        if (!TofAvoid_Init()) {
-                            tof_avoid_ready = 1;
-                        }
-                    }
                     pit_ms_init(TIM0_PIT, CONTROL_PERIOD_MS, Timer0_Callback);
                     car_started = 1;
                 }
@@ -131,6 +115,13 @@ void main(void)
             wifi_assistant_started = 0;
         }
 
+        if (Assistant_Debug_Take_Launch_Request()) {
+            if (wifi_ready && !car_started) {
+                pit_ms_init(TIM0_PIT, CONTROL_PERIOD_MS, Timer0_Callback);
+                car_started = 1;
+            }
+        }
+
         /* 摄像头完成一帧后再处理图像，处理完再等下一帧。 */
         if (mt9v03x_finish_flag) {
             mt9v03x_finish_flag = 0;
@@ -141,15 +132,10 @@ void main(void)
             }
 
             Image_OldStyle_Process(target_detect_enabled,
-                                   (tof_avoid_ready && TofAvoid_InhibitRing()));
-
-            if (tof_avoid_ready) {
-                /* ToF confirms presence; the completed vision frame selects left/right. */
-                TofAvoid_OnFrame();
-            }
+                                   1u);
 
             if (wifi_ready) {
-                Assistant_Debug_On_Frame(tof_avoid_enabled);
+                Assistant_Debug_On_Frame(1u);
             }
 
             /* 按下 SWITCH2 时显示调试画面。 */
@@ -160,14 +146,5 @@ void main(void)
             */
         }
 
-        /* Let one pending camera frame go first, then force the due ToF slot. */
-        if (tof_avoid_ready) {
-            if (mt9v03x_finish_flag && !tof_poll_deferred) {
-                tof_poll_deferred = 1;
-            } else {
-                TofAvoid_ServiceMain();
-                tof_poll_deferred = 0;
-            }
-        }
     }
 }

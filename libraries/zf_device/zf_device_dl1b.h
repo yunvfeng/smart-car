@@ -98,6 +98,8 @@
 
 extern uint8 dl1b_finsh_flag;
 extern uint16 dl1b_distance_mm;
+extern uint8 dl1b_data_ready_flag;
+extern uint8 dl1b_communication_ok;
 
 void   dl1b_get_distance (void);
 
@@ -105,4 +107,3 @@ void   dl1b_int_handler  (void);
 uint8  dl1b_init         (void);
 
 #endif
-

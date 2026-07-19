@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  image2                                                             15/07/26  19:17:44  PAGE 1   
+C251 COMPILER V5.60.0,  image2                                                             19/07/26  16:34:09  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE image2
@@ -12,153 +12,158 @@ stmt  level    source
 
     1          #include "image2.h"
     2          
-    3          uint8 far base_image[MT9V03X_H][MT9V03X_W];
-    4          uint8 Threshold = 128;
-    5          static uint16 xdata s_otsu_hist[GrayScale];
-    6          
-    7          /* 根据当前灰度图计算 Otsu 阈值，过滤过亮反光点后再统计直方图。 */
-    8          uint8 otsuThreshold(uint8 *mt9v03x_image_first)
-    9          {
-   10   1          uint16 width;
-   11   1          uint16 height;
-   12   1          uint32 total;
-   13   1          uint32 valid_total;
-   14   1          uint32 sum_all;
-   15   1          uint32 sum_bg;
-   16   1          uint32 weight_bg;
-   17   1          uint32 weight_fg;
-   18   1          uint32 score;
-   19   1          uint32 best_score;
-   20   1          int16 diff;
-   21   1          int16 mean_bg;
-   22   1          int16 mean_fg;
-   23   1          uint8 threshold;
-   24   1          uint8 pixel_max;
-   25   1          uint8 pixel_min;
-   26   1          uint8 clip_min;
-   27   1          uint8 clip_max;
-   28   1          uint8 pix;
-   29   1          uint16 clip_count;
-   30   1          uint32 acc;
-   31   1          uint16 i;
-   32   1          uint16 j;
-   33   1          uint8 *img_ptr;
-   34   1      #if OTSU_USE_LIMIT
+    3          #if IMAGE_OTSU_ENABLE
+               uint8 Threshold = 128;
+               static uint16 xdata s_otsu_hist[GrayScale];
+               
+               /* 根据当前灰度图计算 Otsu 阈值，过滤过亮反光点后再统计直方图。 */
+               uint8 otsuThreshold(uint8 *mt9v03x_image_first)
+               {
+                   uint16 width;
+                   uint16 height;
+                   uint32 total;
+                   uint32 valid_total;
+                   uint32 sum_all;
+                   uint32 sum_bg;
+                   uint32 weight_bg;
+                   uint32 weight_fg;
+                   uint32 score;
+                   uint32 best_score;
+                   int16 diff;
+                   int16 mean_bg;
+                   int16 mean_fg;
+                   uint8 threshold;
+                   uint8 pixel_max;
+                   uint8 pixel_min;
+                   uint8 clip_min;
+                   uint8 clip_max;
+                   uint8 pix;
+                   uint16 clip_count;
+                   uint32 acc;
+                   uint16 i;
+                   uint16 j;
+                   uint8 *img_ptr;
+               #if OTSU_USE_LIMIT
                    int16 threshold_delta;
                    static uint8 last_threshold = 128;
                    static uint8 threshold_ready = 0;
                #endif
-   39   1      
-   40   1          width = MT9V03X_W;
-   41   1          height = MT9V03X_H;
-   42   1          total = 0;
-   43   1          pixel_max = 0;
-   44   1          pixel_min = 255;
-   45   1          threshold = 128;
-   46   1      
-   47   1          for (i = 0; i < GrayScale; i++) {
-   48   2              s_otsu_hist[i] = 0;
-   49   2          }
-   50   1      
-   51   1          for (i = OTSU_START_ROW; i < height; i += OTSU_ROW_STEP) {
-   52   2              img_ptr = mt9v03x_image_first + (uint32)i * width;
-   53   2      
-   54   2              for (j = 0; j < width; j += OTSU_COL_STEP) {
-   55   3                  pix = *(img_ptr + j);
-   56   3                  if (pix >= OTSU_REFLECT_POINT) {
-C251 COMPILER V5.60.0,  image2                                                             15/07/26  19:17:44  PAGE 2   
+               
+                   width = MT9V03X_W;
+                   height = MT9V03X_H;
+                   total = 0;
+                   pixel_max = 0;
+                   pixel_min = 255;
+                   threshold = 128;
+               
+                   for (i = 0; i < GrayScale; i++) {
+                       s_otsu_hist[i] = 0;
+                   }
+               
+                   for (i = OTSU_START_ROW; i < height; i += OTSU_ROW_STEP) {
+                       img_ptr = mt9v03x_image_first + (uint32)i * width;
+               
+                       for (j = 0; j < width; j += OTSU_COL_STEP) {
+                           pix = *(img_ptr + j);
+                           if (pix >= OTSU_REFLECT_POINT) {
+C251 COMPILER V5.60.0,  image2                                                             19/07/26  16:34:09  PAGE 2   
 
-   57   4                      continue;
-   58   4                  }
-   59   3      
-   60   3                  s_otsu_hist[pix]++;
-   61   3                  total++;
-   62   3                  if (pix > pixel_max) pixel_max = pix;
-   63   3                  if (pix < pixel_min) pixel_min = pix;
-   64   3              }
-   65   2          }
-   66   1      
-   67   1          if (!total) {
-   68   2              return Threshold;
-   69   2          }
-   70   1      
-   71   1          if ((uint16)pixel_max <= (uint16)pixel_min + OTSU_MIN_RANGE) {
-   72   2              threshold = (uint8)(((uint16)pixel_min + pixel_max) >> 1);
-   73   2          } else {
-   74   2              clip_count = (uint16)(total * OTSU_CLIP_PERCENT / 100u);
-   75   2              if (!clip_count) {
-   76   3                  clip_count = 1;
-   77   3              }
-   78   2      
-   79   2              acc = 0;
-   80   2              clip_min = pixel_min;
-   81   2              for (i = pixel_min; i <= pixel_max; i++) {
-   82   3                  acc += s_otsu_hist[i];
-   83   3                  if (acc >= clip_count) {
-   84   4                      clip_min = (uint8)i;
-   85   4                      break;
-   86   4                  }
-   87   3              }
-   88   2      
-   89   2              acc = 0;
-   90   2              clip_max = pixel_max;
-   91   2              for (i = pixel_max; i >= pixel_min; i--) {
-   92   3                  acc += s_otsu_hist[i];
-   93   3                  if (acc >= clip_count) {
-   94   4                      clip_max = (uint8)i;
-   95   4                      break;
-   96   4                  }
-   97   3                  if (!i) {
-   98   4                      break;
-   99   4                  }
-  100   3              }
-  101   2      
-  102   2              if ((uint16)clip_max <= (uint16)clip_min + OTSU_MIN_RANGE) {
-  103   3                  threshold = (uint8)(((uint16)clip_min + clip_max) >> 1);
-  104   3              } else {
-  105   3                  valid_total = 0;
-  106   3                  sum_all = 0;
-  107   3      
-  108   3                  for (i = clip_min; i <= clip_max; i++) {
-  109   4                      valid_total += s_otsu_hist[i];
-  110   4                      sum_all += (uint32)i * (uint32)s_otsu_hist[i];
-  111   4                  }
-  112   3      
-  113   3                  weight_bg = 0;
-  114   3                  sum_bg = 0;
-  115   3                  best_score = 0;
-  116   3      
-  117   3                  for (i = clip_min; i <= clip_max; i++) {
-  118   4                      weight_bg += s_otsu_hist[i];
-  119   4                      sum_bg += (uint32)i * (uint32)s_otsu_hist[i];
-  120   4      
-  121   4                      if (weight_bg == 0) {
-  122   5                          continue;
-C251 COMPILER V5.60.0,  image2                                                             15/07/26  19:17:44  PAGE 3   
+                               continue;
+                           }
+               
+                           s_otsu_hist[pix]++;
+                           total++;
+                           if (pix > pixel_max) pixel_max = pix;
+                           if (pix < pixel_min) pixel_min = pix;
+                       }
+                   }
+               
+                   if (!total) {
+                       return Threshold;
+                   }
+               
+                   if ((uint16)pixel_max <= (uint16)pixel_min + OTSU_MIN_RANGE) {
+                       threshold = (uint8)(((uint16)pixel_min + pixel_max) >> 1);
+                   } else {
+                       clip_count = (uint16)(total * OTSU_CLIP_PERCENT / 100u);
+                       if (!clip_count) {
+                           clip_count = 1;
+                       }
+               
+                       acc = 0;
+                       clip_min = pixel_min;
+                       for (i = pixel_min; i <= pixel_max; i++) {
+                           acc += s_otsu_hist[i];
+                           if (acc >= clip_count) {
+                               clip_min = (uint8)i;
+                               break;
+                           }
+                       }
+               
+                       acc = 0;
+                       clip_max = pixel_max;
+                       for (i = pixel_max; i >= pixel_min; i--) {
+                           acc += s_otsu_hist[i];
+                           if (acc >= clip_count) {
+                               clip_max = (uint8)i;
+                               break;
+                           }
+                           if (!i) {
+                               break;
+                           }
+                       }
+               
+                       if ((uint16)clip_max <= (uint16)clip_min + OTSU_MIN_RANGE) {
+                           threshold = (uint8)(((uint16)clip_min + clip_max) >> 1);
+                       } else {
+                           valid_total = 0;
+                           sum_all = 0;
+               
+                           for (i = clip_min; i <= clip_max; i++) {
+                               valid_total += s_otsu_hist[i];
+                               sum_all += (uint32)i * (uint32)s_otsu_hist[i];
+                           }
+               
+                           weight_bg = 0;
+                           sum_bg = 0;
+                           best_score = 0;
+               
+                           for (i = clip_min; i <= clip_max; i++) {
+                               /* 空直方图桶不会改变累计量，也不可能产生新的最优阈值。 */
+                               if (!s_otsu_hist[i]) {
+                                   continue;
+                               }
+               
+C251 COMPILER V5.60.0,  image2                                                             19/07/26  16:34:09  PAGE 3   
 
-  123   5                      }
-  124   4      
-  125   4                      weight_fg = valid_total - weight_bg;
-  126   4                      if (weight_fg == 0) {
-  127   5                          break;
-  128   5                      }
-  129   4      
-  130   4                      mean_bg = (int16)(sum_bg / weight_bg);
-  131   4                      mean_fg = (int16)((sum_all - sum_bg) / weight_fg);
-  132   4                      diff = mean_bg - mean_fg;
-  133   4                      if (diff < 0) diff = -diff;
-  134   4      
-  135   4                      score = ((weight_bg * weight_fg) >> 12) * (uint32)diff * (uint32)diff;
-  136   4      
-  137   4                      if (score > best_score) {
-  138   5                          best_score = score;
-  139   5                          threshold = (uint8)i;
-  140   5                      }
-  141   4                  }
-  142   3              }
-  143   2          }
-  144   1      
-  145   1      #if OTSU_USE_LIMIT
+                               weight_bg += s_otsu_hist[i];
+                               sum_bg += (uint32)i * (uint32)s_otsu_hist[i];
+               
+                               if (weight_bg == 0) {
+                                   continue;
+                               }
+               
+                               weight_fg = valid_total - weight_bg;
+                               if (weight_fg == 0) {
+                                   break;
+                               }
+               
+                               mean_bg = (int16)(sum_bg / weight_bg);
+                               mean_fg = (int16)((sum_all - sum_bg) / weight_fg);
+                               diff = mean_bg - mean_fg;
+                               if (diff < 0) diff = -diff;
+               
+                               score = ((weight_bg * weight_fg) >> 12) * (uint32)diff * (uint32)diff;
+               
+                               if (score > best_score) {
+                                   best_score = score;
+                                   threshold = (uint8)i;
+                               }
+                           }
+                       }
+                   }
+               
+               #if OTSU_USE_LIMIT
                    if (threshold < OTSU_LIMIT_MIN) {
                        threshold = OTSU_LIMIT_MIN;
                    } else if (threshold > OTSU_LIMIT_MAX) {
@@ -177,52 +182,33 @@ stmt  level    source
                    last_threshold = threshold;
                    threshold_ready = 1;
                #endif
-  164   1      
-  165   1          Threshold = threshold;
-  166   1          return threshold;
-  167   1      }
-  168          
-  169          /* 按指定阈值把 base_image 转成黑白图，主要用于调试或备用处理。 */
-  170          void base_image_threshold(uint8 threshold)
-  171          {
-  172   1          int i;
-  173   1          int j;
-  174   1          uint8 th_use;
-  175   1      
-  176   1          if (threshold > 8) {
-  177   2              th_use = threshold - 8;
-  178   2          } else {
-  179   2              th_use = threshold;
-  180   2          }
-  181   1      
-  182   1          for (i = 0; i < MT9V03X_H; i++) {
-  183   2              for (j = 0; j < MT9V03X_W; j++) {
-  184   3                  base_image[i][j] = (base_image[i][j] < th_use) ? 0 : 255;
-  185   3              }
-  186   2          }
-  187   1      }
-
-C251 COMPILER V5.60.0,  image2                                                             15/07/26  19:17:44  PAGE 4   
+               
+                   Threshold = threshold;
+                   return threshold;
+               }
+               #endif
 
 
 Module Information          Static   Overlayable
 ------------------------------------------------
   code size            =    ------     ------
-  ecode size           =      1733     ------
+  ecode size           =    ------     ------
   data size            =    ------     ------
   idata size           =    ------     ------
   pdata size           =    ------     ------
-  xdata size           =       585     ------
+  xdata size           =    ------     ------
   xdata-const size     =    ------     ------
   edata size           =    ------     ------
   bit size             =    ------     ------
   ebit size            =    ------     ------
   bitaddressable size  =    ------     ------
   ebitaddressable size =    ------     ------
-  far data size        =     22560     ------
+C251 COMPILER V5.60.0,  image2                                                             19/07/26  16:34:09  PAGE 4   
+
+  far data size        =    ------     ------
   huge data size       =    ------     ------
   const size           =    ------     ------
-  hconst size          =         6     ------
+  hconst size          =    ------     ------
 End of Module Information.
 
 

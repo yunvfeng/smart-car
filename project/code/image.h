@@ -63,6 +63,6 @@ void insert_val(void);
 void Camera_Auto_Exposure_Init(void);
 /* 每帧完成寻线；main.c 传入靶点/视觉避障运行门控。 */
 void Image_OldStyle_Process(uint8 target_detect_enable,
-                            uint8 inhibit_ring);
+                            uint8 visual_avoid_enable);
 
 #endif

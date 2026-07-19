@@ -3,41 +3,35 @@
 
 #include "zf_common_headfile.h"
 
-/* The three values normally adjusted during track testing. */
-#define VISUAL_AVOID_TRIGGER_ROW       90u
-#define VISUAL_AVOID_PATH_BIAS_PX      30
-#define VISUAL_AVOID_PASS_PULSES       6500u
+/* A width change of at least 12 pixels is treated as a jump. */
+#define VISUAL_AVOID_WIDTH_JUMP_PX           12
+#define VISUAL_AVOID_UPPER_JUMP_PX           8
+/* The two left-edge obstacle corners must differ by strictly less than 10 px. */
+#define VISUAL_AVOID_LEFT_POINT_DIFF_PX      10
 
-/* Fixed control values for the first low-speed version. */
-#define VISUAL_AVOID_SPEED_CAP         165
-#define VISUAL_AVOID_RECENTER_TICKS    10u
+#define VISUAL_AVOID_RIGHT_BIAS_PX           (-40)
+#define VISUAL_AVOID_PASS_PULSES             6500u
+#define VISUAL_AVOID_RECENTER_TICKS          8u
 
-typedef struct
-{
-    uint8 valid;
-    uint8 left;
-    uint8 right;
-    uint8 bottom_row;
-} visual_avoid_candidate_t;
-
-typedef enum
-{
-    VISUAL_AVOID_STATE_FOLLOW = 0,
-    VISUAL_AVOID_STATE_BYPASS,
-    VISUAL_AVOID_STATE_RECENTER
-} visual_avoid_state_t;
+#define VISUAL_AVOID_RESULT_NONE             0u
+#define VISUAL_AVOID_RESULT_HOLD             1u
+#define VISUAL_AVOID_RESULT_DONE             2u
 
 void VisualAvoid_Init(void);
-void VisualAvoid_OnFrame(const visual_avoid_candidate_t *candidate);
+
+/*
+ * Called first from Ring() only while the ring state is FIRST.
+ * Returns NONE, HOLD, or DONE so Ring() owns every ring-state transition.
+ */
+uint8 VisualAvoid_ProcessFrame(uint8 enable);
+
+/* Lightweight 15 ms encoder accumulation; never scans or modifies image data. */
 void VisualAvoid_ControlTick(int16 encoder_l, int16 encoder_r);
-uint8 VisualAvoid_InhibitRing(void);
-void VisualAvoid_GetDebug(uint8 *candidate_valid,
-                          uint8 *left,
-                          uint8 *right,
-                          uint8 *bottom,
-                          uint8 *state,
-                          uint8 *pending_hit,
-                          int8 *bias,
-                          uint16 *travel);
+
+void VisualAvoid_GetDebug(uint8 *detected,
+                          uint8 *active,
+                          uint8 *upper_row,
+                          uint8 *lower_row,
+                          uint8 *lower_col);
 
 #endif

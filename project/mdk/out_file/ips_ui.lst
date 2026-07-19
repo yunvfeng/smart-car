@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  ips_ui                                                             15/07/26  19:17:44  PAGE 1   
+C251 COMPILER V5.60.0,  ips_ui                                                             19/07/26  16:34:09  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE ips_ui
@@ -66,7 +66,7 @@ stmt  level    source
    53   1      
    54   1          if (tar_flag &&
    55   1              tar_x > 1 && tar_x < SEARCH_IMAGE_W - 2 &&
-C251 COMPILER V5.60.0,  ips_ui                                                             15/07/26  19:17:44  PAGE 2   
+C251 COMPILER V5.60.0,  ips_ui                                                             19/07/26  16:34:09  PAGE 2   
 
    56   1              tar_y > 1 && tar_y < SEARCH_IMAGE_H - 2) {
    57   2              p = tar_x;

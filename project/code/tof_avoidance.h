@@ -3,18 +3,23 @@
 
 #include "zf_common_headfile.h"
 
-/* Keep software-I2C load bounded: one DL1B poll every four 15 ms ticks. */
-#define TOF_AVOID_POLL_TICKS                  4u
-#define TOF_AVOID_TRIGGER_SAMPLES             2u
-#define TOF_AVOID_INVALID_LIMIT               5u
-#define TOF_AVOID_SPEED_CAP                   165
+/* Poll once every three processed camera frames. */
+#define TOF_AVOID_POLL_FRAMES              3u
+#define TOF_AVOID_COMM_ERROR_LIMIT         3u
+#define TOF_AVOID_NO_DATA_LIMIT            12u
 
-/* First low-speed calibration values. Bias sign is selected from the camera. */
-#define TOF_AVOID_TRIGGER_MIN_MM              250u
-#define TOF_AVOID_TRIGGER_MM                  430u
-#define TOF_AVOID_PATH_BIAS_PX                40
-#define TOF_AVOID_PASS_CLEAR_SAMPLES          15u
-#define TOF_AVOID_CLEAR_MM                    200u
+/* Consecutive valid samples confirm both state transitions. */
+#define TOF_AVOID_TRIGGER_MIN_MM           470u
+#define TOF_AVOID_TRIGGER_MAX_MM           530u
+#define TOF_AVOID_ENTER_SAMPLES            2u
+#define TOF_AVOID_EXIT_SAMPLES             15u
+
+/* Reuse one existing lane row; no extra image scan is performed. */
+#define TOF_AVOID_VISION_ROW               90u
+#define TOF_AVOID_VISION_CENTER_DELTA_PX   6u
+
+#define TOF_AVOID_PATH_BIAS_PX             40
+#define TOF_AVOID_SPEED_CAP                165
 
 typedef enum
 {
@@ -22,28 +27,15 @@ typedef enum
     TOF_AVOID_STATE_AVOID
 } tof_avoid_state_enum;
 
-typedef enum
-{
-    TOF_AVOID_OBSTACLE_UNKNOWN = 0,
-    TOF_AVOID_OBSTACLE_LEFT,
-    TOF_AVOID_OBSTACLE_RIGHT
-} tof_avoid_obstacle_side_enum;
-
-/* Returns 0 only when DL1B initialization succeeds. */
+/* Returns 0 on success and 1 on failure. */
 uint8 TofAvoid_Init(void);
-/* Software I2C polling; call only from the main loop. */
-void TofAvoid_ServiceMain(void);
-/* Reuse the latest raw lane edges to classify only the obstacle side. */
+/* Update the left/right choice from the latest completed camera frame. */
 void TofAvoid_OnFrame(void);
-/* Lightweight scheduler and safety-cap maintenance. */
-void TofAvoid_ControlTick(void);
-/* Freeze ring transitions only while an avoidance maneuver is active. */
+/* Low-rate DL1B polling; call after processing a camera frame. */
+void TofAvoid_ServiceMain(void);
+/* Ring transitions are paused only while bypassing an obstacle. */
 uint8 TofAvoid_InhibitRing(void);
 
-void TofAvoid_GetDebug(uint8 *valid,
-                       uint16 *distance_mm,
-                       uint8 *state,
-                       uint8 *clear_samples,
-                       uint8 *obstacle_side);
+void TofAvoid_GetDebug(uint8 *valid, uint16 *distance_mm, uint8 *state);
 
 #endif

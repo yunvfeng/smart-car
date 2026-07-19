@@ -40,9 +40,9 @@ typedef enum
 #define ENCODER_DIR_DIR_2      PWMC_ENCODER_CH2P_P42
 
 /* 这里的速度单位是 15 ms 内读到的编码器脉冲数。 */
-#define MAX_SPEED          300
+#define MAX_SPEED          339
 #define MAX_SPEED_TUNE_MAX 700
-#define MIN_SPEED          222
+#define MIN_SPEED          183
 #define BASE_TARGET_SPEED  175
 #define WHEEL_TARGET_MIN   165
 #define TURN_DIFF_MAX      8
