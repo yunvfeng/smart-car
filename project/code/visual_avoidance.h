@@ -3,13 +3,14 @@
 
 #include "zf_common_headfile.h"
 
-/* A width change of at least 12 pixels is treated as a jump. */
-#define VISUAL_AVOID_WIDTH_JUMP_PX           12
-#define VISUAL_AVOID_UPPER_JUMP_PX           8
-/* The two left-edge obstacle corners must differ by strictly less than 10 px. */
+/* Keep the lower jump strict; allow the smaller distant upper contour. */
+#define VISUAL_AVOID_WIDTH_JUMP_PX           9
+#define VISUAL_AVOID_UPPER_JUMP_PX           6
+/* The two obstacle-side corners must differ by strictly less than 10 px. */
 #define VISUAL_AVOID_LEFT_POINT_DIFF_PX      10
 
 #define VISUAL_AVOID_RIGHT_BIAS_PX           (-40)
+#define VISUAL_AVOID_LEFT_BIAS_PX            40
 #define VISUAL_AVOID_PASS_PULSES             6500u
 #define VISUAL_AVOID_RECENTER_TICKS          8u
 

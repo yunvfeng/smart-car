@@ -2,6 +2,8 @@
 #include "image.h"
 #include "gyro.h"
 
+#define SERVO_KP_BLEND_ERROR_PX  8
+
 volatile uint16 Out_servo = SERVO_DUTY_MID;
 
 /* 左右电机各一套 PI，参数在 pid.h 里改。 */
@@ -17,6 +19,20 @@ volatile PID_t servo_pidf = {SERVO_KP_TURN_Q10, 0, SERVO_KD_Q10,
 static int16 abs16_local(int16 x)
 {
     return (x < 0) ? (int16)(-x) : x;
+}
+
+/* Small errors use the straight gain; larger errors transition continuously to the live turn gain. */
+static int32 servo_proportional_q10(volatile PID_t *pid, int16 err, int16 abs_err)
+{
+    int32 magnitude;
+
+    if (abs_err <= SERVO_KP_BLEND_ERROR_PX) {
+        return SERVO_KP_STRAIGHT_Q10 * (int32)err;
+    }
+
+    magnitude = SERVO_KP_STRAIGHT_Q10 * SERVO_KP_BLEND_ERROR_PX;
+    magnitude += pid->kp * (int32)(abs_err - SERVO_KP_BLEND_ERROR_PX);
+    return (err < 0) ? -magnitude : magnitude;
 }
 
 /* Q10 除法按 C 的向零截断规则实现，避免 15 ms 中断中的 32 位软件除法。 */
@@ -93,7 +109,7 @@ void PID_servof_Target(volatile PID_t *pid, int16 target_col)
     d_err = err - pid->err1;
     abs_err = abs16_local(err);
 
-    out = pid->kp * (int32)err;
+    out = servo_proportional_q10(pid, err, abs_err);
     out += pid->kd * (int32)d_err;
     out += pid->kf * (int32)curve;
     out += pid->kp2 * (int32)err * (int32)abs_err;

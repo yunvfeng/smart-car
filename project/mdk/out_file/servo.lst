@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  servo                                                              19/07/26  16:34:10  PAGE 1   
+C251 COMPILER V5.60.0,  servo                                                              19/07/26  16:46:16  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE servo
@@ -13,136 +13,199 @@ stmt  level    source
     1          #include "servo.h"
     2          #include "pid.h"
     3          #include "image.h"
-    4          
-    5          static volatile servo_mode_enum servo_mode = SERVO_MODE_VISION;
-    6          static volatile int16 servo_path_bias_target = 0;
-    7          static volatile int16 servo_path_bias_applied = 0;
-    8          
-    9          void Servo_Reset_Controller(void)
-   10          {
-   11   1          PID_Reset(&servo_pidf);
-   12   1      }
-   13          
-   14          void Servo_Set_Mode(servo_mode_enum mode)
-   15          {
-   16   1          bit interrupt_state;
-   17   1      
-   18   1          if (mode != SERVO_MODE_PATH_BIAS && mode != SERVO_MODE_CENTER) {
-   19   2              mode = SERVO_MODE_VISION;
-   20   2          }
-   21   1      
-   22   1          interrupt_state = EA;
-   23   1          EA = 0;
-   24   1          if (servo_mode != mode) {
-   25   2              servo_mode = mode;
-   26   2              servo_path_bias_applied = 0;
-   27   2              PID_Reset(&servo_pidf);
-   28   2          }
-   29   1          EA = interrupt_state;
-   30   1      }
-   31          
-   32          void Servo_Set_Path_Bias(int16 bias)
-   33          {
-   34   1          bit interrupt_state;
-   35   1      
-   36   1          if (bias > (SEARCH_IMAGE_W - 1)) {
-   37   2              bias = SEARCH_IMAGE_W - 1;
-   38   2          } else if (bias < -(SEARCH_IMAGE_W - 1)) {
-   39   2              bias = -(SEARCH_IMAGE_W - 1);
-   40   2          }
-   41   1      
-   42   1          interrupt_state = EA;
-   43   1          EA = 0;
-   44   1          servo_path_bias_target = bias;
-   45   1          EA = interrupt_state;
-   46   1      }
-   47          
-   48          /* 初始化舵机 PWM，并打开 PWME 输出。 */
-   49          void servo_init(void)
-   50          {
-   51   1          pwm_init(STEER_PWM_PIN, SERVO_FREQ, SERVO_DUTY_MID);
-   52   1      
-   53   1          /* 打开 PWME 输出，否则舵机 PWM 不会真正输出到引脚。 */
-   54   1          PWME_BKR |= 0x80;
-   55   1      }
-   56          
-C251 COMPILER V5.60.0,  servo                                                              19/07/26  16:34:10  PAGE 2   
+    4          #include "ring.h"
+    5          
+    6          #define SERVO_VISION_STRAIGHT_ERROR_PX    10
+    7          #define SERVO_VISION_STRAIGHT_HEADING_PX  6
+    8          #define SERVO_VISION_STRAIGHT_DUTY_STEP   8u
+    9          #define SERVO_VISION_TURN_DUTY_STEP       24u
+   10          
+   11          static volatile servo_mode_enum servo_mode = SERVO_MODE_VISION;
+   12          static volatile int16 servo_path_bias_target = 0;
+   13          static volatile int16 servo_path_bias_applied = 0;
+   14          static uint16 servo_duty_applied = SERVO_DUTY_MID;
+   15          
+   16          static int16 Servo_Abs16(int16 value)
+   17          {
+   18   1          return (value < 0) ? (int16)(-value) : value;
+   19   1      }
+   20          
+   21          /* Limit only normal vision steering; ring and avoidance steering stay unrestricted. */
+   22          static uint16 Servo_Limit_Vision_Duty(uint16 target_duty)
+   23          {
+   24   1          uint8 ref;
+   25   1          uint8 near_ref;
+   26   1          uint16 step;
+   27   1          int16 error;
+   28   1          int16 heading;
+   29   1      
+   30   1          ref = controlReferenceLine;
+   31   1          if (ref >= SEARCH_IMAGE_H) {
+   32   2              ref = SEARCH_IMAGE_H - 1;
+   33   2          }
+   34   1          near_ref = (uint8)(ref + 20u);
+   35   1          if (near_ref >= SEARCH_IMAGE_H) {
+   36   2              near_ref = SEARCH_IMAGE_H - 1;
+   37   2          }
+   38   1      
+   39   1          error = (int16)mid_line[ref] - Mid_Col;
+   40   1          heading = (int16)mid_line[ref] - (int16)mid_line[near_ref];
+   41   1          if (Servo_Abs16(error) <= SERVO_VISION_STRAIGHT_ERROR_PX &&
+   42   1              Servo_Abs16(heading) <= SERVO_VISION_STRAIGHT_HEADING_PX) {
+   43   2              step = SERVO_VISION_STRAIGHT_DUTY_STEP;
+   44   2          } else {
+   45   2              step = SERVO_VISION_TURN_DUTY_STEP;
+   46   2          }
+   47   1      
+   48   1          if (target_duty > servo_duty_applied) {
+   49   2              if ((uint16)(target_duty - servo_duty_applied) > step) {
+   50   3                  servo_duty_applied += step;
+   51   3              } else {
+   52   3                  servo_duty_applied = target_duty;
+   53   3              }
+   54   2          } else if ((uint16)(servo_duty_applied - target_duty) > step) {
+   55   2              servo_duty_applied -= step;
+   56   2          } else {
+C251 COMPILER V5.60.0,  servo                                                              19/07/26  16:46:16  PAGE 2   
 
-   57          /* 设置舵机占空比，写入 PWM 前先限制在安全范围内。 */
-   58          void Set_Servo_Duty(uint32 duty)
-   59          {
-   60   1          if (duty > SERVO_DUTY_MAX) {
-   61   2              duty = SERVO_DUTY_MAX;
-   62   2          } else if (duty < SERVO_DUTY_MIN) {
-   63   2              duty = SERVO_DUTY_MIN;
-   64   2          }
-   65   1      
-   66   1          pwm_set_duty(STEER_PWM_PIN, duty);
-   67   1      }
-   68          
-   69          /* 舵机控制循环：根据当前中线误差计算并输出新的舵机 PWM。 */
-   70          void Servo_Loop(void)
-   71          {
-   72   1          bit interrupt_state;
-   73   1          servo_mode_enum mode;
-   74   1          int16 path_bias_target;
-   75   1          int16 path_bias_applied;
-   76   1          int16 target_col;
-   77   1      
-   78   1          interrupt_state = EA;
-   79   1          EA = 0;
-   80   1          mode = servo_mode;
-   81   1          path_bias_target = servo_path_bias_target;
-   82   1          path_bias_applied = servo_path_bias_applied;
-   83   1      
-   84   1          if (mode == SERVO_MODE_PATH_BIAS) {
-   85   2              if (path_bias_applied < path_bias_target) {
-   86   3                  path_bias_applied += SERVO_PATH_BIAS_STEP_PER_TICK;
-   87   3                  if (path_bias_applied > path_bias_target) {
-   88   4                      path_bias_applied = path_bias_target;
-   89   4                  }
-   90   3              } else if (path_bias_applied > path_bias_target) {
-   91   3                  path_bias_applied -= SERVO_PATH_BIAS_STEP_PER_TICK;
-   92   3                  if (path_bias_applied < path_bias_target) {
-   93   4                      path_bias_applied = path_bias_target;
-   94   4                  }
-   95   3              }
-   96   2              servo_path_bias_applied = path_bias_applied;
-   97   2          }
-   98   1          EA = interrupt_state;
-   99   1      
-  100   1          if (mode == SERVO_MODE_CENTER) {
-  101   2              Out_servo = SERVO_DUTY_MID;
-  102   2          } else if (mode == SERVO_MODE_PATH_BIAS) {
-  103   2              target_col = (int16)Mid_Col + path_bias_applied;
-  104   2              PID_servof_Target(&servo_pidf, target_col);
-  105   2          } else {
-  106   2              PID_servof(&servo_pidf);
-  107   2          }
-  108   1          Set_Servo_Duty((uint32)Out_servo);
-  109   1      }
+   57   2              servo_duty_applied = target_duty;
+   58   2          }
+   59   1      
+   60   1          return servo_duty_applied;
+   61   1      }
+   62          
+   63          void Servo_Reset_Controller(void)
+   64          {
+   65   1          PID_Reset(&servo_pidf);
+   66   1      }
+   67          
+   68          void Servo_Set_Mode(servo_mode_enum mode)
+   69          {
+   70   1          bit interrupt_state;
+   71   1      
+   72   1          if (mode != SERVO_MODE_PATH_BIAS && mode != SERVO_MODE_CENTER) {
+   73   2              mode = SERVO_MODE_VISION;
+   74   2          }
+   75   1      
+   76   1          interrupt_state = EA;
+   77   1          EA = 0;
+   78   1          if (servo_mode != mode) {
+   79   2              servo_mode = mode;
+   80   2              servo_path_bias_applied = 0;
+   81   2              PID_Reset(&servo_pidf);
+   82   2          }
+   83   1          EA = interrupt_state;
+   84   1      }
+   85          
+   86          void Servo_Set_Path_Bias(int16 bias)
+   87          {
+   88   1          bit interrupt_state;
+   89   1      
+   90   1          if (bias > (SEARCH_IMAGE_W - 1)) {
+   91   2              bias = SEARCH_IMAGE_W - 1;
+   92   2          } else if (bias < -(SEARCH_IMAGE_W - 1)) {
+   93   2              bias = -(SEARCH_IMAGE_W - 1);
+   94   2          }
+   95   1      
+   96   1          interrupt_state = EA;
+   97   1          EA = 0;
+   98   1          servo_path_bias_target = bias;
+   99   1          EA = interrupt_state;
+  100   1      }
+  101          
+  102          /* 初始化舵机 PWM，并打开 PWME 输出。 */
+  103          void servo_init(void)
+  104          {
+  105   1          servo_duty_applied = SERVO_DUTY_MID;
+  106   1          pwm_init(STEER_PWM_PIN, SERVO_FREQ, SERVO_DUTY_MID);
+  107   1      
+  108   1          /* 打开 PWME 输出，否则舵机 PWM 不会真正输出到引脚。 */
+  109   1          PWME_BKR |= 0x80;
+  110   1      }
+  111          
+  112          /* 设置舵机占空比，写入 PWM 前先限制在安全范围内。 */
+  113          void Set_Servo_Duty(uint32 duty)
+  114          {
+  115   1          if (duty > SERVO_DUTY_MAX) {
+  116   2              duty = SERVO_DUTY_MAX;
+  117   2          } else if (duty < SERVO_DUTY_MIN) {
+  118   2              duty = SERVO_DUTY_MIN;
+  119   2          }
+  120   1      
+  121   1          pwm_set_duty(STEER_PWM_PIN, duty);
+  122   1      }
+C251 COMPILER V5.60.0,  servo                                                              19/07/26  16:46:16  PAGE 3   
+
+  123          
+  124          /* 舵机控制循环：根据当前中线误差计算并输出新的舵机 PWM。 */
+  125          void Servo_Loop(void)
+  126          {
+  127   1          bit interrupt_state;
+  128   1          servo_mode_enum mode;
+  129   1          int16 path_bias_target;
+  130   1          int16 path_bias_applied;
+  131   1          int16 target_col;
+  132   1      
+  133   1          interrupt_state = EA;
+  134   1          EA = 0;
+  135   1          mode = servo_mode;
+  136   1          path_bias_target = servo_path_bias_target;
+  137   1          path_bias_applied = servo_path_bias_applied;
+  138   1      
+  139   1          if (mode == SERVO_MODE_PATH_BIAS) {
+  140   2              if (path_bias_applied < path_bias_target) {
+  141   3                  path_bias_applied += SERVO_PATH_BIAS_STEP_PER_TICK;
+  142   3                  if (path_bias_applied > path_bias_target) {
+  143   4                      path_bias_applied = path_bias_target;
+  144   4                  }
+  145   3              } else if (path_bias_applied > path_bias_target) {
+  146   3                  path_bias_applied -= SERVO_PATH_BIAS_STEP_PER_TICK;
+  147   3                  if (path_bias_applied < path_bias_target) {
+  148   4                      path_bias_applied = path_bias_target;
+  149   4                  }
+  150   3              }
+  151   2              servo_path_bias_applied = path_bias_applied;
+  152   2          }
+  153   1          EA = interrupt_state;
+  154   1      
+  155   1          if (mode == SERVO_MODE_CENTER) {
+  156   2              Out_servo = SERVO_DUTY_MID;
+  157   2          } else if (mode == SERVO_MODE_PATH_BIAS) {
+  158   2              target_col = (int16)Mid_Col + path_bias_applied;
+  159   2              PID_servof_Target(&servo_pidf, target_col);
+  160   2          } else {
+  161   2              PID_servof(&servo_pidf);
+  162   2          }
+  163   1      
+  164   1          if (mode == SERVO_MODE_VISION && current_step == 0u) {
+  165   2              Out_servo = Servo_Limit_Vision_Duty(Out_servo);
+  166   2          } else {
+  167   2              servo_duty_applied = Out_servo;
+  168   2          }
+  169   1          Set_Servo_Duty((uint32)Out_servo);
+  170   1      }
 
 
 Module Information          Static   Overlayable
 ------------------------------------------------
   code size            =    ------     ------
-  ecode size           =       630     ------
+  ecode size           =      1065     ------
   data size            =    ------     ------
   idata size           =    ------     ------
   pdata size           =    ------     ------
-  xdata size           =        22     ------
+  xdata size           =        36     ------
   xdata-const size     =    ------     ------
   edata size           =    ------     ------
   bit size             =         3     ------
   ebit size            =    ------     ------
-C251 COMPILER V5.60.0,  servo                                                              19/07/26  16:34:10  PAGE 3   
-
   bitaddressable size  =    ------     ------
   ebitaddressable size =    ------     ------
   far data size        =    ------     ------
   huge data size       =    ------     ------
   const size           =    ------     ------
-  hconst size          =        21     ------
+C251 COMPILER V5.60.0,  servo                                                              19/07/26  16:46:16  PAGE 4   
+
+  hconst size          =        28     ------
 End of Module Information.
 
 

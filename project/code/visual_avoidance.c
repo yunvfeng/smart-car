@@ -11,11 +11,11 @@
 #define VISUAL_AVOID_EXACT_BOTTOM_ROW       109u
 #define VISUAL_AVOID_COARSE_FIRST_ROW       107u
 #define VISUAL_AVOID_COARSE_STEP            4u
-#define VISUAL_AVOID_COARSE_TOP_ROW         27u
+#define VISUAL_AVOID_COARSE_TOP_ROW         19u
 #define VISUAL_AVOID_LOWER_COARSE_JUMP_PX   8
-#define VISUAL_AVOID_UPPER_COARSE_JUMP_PX   6
+#define VISUAL_AVOID_UPPER_COARSE_JUMP_PX   4
 #define VISUAL_AVOID_RIGHT_STEP_MAX         4
-#define VISUAL_AVOID_VERTICAL_ROWS_MIN      8u
+#define VISUAL_AVOID_VERTICAL_ROWS_MIN      6u
 #define VISUAL_AVOID_VERTICAL_ROWS_MAX      40u
 #define VISUAL_AVOID_LANE_WIDTH_MIN         20u
 
@@ -23,6 +23,21 @@
     ((row) > lost_left && (row) > lost_right &&                            \
      (left) != 0u && (right) != SEARCH_IMAGE_W - 1u &&                     \
      (left) < (right) && (uint8)((right) - (left)) >= VISUAL_AVOID_LANE_WIDTH_MIN)
+
+#define VISUAL_AVOID_MIRROR_COL(col)                                       \
+    ((uint8)(SEARCH_IMAGE_W - 1u - (col)))
+
+/* Mirror right-side points into the existing left-obstacle coordinate system. */
+#define VISUAL_AVOID_LOAD_POINT(row, mirror, left, right)                  \
+    do {                                                                   \
+        if (mirror) {                                                      \
+            (left) = VISUAL_AVOID_MIRROR_COL(right_edge_line[(row)]);      \
+            (right) = VISUAL_AVOID_MIRROR_COL(left_edge_line[(row)]);      \
+        } else {                                                           \
+            (left) = left_edge_line[(row)];                                \
+            (right) = right_edge_line[(row)];                              \
+        }                                                                  \
+    } while (0)
 
 static volatile uint8 visual_avoid_state = VISUAL_AVOID_STATE_SCAN;
 static volatile uint8 visual_avoid_done = 0u;
@@ -71,6 +86,7 @@ static uint8 VisualAvoid_RefineJump(uint8 below_row,
                                     uint8 right_below,
                                     uint8 left_above,
                                     uint8 right_above,
+                                    uint8 mirror,
                                     int8 wanted,
                                     uint8 *corner_row,
                                     uint8 *corner_col)
@@ -81,8 +97,8 @@ static uint8 VisualAvoid_RefineJump(uint8 below_row,
     int8 jump;
 
     middle_row = (uint8)(below_row - PIXEL_OFFSET);
-    left_middle = left_edge_line[middle_row];
-    right_middle = right_edge_line[middle_row];
+    VISUAL_AVOID_LOAD_POINT(middle_row, mirror,
+                            left_middle, right_middle);
     if (!VISUAL_AVOID_POINT_VALID(middle_row, left_middle, right_middle)) {
         return 0u;
     }
@@ -121,7 +137,8 @@ static uint8 VisualAvoid_VerticalValid(uint8 lower_row,
                                        uint8 lower_col,
                                        uint8 upper_col,
                                        uint8 coarse_min,
-                                       uint8 coarse_max)
+                                       uint8 coarse_max,
+                                       uint8 mirror)
 {
     int16 row;
     int16 corner_diff;
@@ -160,8 +177,7 @@ static uint8 VisualAvoid_VerticalValid(uint8 lower_row,
     }
 
     while (row > (int16)upper_row) {
-        left = left_edge_line[(uint8)row];
-        right = right_edge_line[(uint8)row];
+        VISUAL_AVOID_LOAD_POINT((uint8)row, mirror, left, right);
         if (!VISUAL_AVOID_POINT_VALID((uint8)row, left, right)) {
             return 0u;
         }
@@ -180,7 +196,8 @@ static uint8 VisualAvoid_VerticalValid(uint8 lower_row,
  * Coarse scan only raw odd rows.  Four-row candidates are refined back to
  * the original two-row jump rules, so normal frames load each edge row once.
  */
-static uint8 VisualAvoid_Detect(uint8 *upper_row_out,
+static uint8 VisualAvoid_Detect(uint8 mirror,
+                               uint8 *upper_row_out,
                                uint8 *lower_row_out,
                                uint8 *lower_col_out)
 {
@@ -207,10 +224,8 @@ static uint8 VisualAvoid_Detect(uint8 *upper_row_out,
 
     below_row = VISUAL_AVOID_EXACT_BOTTOM_ROW;
     above_row = VISUAL_AVOID_COARSE_FIRST_ROW;
-    left_below = left_edge_line[below_row];
-    right_below = right_edge_line[below_row];
-    left_above = left_edge_line[above_row];
-    right_above = right_edge_line[above_row];
+    VISUAL_AVOID_LOAD_POINT(below_row, mirror, left_below, right_below);
+    VISUAL_AVOID_LOAD_POINT(above_row, mirror, left_above, right_above);
 
     if (VISUAL_AVOID_POINT_VALID(below_row, left_below, right_below) &&
         VISUAL_AVOID_POINT_VALID(above_row, left_above, right_above) &&
@@ -229,8 +244,8 @@ static uint8 VisualAvoid_Detect(uint8 *upper_row_out,
     above_row = (uint8)(below_row - VISUAL_AVOID_COARSE_STEP);
 
     while (1) {
-        left_above = left_edge_line[above_row];
-        right_above = right_edge_line[above_row];
+        VISUAL_AVOID_LOAD_POINT(above_row, mirror,
+                                left_above, right_above);
 
         if (!VISUAL_AVOID_POINT_VALID(below_row, left_below, right_below) ||
             !VISUAL_AVOID_POINT_VALID(above_row, left_above, right_above)) {
@@ -243,6 +258,7 @@ static uint8 VisualAvoid_Detect(uint8 *upper_row_out,
                     VisualAvoid_RefineJump(below_row,
                                            left_below, right_below,
                                            left_above, right_above,
+                                           mirror,
                                            1, &corner_row, &corner_col)) {
                     lower_row = corner_row;
                     lower_col = corner_col;
@@ -257,10 +273,12 @@ static uint8 VisualAvoid_Detect(uint8 *upper_row_out,
                     VisualAvoid_RefineJump(below_row,
                                            left_below, right_below,
                                            left_above, right_above,
+                                           mirror,
                                            -1, &corner_row, &corner_col)) {
                     if (VisualAvoid_VerticalValid(lower_row, corner_row,
                                                   lower_col, corner_col,
-                                                  vertical_min, vertical_max)) {
+                                                  vertical_min, vertical_max,
+                                                  mirror)) {
                         *upper_row_out = corner_row;
                         *lower_row_out = lower_row;
                         *lower_col_out = lower_col;
@@ -332,6 +350,7 @@ uint8 VisualAvoid_ProcessFrame(uint8 enable)
     uint8 upper_row;
     uint8 lower_row;
     uint8 lower_col;
+    uint8 mirror;
 
     state = visual_avoid_state;
     done = visual_avoid_done;
@@ -359,10 +378,20 @@ uint8 VisualAvoid_ProcessFrame(uint8 enable)
     visual_avoid_lower_row = 0u;
     visual_avoid_lower_col = 0u;
 
-    /* Only a left-side PRE_MEET can match this left-edge obstacle shape. */
-    if (!ring_l || ring_r ||
-        !VisualAvoid_Detect(&upper_row, &lower_row, &lower_col)) {
+    if (ring_l && !ring_r) {
+        mirror = 0u;
+    } else if (ring_r && !ring_l) {
+        mirror = 1u;
+    } else {
         return VISUAL_AVOID_RESULT_NONE;
+    }
+
+    if (!VisualAvoid_Detect(mirror, &upper_row, &lower_row, &lower_col)) {
+        return VISUAL_AVOID_RESULT_NONE;
+    }
+
+    if (mirror) {
+        lower_col = VISUAL_AVOID_MIRROR_COL(lower_col);
     }
 
     visual_avoid_detected = 1u;
@@ -370,7 +399,8 @@ uint8 VisualAvoid_ProcessFrame(uint8 enable)
     visual_avoid_lower_row = lower_row;
     visual_avoid_lower_col = lower_col;
 
-    Servo_Set_Path_Bias(VISUAL_AVOID_RIGHT_BIAS_PX);
+    Servo_Set_Path_Bias(mirror ? VISUAL_AVOID_LEFT_BIAS_PX :
+                                 VISUAL_AVOID_RIGHT_BIAS_PX);
     Servo_Set_Mode(SERVO_MODE_PATH_BIAS);
 
     interrupt_state = EA;

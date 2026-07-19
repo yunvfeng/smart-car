@@ -23,6 +23,7 @@
 #define REFERENCE_COL_MIN              0u
 #define REFERENCE_COL_MAX              (SEARCH_IMAGE_W - 1u)
 #define REFERENCE_COL_STEP             8u
+#define REFERENCE_REUSE_MAX_END_ROW     30u
 #define REFERENCE_SAMPLE_STEP          4u
 #define ZEBRA_ROW_TOP                  50u
 #define ZEBRA_ROW_BOTTOM               100u
@@ -54,7 +55,7 @@ uint8 cross_flag = 0;
 uint8 zebra_flag = 0;
 uint16 encoder_enter = 0;
 uint8 th = 0;
-uint16 camera_exposure_time = 110;
+uint16 camera_exposure_time = 512;
 uint8 camera_init_brightness = 0;
 static uint8 reflect_point = REFLECT_BASE_POINT;
 
@@ -388,6 +389,7 @@ void get_reference_point(const uint8 *image)
 /* 在整幅图中寻找一条较可靠的参考列，作为左右寻线的起点。 */
 void Search_reference_col(const uint8 *image)
 {
+    static uint8 reference_ready = 0u;
     uint8 col;
     uint8 row;
     uint8 temp1;
@@ -402,14 +404,51 @@ void Search_reference_col(const uint8 *image)
     const uint8 *row_ptr;
     const uint8 *bottom_ptr;
 
-    globe_remote_min = SEARCH_IMAGE_H;
-    reference_col = SEARCH_IMAGE_W / 2;
     row_step = (uint16)PIXEL_OFFSET * SEARCH_IMAGE_W;
     bottom_ptr = image + (uint16)(SEARCH_IMAGE_H - 1u) * SEARCH_IMAGE_W;
     reflect_limit = reflect_point;
     white_min = white_min_point;
     white_max = white_max_point;
     contrast_ratio = reference_contrast_ratio;
+
+    /* Reuse a reference that still reaches the upper detection area. */
+    if (reference_ready) {
+        globe_remote = SEARCH_IMAGE_H;
+        row_ptr = bottom_ptr + reference_col;
+
+        for (row = SEARCH_IMAGE_H - 1; row > PIXEL_OFFSET; row -= PIXEL_OFFSET) {
+            temp1 = *row_ptr;
+            temp2 = *(row_ptr - row_step);
+
+            if (temp1 >= reflect_limit || temp2 >= reflect_limit) {
+                row_ptr -= row_step;
+                continue;
+            }
+
+            if (temp2 > white_max) {
+                row_ptr -= row_step;
+                continue;
+            } else if (temp1 < white_min) {
+                globe_remote = row;
+                break;
+            }
+
+            if (contrast_over_threshold(temp1, temp2, contrast_ratio)) {
+                globe_remote = row;
+                break;
+            }
+
+            row_ptr -= row_step;
+        }
+
+        if (globe_remote == SEARCH_IMAGE_H ||
+            globe_remote <= REFERENCE_REUSE_MAX_END_ROW) {
+            return;
+        }
+    }
+
+    globe_remote_min = SEARCH_IMAGE_H;
+    reference_col = SEARCH_IMAGE_W / 2;
     for (col = REFERENCE_COL_MIN; col <= REFERENCE_COL_MAX; col += REFERENCE_COL_STEP) {
         globe_remote = SEARCH_IMAGE_H;
         row_ptr = bottom_ptr + col;
@@ -450,6 +489,7 @@ void Search_reference_col(const uint8 *image)
             }
         }
     }
+    reference_ready = 1u;
 }
 
 /* 从下往上搜索左右边线，并把缺失行插值补齐。 */
@@ -477,8 +517,8 @@ void Search_line(const uint8 *image)
     uint8 contrast_ratio;
     uint8 col;
     uint8 row;
+    uint16 row_step;
 
-    p = image;
     row_max = SEARCH_IMAGE_H - 1;
     row_min = STOP_ROW;
     col_max = SEARCH_IMAGE_W - 1;
@@ -487,6 +527,8 @@ void Search_line(const uint8 *image)
     white_min = white_min_point;
     white_max = white_max_point;
     contrast_ratio = reference_contrast_ratio;
+    row_step = (uint16)PIXEL_OFFSET * SEARCH_IMAGE_W;
+    p = image + (uint16)row_max * SEARCH_IMAGE_W;
 
     left_start_col  = reference_col;
     right_start_col = reference_col;
@@ -502,8 +544,6 @@ void Search_line(const uint8 *image)
     memset(&right_edge_line[row_min], SEARCH_IMAGE_W - 1, row_max - row_min + 1u);
 
     for (row = row_max; row >= row_min; row -= PIXEL_OFFSET) {
-        p = image + (uint16)row * SEARCH_IMAGE_W;
-
         if (!left_stop) {
             search_time = 2;
             do {
@@ -630,6 +670,7 @@ void Search_line(const uint8 *image)
         if (row < row_min + PIXEL_OFFSET) {
             break;
         }
+        p -= row_step;
     }
 
     insert_val();

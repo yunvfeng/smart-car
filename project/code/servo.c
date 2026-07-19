@@ -1,10 +1,64 @@
 #include "servo.h"
 #include "pid.h"
 #include "image.h"
+#include "ring.h"
+
+#define SERVO_VISION_STRAIGHT_ERROR_PX    10
+#define SERVO_VISION_STRAIGHT_HEADING_PX  6
+#define SERVO_VISION_STRAIGHT_DUTY_STEP   8u
+#define SERVO_VISION_TURN_DUTY_STEP       24u
 
 static volatile servo_mode_enum servo_mode = SERVO_MODE_VISION;
 static volatile int16 servo_path_bias_target = 0;
 static volatile int16 servo_path_bias_applied = 0;
+static uint16 servo_duty_applied = SERVO_DUTY_MID;
+
+static int16 Servo_Abs16(int16 value)
+{
+    return (value < 0) ? (int16)(-value) : value;
+}
+
+/* Limit only normal vision steering; ring and avoidance steering stay unrestricted. */
+static uint16 Servo_Limit_Vision_Duty(uint16 target_duty)
+{
+    uint8 ref;
+    uint8 near_ref;
+    uint16 step;
+    int16 error;
+    int16 heading;
+
+    ref = controlReferenceLine;
+    if (ref >= SEARCH_IMAGE_H) {
+        ref = SEARCH_IMAGE_H - 1;
+    }
+    near_ref = (uint8)(ref + 20u);
+    if (near_ref >= SEARCH_IMAGE_H) {
+        near_ref = SEARCH_IMAGE_H - 1;
+    }
+
+    error = (int16)mid_line[ref] - Mid_Col;
+    heading = (int16)mid_line[ref] - (int16)mid_line[near_ref];
+    if (Servo_Abs16(error) <= SERVO_VISION_STRAIGHT_ERROR_PX &&
+        Servo_Abs16(heading) <= SERVO_VISION_STRAIGHT_HEADING_PX) {
+        step = SERVO_VISION_STRAIGHT_DUTY_STEP;
+    } else {
+        step = SERVO_VISION_TURN_DUTY_STEP;
+    }
+
+    if (target_duty > servo_duty_applied) {
+        if ((uint16)(target_duty - servo_duty_applied) > step) {
+            servo_duty_applied += step;
+        } else {
+            servo_duty_applied = target_duty;
+        }
+    } else if ((uint16)(servo_duty_applied - target_duty) > step) {
+        servo_duty_applied -= step;
+    } else {
+        servo_duty_applied = target_duty;
+    }
+
+    return servo_duty_applied;
+}
 
 void Servo_Reset_Controller(void)
 {
@@ -48,6 +102,7 @@ void Servo_Set_Path_Bias(int16 bias)
 /* 初始化舵机 PWM，并打开 PWME 输出。 */
 void servo_init(void)
 {
+    servo_duty_applied = SERVO_DUTY_MID;
     pwm_init(STEER_PWM_PIN, SERVO_FREQ, SERVO_DUTY_MID);
 
     /* 打开 PWME 输出，否则舵机 PWM 不会真正输出到引脚。 */
@@ -104,6 +159,12 @@ void Servo_Loop(void)
         PID_servof_Target(&servo_pidf, target_col);
     } else {
         PID_servof(&servo_pidf);
+    }
+
+    if (mode == SERVO_MODE_VISION && current_step == 0u) {
+        Out_servo = Servo_Limit_Vision_Duty(Out_servo);
+    } else {
+        servo_duty_applied = Out_servo;
     }
     Set_Servo_Duty((uint32)Out_servo);
 }

@@ -1,6 +1,6 @@
 # STC32G144K 智能车固件
 
-本工程基于逐飞 STC32G144K 库和 Keil C251 工具链，实现摄像头循迹、左右环岛、左边线宽度突变视觉避障、编码器测速、电机与舵机闭环、IMU 横摆阻尼、靶点识别、激光时序和 WiFi 调试。视觉避障默认开启，DL1B ToF 当前不初始化、不轮询。
+本工程基于逐飞 STC32G144K 库和 Keil C251 工具链，实现摄像头循迹、左右环岛、双侧边线宽度突变视觉避障、编码器测速、电机与舵机闭环、IMU 横摆阻尼、靶点识别、激光时序和 WiFi 调试。视觉避障默认开启，DL1B ToF 当前不初始化、不轮询。
 
 ## 快速开始
 
@@ -38,7 +38,7 @@ project/mdk/out_file/      构建产物，不手工修改
 | `project/code/motor.c` | 编码器、目标速度、差速和电机 PWM |
 | `project/code/servo.c` | 舵机 PWM 初始化、闭环和安全限幅 |
 | `project/code/laser.c` | 靶点检测和激光脉冲/冷却时序 |
-| `project/code/visual_avoidance.c` | 左边线宽度双突变的低算力检测和 `PATH_BIAS` 持续避障 |
+| `project/code/visual_avoidance.c` | 左右边线宽度双突变的低算力检测和 `PATH_BIAS` 持续避障 |
 | `project/code/tof_avoidance.c` | 保留的 ToF 历史实现，当前不加入活跃 Keil 目标 |
 | `project/code/assistant_debug.c` | 图像边界、状态叠加、示波器数据和在线调参 |
 | `project/code/wifi_assistant.c` | WiFi 连接与调试助手会话 |
@@ -64,7 +64,7 @@ project/mdk/out_file/      构建产物，不手工修改
 1. `get_reference_point()` 用图像底部 4 行、步长 4 的样本更新黑白和反光阈值；运行时 Otsu 已关闭。
 2. `Search_reference_col()` 保持第 0～187 列范围，候选列步长为 8；纵向仍按 2 行扫描。底部阈值采样步长为 4。
 3. `Search_line()` 使用 Git 初版的左右独立搜线规则，并复制到控制线。
-4. `Ring()` 在 `FIRST` 阶段先调用 `VisualAvoid_ProcessFrame()`；仅左环预判 `ring_l` 且处于 `SCAN` 时检测障碍。完整双突变轮廓一成立就立即进入持续避障，直到里程和回正完成都停留在 `FIRST`；未命中才继续原来的左/右环顺位判断。
+4. `Ring()` 在 `FIRST` 阶段先调用 `VisualAvoid_ProcessFrame()`；左环预判检测左侧障碍，右环预判镜像检测右侧障碍。完整双突变轮廓一成立就立即进入持续避障，直到里程和回正完成都停留在 `FIRST`；未命中才继续原来的左/右环顺位判断。
 5. `Fitted_Midline()` 生成舵机使用的中线。
 6. 发车前按过 PB3 时，每 2 帧执行一次 Git 初版风格的单行预扫和纵横粗扫；视觉避障不停止靶点识别。
 
@@ -86,21 +86,21 @@ Laser_Task();
 
 障碍轮廓检测全部留在图像主循环，只读取已经生成的原始扫线点。15 ms 中断只做两轮编码器均值累加和单字节状态发布，不扫图、不读边线、不调用 `Ring_Over()`。发车前 `Gyro_Update()` 随图像周期执行；发车后只由 15 ms 控制任务在 `Servo_Loop()` 前采样。
 
-## 左边线宽度突变视觉避障
+## 双侧边线宽度突变视觉避障
 
 DL1B 不初始化、不轮询，ToF 驱动和旧避障文件只保留在磁盘，不参与当前 Keil 目标。视觉避障默认开启，不额外扫描原图，不改写 `left_control_line[]`、`right_control_line[]` 或 `mid_line[]`，只通过现有 `SERVO_MODE_PATH_BIAS` 改变视觉目标列。
 
 ### 检测与控制
 
-`Search_line()` 的原始扫线行为第 119、117、115……9 行，偶数行由 `insert_val()` 后插补。避障只在 `FIRST && ring_l && SCAN` 时运行，`ring_r` 直接跳过。先精确检查原始点 `(109,107)`，然后以 4 行步长粗扫 `107,103,…,27`：
+`Search_line()` 的原始扫线行为第 119、117、115……9 行，偶数行由 `insert_val()` 后插补。避障只在 `FIRST && SCAN` 时运行：`ring_l` 直接检测左边线，`ring_r` 将右边线镜像到同一坐标系复用完全相同的检测。先精确检查原始点 `(109,107)`，然后以 4 行步长粗扫 `107,103,…,19`：
 
-1. 粗扫每次只读一组新的左/右边线并复用上一组；下端左线变化达到 `+8 px` 或上端达到 `-6 px` 时才读取中间原始行。
-2. 候选区间被还原为两个 2 行区间：下端宽变窄至少 12 px，上端窄变宽至少 8 px，右线变化不超过 4 px。
-3. 双突变成立后才检查粗扫跳过的原始点：中间近竖直左线高 8～40 行、整段横向起伏小于 10 px，两角列差也严格小于 10 px。全程不读偶数插补点。
+1. 粗扫每次只读一组新的左右边线并复用上一组；障碍侧下端变化达到 `+8 px` 或上端达到 `-4 px` 时才读取中间原始行。
+2. 候选区间被还原为两个 2 行区间：下端宽变窄至少 9 px，上端窄变宽至少 6 px，另一侧边线变化不超过 4 px。
+3. 双突变成立后才检查粗扫跳过的原始点：障碍侧近竖直线高 6～40 行、整段横向起伏小于 10 px，两角列差也严格小于 10 px。全程不读偶数插补点。
 
 普通循迹先由环岛预判进入 `FIRST`。完整轮廓一经识别就立即开始一次完整动作：
 
-1. `SCAN → ACTIVE`：设定 `PATH_BIAS=-40 px`，切换到 `SERVO_MODE_PATH_BIAS` 并清零避障里程。偏置每 15 ms 最多变化 6 px。
+1. `SCAN → ACTIVE`：左侧障碍设定 `PATH_BIAS=-40 px` 向右绕，右侧障碍设定 `PATH_BIAS=+40 px` 向左绕；随后切换到 `SERVO_MODE_PATH_BIAS` 并清零避障里程。偏置每 15 ms 最多变化 6 px。
 2. `ACTIVE`：图像侧完全停止障碍扫描，环岛保持 `FIRST`。中断只累加 `(|encoder_l|+|encoder_r|)/2`；累计 6500 脉冲前不会退出避障。
 3. `ACTIVE → RECENTER`：达到 6500 后仅把偏置目标改为 0，仍保持 `PATH_BIAS` 模式。
 4. `RECENTER → SCAN`：用 8 个控制周期平滑回正；中断只发布完成标志，下一图像帧切回 `SERVO_MODE_VISION`、执行 `Ring_Over()` 并恢复 `NORM`。
@@ -112,11 +112,12 @@ DL1B 不初始化、不轮询，ToF 驱动和旧避障文件只保留在磁盘�
 | 参数 | 当前值 | 含义 |
 | --- | ---: | --- |
 | `VISUAL_AVOID_RIGHT_BIAS_PX` | -40 px | 右绕的视觉目标列偏置 |
+| `VISUAL_AVOID_LEFT_BIAS_PX` | +40 px | 左绕的视觉目标列偏置 |
 | `SERVO_PATH_BIAS_STEP_PER_TICK` | 6 px/15 ms | 偏置加入和撤销的最大变化率 |
 | `VISUAL_AVOID_PASS_PULSES` | 6500 | 两轮绝对编码器脉冲均值的累计门限 |
 | `VISUAL_AVOID_RECENTER_TICKS` | 8 | 里程到达后的平滑回正周期数 |
-| `VISUAL_AVOID_WIDTH_JUMP_PX` | 12 px | 障碍下端宽变窄的最小幅值 |
-| `VISUAL_AVOID_UPPER_JUMP_PX` | 8 px | 障碍上端窄变宽的最小幅值 |
+| `VISUAL_AVOID_WIDTH_JUMP_PX` | 9 px | 障碍下端宽变窄的最小幅值 |
+| `VISUAL_AVOID_UPPER_JUMP_PX` | 6 px | 障碍上端窄变宽的最小幅值 |
 | `VISUAL_AVOID_LEFT_POINT_DIFF_PX` | 10 px | 两个左线突变点必须严格小于该列差 |
 
 低速测试时先看 WiFi 状态：轮廓成立后直接显示 `V:AVD`，并在 `ACTIVE/RECENTER` 全程保持。CH6 在整段动作中保留最初的检测行。
@@ -201,7 +202,7 @@ PB3 按住或短按一次都能在发车前锁存靶点检测。视觉避障始�
 | `controlReferenceLine` | 80 | `project/code/servo.h` |
 | `Mid_Col` | 94 | `project/code/servo.h` |
 | `reference_contrast_ratio` | 120 | `project/code/image.c` |
-| `camera_exposure_time` | 110 | `project/code/image.c` |
+| `camera_exposure_time` | 512 | `project/code/image.c` |
 | `SERVO_DUTY_MIN` | 690 | `project/code/servo.h` |
 | `SERVO_DUTY_MID` | 850 | `project/code/servo.h` |
 | `SERVO_DUTY_MAX` | 1040 | `project/code/servo.h` |
@@ -220,12 +221,14 @@ PB3 按住或短按一次都能在发车前锁存靶点检测。视觉避障始�
 
 PID/PI 参数采用 Q10 定点格式，代码中的整数值等于实际系数乘以 1024。
 
+普通循迹采用连续双 KP：中线误差绝对值不超过 8 px 时使用直道 KP 2000，超过 8 px 后连续过渡到可在线调节的转弯 KP，避免增益突跳。普通直道（误差不超过 10 px 且 80/100 行中线差不超过 6 px）的舵机输出每 15 ms 最多变化 8 duty，其余普通弯道最多变化 24 duty；环岛和 `PATH_BIAS/CENTER` 不受该变化率限制。
+
 ### 陀螺仪横摆阻尼
 
 - 上电执行 IMU660RB 初始化，然后静止采集 100 个 Z 轴样本求平均零偏，每个样本间隔 5 ms，约需 0.5 秒。
 - 不再进行样本跨度判断；只有 IMU660RB 驱动初始化失败时才禁用陀螺仪反馈，此时视觉循线仍可继续工作。
 - 校零后的 Z 轴使用 `filtered = (3 * filtered + corrected) / 4` 低通滤波；除以 4 和 Q10 除以 1024 均使用等价移位，减少 15 ms 中断的软件除法。
-- 舵机使用 `Kp=4500`、`Kd=400`、`Kf=200`、`KG=1200`，按 `out -= KG * gyro_z / 1024` 加入横摆阻尼；该修正单独限制在 -40～40 duty。
+- 舵机使用转弯 `Kp=6575`、直道 `Kp=2000`、`Kd=498`、`Kf=200`、`KG=22`，按 `out -= KG * gyro_z / 1024` 加入横摆阻尼；该修正单独限制在 -40～40 duty。
 - 首次确认符号时保持车轮离地，手动将车头向右旋转，确认舵机向旋转反方向修正；若方向相反，将 KG 改成负值后再落地测试。
 
 ### 电机与速度
@@ -260,7 +263,7 @@ PID/PI 参数采用 Q10 定点格式，代码中的整数值等于实际系数�
 - 8 通道示波器当前开启，每 5 个图像帧发送一次：CH1 中线误差、CH2 舵机误差、CH3/CH4 左右编码器、CH5 陀螺仪 Z 轴、CH6 障碍下突变点行数、CH7/CH8 左右电机 PWM。未检测到障碍时 CH6 为 0；进入 `ACTIVE` 后 CH6 锁存最初触发行，直到回正完成。
 - WiFi 图像每处理 2 帧发送 1 帧，边线随该图像一起发送；非发送帧不读取避障调试快照、不绘制标注。在线参数接收仍保留，车辆的 15 ms 控制周期和电机目标速度不变。
 - 图像左上角使用英文缩写显示环岛状态 `R:NORM/FIRST/ENTER/TURN/IN/OUT/BACK/OVER` 和视觉避障状态 `V:OFF/SCN/AVD`。`AVD` 表示正处于 `ACTIVE` 或 `RECENTER`；状态只在实际发送图像时绘制。
-- 摄像头固定曝光初值为 110；`mt9v03x_init()` 后主程序立即写入该值。WiFi 第 8 通道仍可在运行时修改曝光。
+- 摄像头固定曝光初值为 512；`mt9v03x_init()` 后主程序立即写入该值。WiFi 第 8 通道仍可在运行时修改曝光。
 
 ## 硬件连接摘要
 

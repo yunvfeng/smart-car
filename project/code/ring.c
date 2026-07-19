@@ -193,14 +193,34 @@ static void Ring_Fill_Line(uint8 start_row, uint8 end_row,
     den = (int16)(end_row - start_row);
 
     diff = end_col - start_col;
+    if (diff == 0) {
+        if (end_row > start_row + 1u) {
+            if (!to_flag) {
+                memset(&left_control_line[start_row + 1u],
+                       (uint8)start_col,
+                       end_row - start_row - 1u);
+            } else {
+                memset(&right_control_line[start_row + 1u],
+                       (uint8)start_col,
+                       end_row - start_row - 1u);
+            }
+        }
+        return;
+    }
+
     dir = 1;
     if (diff < 0) {
         diff = (int16)(-diff);
         dir = -1;
     }
 
-    base_step = diff / den;
-    rem = (int16)(diff - base_step * den);
+    if (diff < den) {
+        base_step = 0;
+        rem = diff;
+    } else {
+        base_step = diff / den;
+        rem = (int16)(diff - base_step * den);
+    }
     acc = den >> 1;
     col = start_col;
 
@@ -212,10 +232,11 @@ static void Ring_Fill_Line(uint8 start_row, uint8 end_row,
             acc = (int16)(acc - den);
         }
 
+        /* Linear interpolation stays between the two uint8 array endpoints. */
         if (!to_flag) {
-            left_control_line[i] = clamp_col_int16(col);
+            left_control_line[i] = (uint8)col;
         } else {
-            right_control_line[i] = clamp_col_int16(col);
+            right_control_line[i] = (uint8)col;
         }
     }
 }
