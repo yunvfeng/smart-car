@@ -11,7 +11,7 @@
 
 #define VISUAL_AVOID_RIGHT_BIAS_PX           (-40)
 #define VISUAL_AVOID_LEFT_BIAS_PX            40
-#define VISUAL_AVOID_PASS_PULSES             6500u
+#define VISUAL_AVOID_PASS_PULSES             4500u
 #define VISUAL_AVOID_RECENTER_TICKS          8u
 
 #define VISUAL_AVOID_RESULT_NONE             0u

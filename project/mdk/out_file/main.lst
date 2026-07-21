@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  main                                                               19/07/26  17:52:55  PAGE 1   
+C251 COMPILER V5.60.0,  main                                                               20/07/26  21:31:37  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE main
@@ -66,7 +66,7 @@ stmt  level    source
    53   1          uint8 car_started;
    54   1          uint8 key1_last;
    55   1          uint8 key1_now;
-C251 COMPILER V5.60.0,  main                                                               19/07/26  17:52:55  PAGE 2   
+C251 COMPILER V5.60.0,  main                                                               20/07/26  21:31:37  PAGE 2   
 
    56   1      
    57   1          clock_init(SYSTEM_CLOCK_96M);
@@ -134,7 +134,7 @@ stmt  level    source
   119   3                  if (wifi_ready && !car_started) {
   120   4                      pit_ms_init(TIM0_PIT, CONTROL_PERIOD_MS, Timer0_Callback);
   121   4                      car_started = 1;
-C251 COMPILER V5.60.0,  main                                                               19/07/26  17:52:55  PAGE 3   
+C251 COMPILER V5.60.0,  main                                                               20/07/26  21:31:37  PAGE 3   
 
   122   4                  }
   123   3              }

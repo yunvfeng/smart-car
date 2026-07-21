@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  assistant_debug                                                    19/07/26  17:52:54  PAGE 1   
+C251 COMPILER V5.60.0,  assistant_debug                                                    20/07/26  21:31:36  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE assistant_debug
@@ -66,7 +66,7 @@ stmt  level    source
    54          static void Assistant_Draw_Image_Point(uint8 x, uint8 y, uint8 gray)
    55          {
    56   1          if (x < MT9V03X_W && y < MT9V03X_H) {
-C251 COMPILER V5.60.0,  assistant_debug                                                    19/07/26  17:52:54  PAGE 2   
+C251 COMPILER V5.60.0,  assistant_debug                                                    20/07/26  21:31:36  PAGE 2   
 
    57   2              mt9v03x_image[y][x] = gray;
    58   2          }
@@ -134,7 +134,7 @@ stmt  level    source
   120   1      
   121   1          x = Assistant_Draw_Image_String(2u, 2u, "R:");
   122   1          Assistant_Draw_Image_String(x, 2u, Assistant_Ring_State_Name());
-C251 COMPILER V5.60.0,  assistant_debug                                                    19/07/26  17:52:54  PAGE 3   
+C251 COMPILER V5.60.0,  assistant_debug                                                    20/07/26  21:31:36  PAGE 3   
 
   123   1          x = Assistant_Draw_Image_String(2u, 18u, "V:");
   124   1          Assistant_Draw_Image_String(x, 18u,
@@ -202,7 +202,7 @@ stmt  level    source
   186   1          seekfree_assistant_parameter[ASSISTANT_PARAM_MOTOR_STOP - 1] =
   187   1              Motor_Is_Force_Stopped() ? 2.0f : 1.0f;
   188   1          seekfree_assistant_parameter[ASSISTANT_PARAM_MIN_SPEED - 1] =
-C251 COMPILER V5.60.0,  assistant_debug                                                    19/07/26  17:52:54  PAGE 4   
+C251 COMPILER V5.60.0,  assistant_debug                                                    20/07/26  21:31:36  PAGE 4   
 
   189   1              (float)speed_min;
   190   1          seekfree_assistant_parameter[ASSISTANT_PARAM_MAX_SPEED - 1] =
@@ -270,7 +270,7 @@ stmt  level    source
   252   2      
   253   2          case ASSISTANT_PARAM_MIN_SPEED:
   254   2              value = Assistant_Clamp_Float(value, ASSISTANT_SPEED_MIN, (float)MAX_SPEED_TUNE_MAX);
-C251 COMPILER V5.60.0,  assistant_debug                                                    19/07/26  17:52:54  PAGE 5   
+C251 COMPILER V5.60.0,  assistant_debug                                                    20/07/26  21:31:36  PAGE 5   
 
   255   2              Motor_Get_Speed_Range(&speed_min, &speed_max);
   256   2              speed_min = (int16)(value + 0.5f);
@@ -338,7 +338,7 @@ stmt  level    source
   318   1          seekfree_assistant_oscilloscope_data.channel_num = SEEKFREE_ASSISTANT_SET_OSCILLOSCOPE_COUNT;
   319   1          seekfree_assistant_oscilloscope_data.dat[0] = (float)mid_error;
   320   1          seekfree_assistant_oscilloscope_data.dat[1] = (float)servo_error;
-C251 COMPILER V5.60.0,  assistant_debug                                                    19/07/26  17:52:54  PAGE 6   
+C251 COMPILER V5.60.0,  assistant_debug                                                    20/07/26  21:31:36  PAGE 6   
 
   321   1          seekfree_assistant_oscilloscope_data.dat[2] = (float)encoder_data_l;
   322   1          seekfree_assistant_oscilloscope_data.dat[3] = (float)encoder_data_r;
@@ -406,7 +406,7 @@ stmt  level    source
   384   2              Assistant_Send_Camera();
   385   2          }
   386   1      #endif
-C251 COMPILER V5.60.0,  assistant_debug                                                    19/07/26  17:52:54  PAGE 7   
+C251 COMPILER V5.60.0,  assistant_debug                                                    20/07/26  21:31:36  PAGE 7   
 
   387   1      }
   388          
@@ -474,7 +474,7 @@ stmt  level    source
                
                void Assistant_Debug_Timebase_Tick(void)
                {
-C251 COMPILER V5.60.0,  assistant_debug                                                    19/07/26  17:52:54  PAGE 8   
+C251 COMPILER V5.60.0,  assistant_debug                                                    20/07/26  21:31:36  PAGE 8   
 
                }
                

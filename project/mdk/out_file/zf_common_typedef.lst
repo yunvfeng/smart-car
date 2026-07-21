@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  zf_common_typedef                                                  19/07/26  16:05:59  PAGE 1   
+C251 COMPILER V5.60.0,  zf_common_typedef                                                  19/07/26  22:17:03  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_common_typedef
@@ -67,7 +67,7 @@ Module Information          Static   Overlayable
   xdata-const size     =    ------     ------
   edata size           =    ------     ------
   bit size             =    ------     ------
-C251 COMPILER V5.60.0,  zf_common_typedef                                                  19/07/26  16:05:59  PAGE 2   
+C251 COMPILER V5.60.0,  zf_common_typedef                                                  19/07/26  22:17:03  PAGE 2   
 
   ebit size            =    ------     ------
   bitaddressable size  =    ------     ------

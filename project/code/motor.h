@@ -19,11 +19,11 @@ typedef enum
 } motor_safety_mode_enum;
 
 /* 左右电机接线。 */
-#define DIR_L              IO_P52
-#define PWM_L              PWMD_CH1_P50
+#define DIR_L              IO_P75
+#define PWM_L              PWMB_CH4_P77
 
-#define DIR_R              IO_P53
-#define PWM_R              PWMD_CH2_P51
+#define DIR_R              IO_P74
+#define PWM_R              PWMB_CH3_P76
 
 #define MOTOR_FREQ         17000
 #define MOTOR_MAX_LIMIT    7500

@@ -23,7 +23,7 @@
 #define REFERENCE_COL_MIN              0u
 #define REFERENCE_COL_MAX              (SEARCH_IMAGE_W - 1u)
 #define REFERENCE_COL_STEP             8u
-#define REFERENCE_REUSE_MAX_END_ROW     30u
+#define REFERENCE_REUSE_MAX_END_ROW     10u
 #define REFERENCE_SAMPLE_STEP          4u
 #define ZEBRA_ROW_TOP                  50u
 #define ZEBRA_ROW_BOTTOM               100u

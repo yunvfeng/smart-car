@@ -6,7 +6,10 @@
 #define SERVO_VISION_STRAIGHT_ERROR_PX    10
 #define SERVO_VISION_STRAIGHT_HEADING_PX  6
 #define SERVO_VISION_STRAIGHT_DUTY_STEP   8u
+#define SERVO_VISION_RETURN_DUTY_STEP     18u
 #define SERVO_VISION_TURN_DUTY_STEP       24u
+#define SERVO_VISION_RECOVERY_DUTY_STEP   40u
+#define SERVO_VISION_RECOVERY_ERROR_PX    20
 
 static volatile servo_mode_enum servo_mode = SERVO_MODE_VISION;
 static volatile int16 servo_path_bias_target = 0;
@@ -24,6 +27,8 @@ static uint16 Servo_Limit_Vision_Duty(uint16 target_duty)
     uint8 ref;
     uint8 near_ref;
     uint16 step;
+    uint16 target_offset;
+    uint16 applied_offset;
     int16 error;
     int16 heading;
 
@@ -43,6 +48,25 @@ static uint16 Servo_Limit_Vision_Duty(uint16 target_duty)
         step = SERVO_VISION_STRAIGHT_DUTY_STEP;
     } else {
         step = SERVO_VISION_TURN_DUTY_STEP;
+    }
+
+    if (step == SERVO_VISION_TURN_DUTY_STEP) {
+        target_offset = (target_duty >= SERVO_DUTY_MID) ?
+                        (target_duty - SERVO_DUTY_MID) :
+                        (SERVO_DUTY_MID - target_duty);
+        applied_offset = (servo_duty_applied >= SERVO_DUTY_MID) ?
+                         (servo_duty_applied - SERVO_DUTY_MID) :
+                         (SERVO_DUTY_MID - servo_duty_applied);
+        if (target_offset < applied_offset ||
+            (target_duty < SERVO_DUTY_MID &&
+             servo_duty_applied > SERVO_DUTY_MID) ||
+            (target_duty > SERVO_DUTY_MID &&
+             servo_duty_applied < SERVO_DUTY_MID)) {
+            step = SERVO_VISION_RETURN_DUTY_STEP;
+        } else if (error < -SERVO_VISION_RECOVERY_ERROR_PX ||
+                   error > SERVO_VISION_RECOVERY_ERROR_PX) {
+            step = SERVO_VISION_RECOVERY_DUTY_STEP;
+        }
     }
 
     if (target_duty > servo_duty_applied) {

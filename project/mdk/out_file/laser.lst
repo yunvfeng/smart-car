@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  laser                                                              19/07/26  16:34:09  PAGE 1   
+C251 COMPILER V5.60.0,  laser                                                              19/07/26  22:17:08  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE laser
@@ -66,7 +66,7 @@ stmt  level    source
    54   1          gpio_init(LASER_PIN, GPO, 0, GPO_PUSH_PULL);
    55   1      }
    56          
-C251 COMPILER V5.60.0,  laser                                                              19/07/26  16:34:09  PAGE 2   
+C251 COMPILER V5.60.0,  laser                                                              19/07/26  22:17:08  PAGE 2   
 
    57          void laser_on(void)
    58          {
@@ -134,7 +134,7 @@ stmt  level    source
   120   1          uint8 pre_r = 0;
   121   1          int16 l_edge;
   122   1          int16 r_edge;
-C251 COMPILER V5.60.0,  laser                                                              19/07/26  16:34:09  PAGE 3   
+C251 COMPILER V5.60.0,  laser                                                              19/07/26  22:17:08  PAGE 3   
 
   123   1      
   124   1          pre_find_flag = 0;
@@ -202,7 +202,7 @@ stmt  level    source
   186   3                  top_d = (uint8)i;
   187   3                  debug_stage = 1;
   188   3                  break;
-C251 COMPILER V5.60.0,  laser                                                              19/07/26  16:34:09  PAGE 4   
+C251 COMPILER V5.60.0,  laser                                                              19/07/26  22:17:08  PAGE 4   
 
   189   3              }
   190   2          }
@@ -271,7 +271,7 @@ Module Information          Static   Overlayable
   bit size             =    ------     ------
   ebit size            =    ------     ------
   bitaddressable size  =    ------     ------
-C251 COMPILER V5.60.0,  laser                                                              19/07/26  16:34:09  PAGE 5   
+C251 COMPILER V5.60.0,  laser                                                              19/07/26  22:17:08  PAGE 5   
 
   ebitaddressable size =    ------     ------
   far data size        =    ------     ------

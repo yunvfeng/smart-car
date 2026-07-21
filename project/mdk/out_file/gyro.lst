@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  gyro                                                               19/07/26  16:34:10  PAGE 1   
+C251 COMPILER V5.60.0,  gyro                                                               19/07/26  22:17:08  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE gyro
@@ -66,7 +66,7 @@ stmt  level    source
    54   2          }
    55   1      
    56   1          imu660rb_get_gyro();
-C251 COMPILER V5.60.0,  gyro                                                               19/07/26  16:34:10  PAGE 2   
+C251 COMPILER V5.60.0,  gyro                                                               19/07/26  22:17:08  PAGE 2   
 
    57   1          corrected = (int32)imu660rb_gyro_z - (int32)gyro_z_bias;
    58   1          if (corrected > 32767L) {

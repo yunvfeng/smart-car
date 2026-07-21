@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  image                                                              19/07/26  19:32:10  PAGE 1   
+C251 COMPILER V5.60.0,  image                                                              20/07/26  21:31:34  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE image
@@ -35,7 +35,7 @@ stmt  level    source
    23          #define REFERENCE_COL_MIN              0u
    24          #define REFERENCE_COL_MAX              (SEARCH_IMAGE_W - 1u)
    25          #define REFERENCE_COL_STEP             8u
-   26          #define REFERENCE_REUSE_MAX_END_ROW     30u
+   26          #define REFERENCE_REUSE_MAX_END_ROW     10u
    27          #define REFERENCE_SAMPLE_STEP          4u
    28          #define ZEBRA_ROW_TOP                  50u
    29          #define ZEBRA_ROW_BOTTOM               100u
@@ -66,7 +66,7 @@ stmt  level    source
    54          uint8 cross_flag = 0;
    55          uint8 zebra_flag = 0;
    56          uint16 encoder_enter = 0;
-C251 COMPILER V5.60.0,  image                                                              19/07/26  19:32:10  PAGE 2   
+C251 COMPILER V5.60.0,  image                                                              20/07/26  21:31:34  PAGE 2   
 
    57          uint8 th = 0;
    58          uint16 camera_exposure_time = 512;
@@ -134,7 +134,7 @@ stmt  level    source
                
                    for (col = (uint8)left; col < (uint8)right; col += ZEBRA_COL_STEP) {
                        state = zebra_pixel_state(row_ptr[col]);
-C251 COMPILER V5.60.0,  image                                                              19/07/26  19:32:10  PAGE 3   
+C251 COMPILER V5.60.0,  image                                                              20/07/26  21:31:34  PAGE 3   
 
                        if (state < 0) {
                            continue;
@@ -202,7 +202,7 @@ stmt  level    source
                            }
                        }
                    }
-C251 COMPILER V5.60.0,  image                                                              19/07/26  19:32:10  PAGE 4   
+C251 COMPILER V5.60.0,  image                                                              20/07/26  21:31:34  PAGE 4   
 
                
                    left = (uint8)limit_i16((int16)left_edge_line[controlReferenceLine] + ZEBRA_MARGIN,
@@ -270,7 +270,7 @@ stmt  level    source
   252   3                  sum += *(p + col);
   253   3                  sample_count++;
   254   3              }
-C251 COMPILER V5.60.0,  image                                                              19/07/26  19:32:10  PAGE 5   
+C251 COMPILER V5.60.0,  image                                                              20/07/26  21:31:34  PAGE 5   
 
   255   2          }
   256   1      
@@ -338,7 +338,7 @@ stmt  level    source
   318   1          mt9v03x_finish_flag = 0;
   319   1      }
   320          
-C251 COMPILER V5.60.0,  image                                                              19/07/26  19:32:10  PAGE 6   
+C251 COMPILER V5.60.0,  image                                                              20/07/26  21:31:34  PAGE 6   
 
   321          static uint8 contrast_over_threshold(uint8 temp1, uint8 temp2, uint8 threshold)
   322          {
@@ -406,7 +406,7 @@ stmt  level    source
   384   1      
   385   1          white_max_point = (uint8)limit_i16((int16)((uint16)white_min_point + WHITE_MAX_OFFSET),
   386   1                                             (int16)white_min_point + 8, (int16)reflect_point - 1);
-C251 COMPILER V5.60.0,  image                                                              19/07/26  19:32:10  PAGE 7   
+C251 COMPILER V5.60.0,  image                                                              20/07/26  21:31:34  PAGE 7   
 
   387   1      }
   388          
@@ -474,7 +474,7 @@ stmt  level    source
   450   1          globe_remote_min = SEARCH_IMAGE_H;
   451   1          reference_col = SEARCH_IMAGE_W / 2;
   452   1          for (col = REFERENCE_COL_MIN; col <= REFERENCE_COL_MAX; col += REFERENCE_COL_STEP) {
-C251 COMPILER V5.60.0,  image                                                              19/07/26  19:32:10  PAGE 8   
+C251 COMPILER V5.60.0,  image                                                              20/07/26  21:31:34  PAGE 8   
 
   453   2              globe_remote = SEARCH_IMAGE_H;
   454   2              row_ptr = bottom_ptr + col;
@@ -542,7 +542,7 @@ stmt  level    source
   516   1          uint8 white_max;
   517   1          uint8 contrast_ratio;
   518   1          uint8 col;
-C251 COMPILER V5.60.0,  image                                                              19/07/26  19:32:10  PAGE 9   
+C251 COMPILER V5.60.0,  image                                                              20/07/26  21:31:34  PAGE 9   
 
   519   1          uint8 row;
   520   1          uint16 row_step;
@@ -610,7 +610,7 @@ stmt  level    source
   582   6                          }
   583   5      
   584   5                          if (col == col_min ||
-C251 COMPILER V5.60.0,  image                                                              19/07/26  19:32:10  PAGE 10  
+C251 COMPILER V5.60.0,  image                                                              20/07/26  21:31:34  PAGE 10  
 
   585   5                              contrast_over_threshold(temp1, temp2, contrast_ratio)) {
   586   6                              left_edge_line[row] = col;
@@ -678,7 +678,7 @@ stmt  level    source
   648   7                              }
   649   6                              break;
   650   6                          }
-C251 COMPILER V5.60.0,  image                                                              19/07/26  19:32:10  PAGE 11  
+C251 COMPILER V5.60.0,  image                                                              20/07/26  21:31:34  PAGE 11  
 
   651   5      
   652   5                          if (temp2 > white_max) {
@@ -746,7 +746,7 @@ stmt  level    source
   714   3                  sum++;
   715   3              }
   716   2              right_edge_line[i + 1u] = (uint8)(sum >> 1);
-C251 COMPILER V5.60.0,  image                                                              19/07/26  19:32:10  PAGE 12  
+C251 COMPILER V5.60.0,  image                                                              20/07/26  21:31:34  PAGE 12  
 
   717   2              front_p = cur_p;
   718   2      
@@ -814,7 +814,7 @@ stmt  level    source
   780   2              debug_stage = 0;
   781   2              return;
   782   2          }
-C251 COMPILER V5.60.0,  image                                                              19/07/26  19:32:10  PAGE 13  
+C251 COMPILER V5.60.0,  image                                                              20/07/26  21:31:34  PAGE 13  
 
   783   1      
   784   1          /* 靶点结果在跳过帧保留，避免 15 ms 激光任务看到隔帧闪烁。 */

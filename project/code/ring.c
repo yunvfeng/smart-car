@@ -6,15 +6,20 @@
 
 #define FIRST_TO_NORMAL_CONFIRM_FRAMES 3u
 #define ENTER_TO_FIRST_CONFIRM_FRAMES  3u
+#define ENTER_TO_TURN_CONFIRM_FRAMES   2u
 #define TURN_TO_IN_CONFIRM_FRAMES      3u
+#define FIRST_TO_ENTER_WIDTH_MIN       110u
+#define FIRST_TO_ENTER_WIDTH_TOP_ROW   25u
+#define FIRST_TO_ENTER_WIDTH_END_ROW   65u
+#define FIRST_TO_ENTER_WIDTH_ROW_STEP  5u
 #define IN_TO_OUT_MIN_FRAMES           20u
 #define IN_TO_OUT_CONFIRM_FRAMES       3u
 #define LEFT_IN_AUTO_OUT_FRAMES        35u
 #define RING_IN_LEFT_TOP_COL           15u
 #define RING_OUT_LEFT_TOP_COL          10u
 #define RING_MIRROR_COL(col)           ((uint8)(SEARCH_IMAGE_W - 1u - (col)))
-#define RING_IN_RIGHT_TOP_COL          170u
-#define RING_OUT_RIGHT_TOP_COL         170u
+#define RING_IN_RIGHT_TOP_COL          175u
+#define RING_OUT_RIGHT_TOP_COL         175u
 #define RING_LEFT_IN_OUT_BOTTOM_BASE_COL   141u
 #define RING_RIGHT_IN_OUT_BOTTOM_BASE_COL  10u
 #define RING_RIGHT_TURN_BOTTOM_COL     30u
@@ -53,6 +58,7 @@ uint8 ring_over_flag = 0;
 static uint8 mid_under_flag = 0;
 static uint8 first_to_normal_cnt = 0;
 static uint8 enter_to_first_cnt = 0;
+static uint8 enter_to_turn_cnt = 0;
 static uint8 turn_to_in_cnt = 0;
 static uint8 in_to_out_cnt = 0;
 static uint16 cnt_over = 0;
@@ -84,17 +90,20 @@ static void Ring_Change_Step(uint8 next_step)
         mid_under_flag = 0;
         first_to_normal_cnt = 0;
         enter_to_first_cnt = 0;
+        enter_to_turn_cnt = 0;
         break;
 
     case RING_STEP_ENTER:
         ring_enter_flag = 0;
         mid_under_flag = 0;
         enter_to_first_cnt = 0;
+        enter_to_turn_cnt = 0;
         break;
 
     case RING_STEP_TURN:
         ring_turn_flag = 0;
         enter_to_first_cnt = 0;
+        enter_to_turn_cnt = 0;
         turn_to_in_cnt = 0;
         break;
 
@@ -132,13 +141,20 @@ static uint8 abs_diff_u8(uint8 a, uint8 b)
     return (a > b) ? (a - b) : (b - a);
 }
 
-static uint8 Ring_Row_Width_Over(uint8 row, uint8 width)
+static uint8 Ring_First_Upper_Width_Ready(void)
 {
-    if (right_edge_line[row] <= left_edge_line[row]) {
-        return 0;
-    }
+    uint8 row;
 
-    return ((uint8)(right_edge_line[row] - left_edge_line[row]) > width) ? 1u : 0u;
+    for (row = FIRST_TO_ENTER_WIDTH_TOP_ROW;
+         row <= FIRST_TO_ENTER_WIDTH_END_ROW;
+         row += FIRST_TO_ENTER_WIDTH_ROW_STEP) {
+        if (right_edge_line[row] > left_edge_line[row] &&
+            (uint8)(right_edge_line[row] - left_edge_line[row]) >
+                FIRST_TO_ENTER_WIDTH_MIN) {
+            return 1u;
+        }
+    }
+    return 0u;
 }
 
 static uint8 Ring_Left_Side_Ready(void)
@@ -305,7 +321,12 @@ void Ring(uint8 visual_avoid_enable)
         }
 
         if (ring_enter_flag) {
-            Ring_Change_Step(RING_STEP_TURN);
+            if (++enter_to_turn_cnt >= ENTER_TO_TURN_CONFIRM_FRAMES) {
+                Ring_Change_Step(RING_STEP_TURN);
+            }
+            ring_enter_flag = 0;
+        } else {
+            enter_to_turn_cnt = 0;
         }
         break;
 
@@ -555,12 +576,9 @@ void Ring_First_meeting(void)
 
     if (midPoint &&
         Ring_Left_Side_Ready() &&
-        left_edge_line[94] <= 2 &&
-        left_edge_line[85] <= 2 &&
-        (Ring_Row_Width_Over(55, 110u) ||
-         Ring_Row_Width_Over(30, 110u) ||
-         Ring_Row_Width_Over(35, 110u) ||
-         Ring_Row_Width_Over(40, 110u))) {
+        left_edge_line[94] <= 2u &&
+        left_edge_line[85] <= 2u &&
+        Ring_First_Upper_Width_Ready()) {
         first_meeting_flag = 1;
         first_to_normal_cnt = 0;
         return;
@@ -793,10 +811,7 @@ static void Ring_First_meeting_Right(void)
         Ring_Right_Side_Ready() &&
         right_edge_line[94] >= RING_MIRROR_COL(2u) &&
         right_edge_line[85] >= RING_MIRROR_COL(2u) &&
-        (Ring_Row_Width_Over(55, 110u) ||
-         Ring_Row_Width_Over(30, 110u) ||
-         Ring_Row_Width_Over(35, 110u) ||
-         Ring_Row_Width_Over(40, 110u))) {
+        Ring_First_Upper_Width_Ready()) {
         first_meeting_flag = 1;
         first_to_normal_cnt = 0;
         return;
@@ -974,6 +989,7 @@ void Ring_Over(void)
     mid_under_flag = 0;
     first_to_normal_cnt = 0;
     enter_to_first_cnt = 0;
+    enter_to_turn_cnt = 0;
     turn_to_in_cnt = 0;
     in_to_out_cnt = 0;
     current_step = 0;
