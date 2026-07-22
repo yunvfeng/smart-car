@@ -109,6 +109,16 @@ static void Assistant_Draw_Target_Cross(void)
     }
 }
 
+static const char *Assistant_Target_Laser_Name(void)
+{
+    switch (debug_stage) {
+    case TARGET_LASER_LEFT:   return "L";
+    case TARGET_LASER_CENTER: return "C";
+    case TARGET_LASER_RIGHT:  return "R";
+    default:                  return "-";
+    }
+}
+
 static void Assistant_Draw_Status_Overlay(void)
 {
     uint8 x;
@@ -126,6 +136,8 @@ static void Assistant_Draw_Status_Overlay(void)
                                     assistant_visual_avoid_enabled,
                                     obstacle_detected,
                                     avoid_active));
+    x = Assistant_Draw_Image_String(2u, 34u, "T:");
+    Assistant_Draw_Image_String(x, 34u, Assistant_Target_Laser_Name());
     Assistant_Draw_Target_Cross();
 }
 #endif
@@ -305,25 +317,40 @@ static void Assistant_Apply_Param_Updates(void)
 #if ASSISTANT_DEBUG_SCOPE_ENABLE
 static void Assistant_Send_Scope(void)
 {
+    uint8 interrupt_state;
     int16 mid_error;
     int16 servo_error;
+    int16 encoder_l;
+    int16 encoder_r;
     int16 gyro_z;
+    int16 pwm_l;
+    int16 pwm_r;
+    uint16 servo_duty;
     uint8 obstacle_lower_row;
 
     mid_error = (int16)mid_line[controlReferenceLine] - (int16)Mid_Col;
-    servo_error = (int16)Out_servo - (int16)SERVO_DUTY_MID;
+    interrupt_state = EA;
+    EA = 0;
+    servo_duty = Out_servo;
+    encoder_l = encoder_data_l;
+    encoder_r = encoder_data_r;
+    pwm_l = motor_pwm_l;
+    pwm_r = motor_pwm_r;
+    EA = interrupt_state;
+
+    servo_error = (int16)servo_duty - (int16)SERVO_DUTY_MID;
     Gyro_Get_Debug(NULL, &gyro_z, NULL);
     VisualAvoid_GetDebug(NULL, NULL, NULL, &obstacle_lower_row, NULL);
 
     seekfree_assistant_oscilloscope_data.channel_num = SEEKFREE_ASSISTANT_SET_OSCILLOSCOPE_COUNT;
     seekfree_assistant_oscilloscope_data.dat[0] = (float)mid_error;
     seekfree_assistant_oscilloscope_data.dat[1] = (float)servo_error;
-    seekfree_assistant_oscilloscope_data.dat[2] = (float)encoder_data_l;
-    seekfree_assistant_oscilloscope_data.dat[3] = (float)encoder_data_r;
+    seekfree_assistant_oscilloscope_data.dat[2] = (float)encoder_l;
+    seekfree_assistant_oscilloscope_data.dat[3] = (float)encoder_r;
     seekfree_assistant_oscilloscope_data.dat[4] = (float)gyro_z;
     seekfree_assistant_oscilloscope_data.dat[5] = (float)obstacle_lower_row;
-    seekfree_assistant_oscilloscope_data.dat[6] = (float)motor_pwm_l;
-    seekfree_assistant_oscilloscope_data.dat[7] = (float)motor_pwm_r;
+    seekfree_assistant_oscilloscope_data.dat[6] = (float)pwm_l;
+    seekfree_assistant_oscilloscope_data.dat[7] = (float)pwm_r;
 
     seekfree_assistant_oscilloscope_send(&seekfree_assistant_oscilloscope_data);
 }

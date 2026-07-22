@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  zf_driver_gpio                                                     19/07/26  22:17:04  PAGE 1   
+C251 COMPILER V5.60.0,  zf_driver_gpio                                                     23/07/26  00:12:29  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_driver_gpio
@@ -66,7 +66,7 @@ stmt  level    source
    50   1      
    51   1          // 统一高阻输入配置（PnM1置位，PnM0清零）
    52   1          switch(port_flag)
-C251 COMPILER V5.60.0,  zf_driver_gpio                                                     19/07/26  22:17:04  PAGE 2   
+C251 COMPILER V5.60.0,  zf_driver_gpio                                                     23/07/26  00:12:29  PAGE 2   
 
    53   1          {
    54   2              case IO_P00: P0M1 &= ~(1 << pin_bit); P0M0 |= (1 << pin_bit); break;
@@ -134,7 +134,7 @@ stmt  level    source
   112   1          uint8 pin_bit = pin & 0x0F;
   113   1          uint8 port_flag = pin & 0xF0;
   114   1      
-C251 COMPILER V5.60.0,  zf_driver_gpio                                                     19/07/26  22:17:04  PAGE 3   
+C251 COMPILER V5.60.0,  zf_driver_gpio                                                     23/07/26  00:12:29  PAGE 3   
 
   115   1          // 统一高阻输入配置（PnM1置位，PnM0清零）
   116   1          switch(port_flag)
@@ -202,7 +202,7 @@ stmt  level    source
   178   4                      (*(unsigned char volatile far *)(0x7ef9d8 + ((pin >> 4) - 9))) &= ~(1 << (pin & 0x0F));
   179   4                  }
   180   3                  break;
-C251 COMPILER V5.60.0,  zf_driver_gpio                                                     19/07/26  22:17:04  PAGE 4   
+C251 COMPILER V5.60.0,  zf_driver_gpio                                                     23/07/26  00:12:29  PAGE 4   
 
   181   3              }
   182   2              
@@ -270,7 +270,7 @@ stmt  level    source
   244   3                  break;          // 无效引脚
   245   3              }
   246   2          }
-C251 COMPILER V5.60.0,  zf_driver_gpio                                                     19/07/26  22:17:04  PAGE 5   
+C251 COMPILER V5.60.0,  zf_driver_gpio                                                     23/07/26  00:12:29  PAGE 5   
 
   247   1      }
   248          
@@ -338,7 +338,7 @@ stmt  level    source
   308   2              case IO_P60: status = P6 & (1 << pin_bit); break;
   309   2              case IO_P70: status = P7 & (1 << pin_bit); break;
   310   2              
-C251 COMPILER V5.60.0,  zf_driver_gpio                                                     19/07/26  22:17:04  PAGE 6   
+C251 COMPILER V5.60.0,  zf_driver_gpio                                                     23/07/26  00:12:29  PAGE 6   
 
   311   2              case IO_P80: status = P8IN & (1 << pin_bit); break;
   312   2              case IO_P90: status = P9IN & (1 << pin_bit); break;
@@ -406,7 +406,7 @@ stmt  level    source
   369          // 函数简介     GPIO初始化
   370          // 参数说明     pin         选择的引脚
   371          // 参数说明     dir         引脚的方向   输出：GPO   输入：GPI
-C251 COMPILER V5.60.0,  zf_driver_gpio                                                     19/07/26  22:17:04  PAGE 7   
+C251 COMPILER V5.60.0,  zf_driver_gpio                                                     23/07/26  00:12:29  PAGE 7   
 
   372          // 参数说明     dat         引脚初始化时设置的电平状态，输出时有效
   373          // 参数说明     mode        引脚模式（上下拉/开漏等）
@@ -475,7 +475,7 @@ Module Information          Static   Overlayable
   bitaddressable size  =    ------     ------
   ebitaddressable size =    ------     ------
   far data size        =    ------     ------
-C251 COMPILER V5.60.0,  zf_driver_gpio                                                     19/07/26  22:17:04  PAGE 8   
+C251 COMPILER V5.60.0,  zf_driver_gpio                                                     23/07/26  00:12:29  PAGE 8   
 
   huge data size       =    ------     ------
   const size           =    ------     ------

@@ -770,6 +770,11 @@
           <GroupName>code</GroupName>
           <Files>
             <File>
+              <FileName>image2.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\image2.c</FilePath>
+            </File>
+            <File>
               <FileName>image.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\code\image.c</FilePath>
@@ -778,11 +783,6 @@
               <FileName>image.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\code\image.h</FilePath>
-            </File>
-            <File>
-              <FileName>image2.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\code\image2.c</FilePath>
             </File>
             <File>
               <FileName>image2.h</FileName>

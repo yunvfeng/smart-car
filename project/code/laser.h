@@ -3,6 +3,11 @@
 
 #include "zf_common_headfile.h"
 
+#define TARGET_LASER_NONE    0u
+#define TARGET_LASER_LEFT    1u
+#define TARGET_LASER_CENTER  2u
+#define TARGET_LASER_RIGHT   3u
+
 extern uint16 tar_i;
 extern uint8 tar_flag;
 extern uint8 tar_x;
@@ -21,17 +26,13 @@ extern int8 pre_find_offset;
 
 /* 初始化激光 GPIO。 */
 void laser_init(void);
-/* 打开激光。 */
-void laser_on(void);
-/* 关闭激光。 */
-void laser_off(void);
 /* 安全抑制使能；使能时立即关闭激光并清空发射时序。 */
 void Laser_Set_Inhibit(uint8 inhibit);
 void Laser_Task(void);
 
-/* 预扫描目标位置，得到横向偏移。 */
-void Pre_Scan(void);
-/* 根据预扫描偏移精找目标区域。 */
-void Target_find(int8 mid_offset);
+/* 清空凹陷检测、单次发射锁存和待发请求。 */
+void Target_Notch_Reset(void);
+/* 每帧只读取 61～79 奇数行的左右边线，检测凹陷并发布单次请求。 */
+void Target_Notch_ProcessFrame(void);
 
 #endif

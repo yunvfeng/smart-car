@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  main                                                               20/07/26  21:31:37  PAGE 1   
+C251 COMPILER V5.60.0,  main                                                               23/07/26  00:12:34  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE main
@@ -13,168 +13,199 @@ stmt  level    source
     1          #include "zf_common_headfile.h"
     2          #include "zf_device_mt9v03x.h"
     3          /* #include "zf_device_ips200.h" */
-    4          #include "wifi_assistant.h"
-    5          #include "assistant_debug.h"
-    6          #include "image.h"
-    7          #include "image2.h"
-    8          #include "ring.h"
-    9          #include "pid.h"
-   10          #include "gyro.h"
-   11          #include "motor.h"
-   12          #include "servo.h"
-   13          #include "laser.h"
-   14          #include "key.h"
-   15          #include "visual_avoidance.h"
-   16          /* #include "ips_ui.h" */
-   17          #include <stdio.h>
-   18          
-   19          /* PB3 is latched before launch; visual avoidance is always enabled. */
-   20          static uint8 target_detect_enabled = 0;
-   21          
-   22          /*
-   23           * 运行方式：
-   24           * 1. 主循环等待摄像头完成一帧图像；
-   25           * 2. 图像处理函数更新边线、中线、圆环状态和目标点；
-   26           * 3. 15 ms 定时器根据最新中线控制舵机和电机。
-   27           */
+    4          #define WIFI_RUNTIME_ENABLE 0
+    5          #define SERIAL_ASSISTANT_RUNTIME_ENABLE 1
+    6          
+    7          #if WIFI_RUNTIME_ENABLE
+               #include "wifi_assistant.h"
+               #endif
+   10          #if WIFI_RUNTIME_ENABLE || SERIAL_ASSISTANT_RUNTIME_ENABLE
+   11          #include "assistant_debug.h"
+   12          #endif
+   13          #include "image.h"
+   14          #include "image2.h"
+   15          #include "ring.h"
+   16          #include "pid.h"
+   17          #include "gyro.h"
+   18          #include "motor.h"
+   19          #include "servo.h"
+   20          #include "laser.h"
+   21          #include "key.h"
+   22          #include "visual_avoidance.h"
+   23          /* #include "ips_ui.h" */
+   24          #include <stdio.h>
+   25          
+   26          /* PB3 is latched before launch; visual avoidance is always enabled. */
+   27          static uint8 target_detect_enabled = 0;
    28          
-   29          #define CONTROL_PERIOD_MS      15
-   30          
-   31          /* 15 ms 定时任务：读取编码器、刷新舵机/电机输出，并按目标识别结果控制激�
+   29          /*
+   30           * 运行方式：
+   31           * 1. 主循环等待摄像头完成一帧图像；
+   32           * 2. 图像处理函数更新边线、中线、圆环状态和目标点；
+   33           * 3. 15 ms 定时器根据最新中线控制舵机和电机。
+   34           */
+   35          
+   36          #define CONTROL_PERIOD_MS      15
+   37          
+   38          /* 15 ms 定时任务：读取编码器、刷新舵机/电机输出，并按目标识别结果控制激�
              -�。 */
-   32          static void Timer0_Callback(void)
-   33          {
-   34   1          /* 中断里只放轻量控制任务，避免影响下一帧图像采集。 */
-   35   1          Encoder_GetValue();
-   36   1          VisualAvoid_ControlTick(encoder_data_l, encoder_data_r);
-   37   1          Gyro_Update();
-   38   1      
-   39   1          Servo_Loop();
-   40   1          Motor_Loop();
-   41   1      
-   42   1          /* Visual avoidance never suppresses target detection or laser firing. */
-   43   1          Laser_Set_Inhibit(0u);
-   44   1          Laser_Task();
-   45   1      }
-   46          
-   47          /* 程序入口：完成硬件初始化，之后在主循环中等待并处理摄像头图像。 */
-   48          void main(void)
-   49          {
-   50   1          uint8 wifi_ready;
-   51   1          uint8 assistant_debug_ready;
-   52   1          uint8 wifi_assistant_started;
-   53   1          uint8 car_started;
-   54   1          uint8 key1_last;
-   55   1          uint8 key1_now;
-C251 COMPILER V5.60.0,  main                                                               20/07/26  21:31:37  PAGE 2   
+   39          static void Timer0_Callback(void)
+   40          {
+   41   1          /* 中断里只放轻量控制任务，避免影响下一帧图像采集。 */
+   42   1          Encoder_GetValue();
+   43   1          VisualAvoid_ControlTick(encoder_data_l, encoder_data_r);
+   44   1          Gyro_Update();
+   45   1      
+   46   1          Servo_Loop();
+   47   1          Motor_Loop();
+   48   1      
+   49   1          /* PB3 未锁存或进入环岛特殊阶段时，硬性关闭并清空激光时序。 */
+   50   1          Laser_Set_Inhibit((!target_detect_enabled || current_step >= 2u) ? 1u : 0u);
+   51   1          Laser_Task();
+   52   1      }
+   53          
+   54          /* 程序入口：完成硬件初始化，之后在主循环中等待并处理摄像头图像。 */
+   55          void main(void)
+C251 COMPILER V5.60.0,  main                                                               23/07/26  00:12:34  PAGE 2   
 
-   56   1      
-   57   1          clock_init(SYSTEM_CLOCK_96M);
-   58   1          debug_init();
-   59   1      
-   60   1          Motor_Init();
-   61   1          Encoder_Init();
-   62   1          servo_init();
-   63   1          laser_init();
-   64   1          Key_Init();
-   65   1          Gyro_Init();
-   66   1          VisualAvoid_Init();
-   67   1      
-   68   1          mt9v03x_init();
-   69   1          mt9v03x_set_exposure_time(camera_exposure_time);
-   70   1          /* ips200_init(); */
-   71   1          assistant_debug_ready = 0;
-   72   1          wifi_assistant_started = 0;
-   73   1          car_started = 0;
-   74   1          key1_last = 1;
-   75   1      
-   76   1          /* Control timer starts after KEY1/PB2 is pressed. */
-   77   1      
-   78   1          while (1) {
-   79   2              /* PB3 只在发车前锁存；按住或短按一次均可。 */
-   80   2              if (!car_started) {
-   81   3                  if (!gpio_get_level(KEY2_PIN)) {
-   82   4                      target_detect_enabled = 1;
-   83   4                  }
-   84   3              }
-   85   2      
-   86   2              key1_now = gpio_get_level(KEY1_PIN);
-   87   2              if (key1_last && !key1_now) {
-   88   3                  system_delay_ms(20);
-   89   3                  if (!gpio_get_level(KEY1_PIN)) {
-   90   4                      if (!car_started) {
-   91   5                          pit_ms_init(TIM0_PIT, CONTROL_PERIOD_MS, Timer0_Callback);
-   92   5                          car_started = 1;
-   93   5                      }
-   94   4                  }
-   95   3              }
-   96   2              key1_last = gpio_get_level(KEY1_PIN);
-   97   2      
-   98   2              wifi_ready = 0;
-   99   2              if (!gpio_get_level(SWITCH2_PIN)) {
-  100   3                  if (!wifi_assistant_started) {
-  101   4                      Wifi_Assistant_Init();
-  102   4                      assistant_debug_ready = 0;
-  103   4                      wifi_assistant_started = 1;
-  104   4                  }
-  105   3      
-  106   3                  wifi_ready = Wifi_Assistant_Ready();
-  107   3                  if (wifi_ready) {
-  108   4                      if (!assistant_debug_ready) {
-  109   5                          Assistant_Debug_Init();
-  110   5                          assistant_debug_ready = 1;
-  111   5                      }
-  112   4                  }
-  113   3              } else {
-  114   3                  assistant_debug_ready = 0;
-  115   3                  wifi_assistant_started = 0;
-  116   3              }
-  117   2      
-  118   2              if (Assistant_Debug_Take_Launch_Request()) {
-  119   3                  if (wifi_ready && !car_started) {
-  120   4                      pit_ms_init(TIM0_PIT, CONTROL_PERIOD_MS, Timer0_Callback);
-  121   4                      car_started = 1;
-C251 COMPILER V5.60.0,  main                                                               20/07/26  21:31:37  PAGE 3   
+   56          {
+   57   1      #if WIFI_RUNTIME_ENABLE
+                   uint8 wifi_ready;
+                   uint8 assistant_debug_ready;
+                   uint8 wifi_assistant_started;
+               #endif
+   62   1          uint8 car_started;
+   63   1          uint8 key1_last;
+   64   1          uint8 key1_now;
+   65   1      
+   66   1          clock_init(SYSTEM_CLOCK_96M);
+   67   1          debug_init();
+   68   1      
+   69   1          Motor_Init();
+   70   1          Encoder_Init();
+   71   1          servo_init();
+   72   1          laser_init();
+   73   1          Key_Init();
+   74   1          Gyro_Init();
+   75   1          VisualAvoid_Init();
+   76   1      
+   77   1          mt9v03x_init();
+   78   1          mt9v03x_set_exposure_time(camera_exposure_time);
+   79   1          /* ips200_init(); */
+   80   1      #if SERIAL_ASSISTANT_RUNTIME_ENABLE
+   81   1          Assistant_Debug_Init();
+   82   1      #endif
+   83   1      #if WIFI_RUNTIME_ENABLE
+                   assistant_debug_ready = 0;
+                   wifi_assistant_started = 0;
+               #endif
+   87   1          car_started = 0;
+   88   1          key1_last = 1;
+   89   1      
+   90   1          /* Control timer starts after KEY1/PB2 is pressed. */
+   91   1      
+   92   1          while (1) {
+   93   2              /* PB3 只在发车前锁存；按住或短按一次均可。 */
+   94   2              if (!car_started) {
+   95   3                  if (!gpio_get_level(KEY2_PIN)) {
+   96   4                      target_detect_enabled = 1;
+   97   4                  }
+   98   3              }
+   99   2      
+  100   2              key1_now = gpio_get_level(KEY1_PIN);
+  101   2              if (key1_last && !key1_now) {
+  102   3                  system_delay_ms(20);
+  103   3                  if (!gpio_get_level(KEY1_PIN)) {
+  104   4                      if (!car_started) {
+  105   5                          pit_ms_init(TIM0_PIT, CONTROL_PERIOD_MS, Timer0_Callback);
+  106   5                          car_started = 1;
+  107   5                      }
+  108   4                  }
+  109   3              }
+  110   2              key1_last = gpio_get_level(KEY1_PIN);
+  111   2      
+  112   2      #if WIFI_RUNTIME_ENABLE
+                       wifi_ready = 0;
+                       if (!gpio_get_level(SWITCH2_PIN)) {
+                           if (!wifi_assistant_started) {
+                               Wifi_Assistant_Init();
+                               assistant_debug_ready = 0;
+                               wifi_assistant_started = 1;
+                           }
+               
+                           wifi_ready = Wifi_Assistant_Ready();
+C251 COMPILER V5.60.0,  main                                                               23/07/26  00:12:34  PAGE 3   
 
-  122   4                  }
-  123   3              }
-  124   2      
-  125   2              /* 摄像头完成一帧后再处理图像，处理完再等下一帧。 */
-  126   2              if (mt9v03x_finish_flag) {
-  127   3                  mt9v03x_finish_flag = 0;
-  128   3      
-  129   3                  /* 发车前按图像周期采样，发车后由 15 ms 控制定时器独占采样。 */
-  130   3                  if (!car_started) {
-  131   4                      Gyro_Update();
-  132   4                  }
-  133   3      
-  134   3                  Image_OldStyle_Process(target_detect_enabled,
-  135   3                                         1u);
-  136   3      
-  137   3                  if (wifi_ready) {
-  138   4                      Assistant_Debug_On_Frame(1u);
-  139   4                  }
-  140   3      
-  141   3                  /* 按下 SWITCH2 时显示调试画面。 */
-  142   3                  /*
-  143   3                  if (!gpio_get_level(SWITCH2_PIN)) {
-  144   3                      IPS_Show_Image_And_Line(0, 0);
-  145   3                  }
-  146   3                  */
+                           if (wifi_ready) {
+                               if (!assistant_debug_ready) {
+                                   Assistant_Debug_Init();
+                                   assistant_debug_ready = 1;
+                               }
+                           }
+                       } else {
+                           assistant_debug_ready = 0;
+                           wifi_assistant_started = 0;
+                       }
+               
+                       if (Assistant_Debug_Take_Launch_Request()) {
+                           if (wifi_ready && !car_started) {
+                               pit_ms_init(TIM0_PIT, CONTROL_PERIOD_MS, Timer0_Callback);
+                               car_started = 1;
+                           }
+                       }
+               #endif
+  140   2      
+  141   2      #if SERIAL_ASSISTANT_RUNTIME_ENABLE
+  142   2              if (Assistant_Debug_Take_Launch_Request()) {
+  143   3                  if (!car_started) {
+  144   4                      pit_ms_init(TIM0_PIT, CONTROL_PERIOD_MS, Timer0_Callback);
+  145   4                      car_started = 1;
+  146   4                  }
   147   3              }
-  148   2      
-  149   2          }
-  150   1      }
+  148   2      #endif
+  149   2      
+  150   2              /* 摄像头完成一帧后再处理图像，处理完再等下一帧。 */
+  151   2              if (mt9v03x_finish_flag) {
+  152   3                  mt9v03x_finish_flag = 0;
+  153   3      
+  154   3                  /* 发车前按图像周期采样，发车后由 15 ms 控制定时器独占采样。 */
+  155   3                  if (!car_started) {
+  156   4                      Gyro_Update();
+  157   4                  }
+  158   3      
+  159   3                  Image_OldStyle_Process((target_detect_enabled && car_started) ? 1u : 0u,
+  160   3                                         1u);
+  161   3      
+  162   3      #if SERIAL_ASSISTANT_RUNTIME_ENABLE
+  163   3                  Assistant_Debug_On_Frame(1u);
+  164   3      #elif WIFI_RUNTIME_ENABLE
+                           if (wifi_ready) {
+                               Assistant_Debug_On_Frame(1u);
+                           }
+               #endif
+  169   3      
+  170   3                  /* 按下 SWITCH2 时显示调试画面。 */
+  171   3                  /*
+  172   3                  if (!gpio_get_level(SWITCH2_PIN)) {
+  173   3                      IPS_Show_Image_And_Line(0, 0);
+  174   3                  }
+  175   3                  */
+  176   3              }
+  177   2      
+  178   2          }
+  179   1      }
 
 
 Module Information          Static   Overlayable
 ------------------------------------------------
   code size            =    ------     ------
-  ecode size           =       593     ------
+  ecode size           =       520     ------
   data size            =    ------     ------
   idata size           =    ------     ------
   pdata size           =    ------     ------
-  xdata size           =         7     ------
+C251 COMPILER V5.60.0,  main                                                               23/07/26  00:12:34  PAGE 4   
+
+  xdata size           =         4     ------
   xdata-const size     =    ------     ------
   edata size           =    ------     ------
   bit size             =    ------     ------

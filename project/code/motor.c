@@ -3,8 +3,8 @@
 #include "servo.h"
 #include "image.h"
 
-int16 encoder_data_r = 0;
-int16 encoder_data_l = 0;
+volatile int16 encoder_data_r = 0;
+volatile int16 encoder_data_l = 0;
 
 int16 tar_speed = BASE_TARGET_SPEED;
 volatile int16 min_speed = MIN_SPEED;
@@ -143,6 +143,7 @@ static int16 clamp_wheel_target(int16 x, int16 speed_ceiling)
  * 对 PI 请求的 PWM 加死区补偿和变化率限制。
  * 返回值是本周期真正写入电机的 PWM，后续同步回 pid.out。
  */
+#if !MOTOR_FIXED_DUTY_ENABLE
 static int16 shape_motor_pwm(int16 target, int32 requested, int16 previous)
 {
     int32 next;
@@ -170,6 +171,7 @@ static int16 shape_motor_pwm(int16 target, int32 requested, int16 previous)
 
     return clamp_motor((int16)next);
 }
+#endif
 
 /* 初始化左右轮编码器通道。 */
 void Encoder_Init(void)
@@ -322,7 +324,7 @@ void Dream_speed(void)
     target_speed_r = clamp_wheel_target(right_target, output_ceiling);
 }
 
-/* 电机速度闭环：计算目标速度，更新左右 PI，再输出 PWM。 */
+/* 电机任务：固定模式直接输出；关闭固定模式后执行速度 PI。 */
 void Motor_Loop(void)
 {
     motor_safety_mode_enum safety_mode;
@@ -333,6 +335,14 @@ void Motor_Loop(void)
         return;
     }
 
+#if MOTOR_FIXED_DUTY_ENABLE
+    /* PB2 starts this task; keep hard-stop handling above this fixed output. */
+    motor_pwm_l = MOTOR_FIXED_DUTY;
+    motor_pwm_r = MOTOR_FIXED_DUTY;
+    Motor_control(PWM_L, motor_pwm_l);
+    Motor_control(PWM_R, motor_pwm_r);
+    return;
+#else
     Dream_speed();
 
     Increment_PID(&pid_lf, target_speed_l, encoder_data_l);
@@ -347,4 +357,5 @@ void Motor_Loop(void)
 
     Motor_control(PWM_L, motor_pwm_l);
     Motor_control(PWM_R, motor_pwm_r);
+#endif
 }

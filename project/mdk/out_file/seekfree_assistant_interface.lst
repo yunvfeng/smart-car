@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  seekfree_assistant_interface                                       19/07/26  22:17:07  PAGE 1   
+C251 COMPILER V5.60.0,  seekfree_assistant_interface                                       23/07/26  00:12:32  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE seekfree_assistant_interface
@@ -66,7 +66,7 @@ stmt  level    source
              -------------
    49          // 函数简介     逐飞助手接收数据函数
    50          // 参数说明     *buff           需要接收的数据地址
-C251 COMPILER V5.60.0,  seekfree_assistant_interface                                       19/07/26  22:17:07  PAGE 2   
+C251 COMPILER V5.60.0,  seekfree_assistant_interface                                       23/07/26  00:12:32  PAGE 2   
 
    51          // 参数说明     length          要接收的数据最大长度
    52          // 返回参数     uint32          接收到的数据长度
@@ -135,7 +135,7 @@ Module Information          Static   Overlayable
   ecode size           =        95     ------
   data size            =    ------     ------
   idata size           =    ------     ------
-C251 COMPILER V5.60.0,  seekfree_assistant_interface                                       19/07/26  22:17:07  PAGE 3   
+C251 COMPILER V5.60.0,  seekfree_assistant_interface                                       23/07/26  00:12:32  PAGE 3   
 
   pdata size           =    ------     ------
   xdata size           =        10     ------

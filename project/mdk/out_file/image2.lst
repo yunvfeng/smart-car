@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  image2                                                             19/07/26  22:17:07  PAGE 1   
+C251 COMPILER V5.60.0,  image2                                                             23/07/26  00:12:32  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE image2
@@ -66,7 +66,7 @@ stmt  level    source
                        for (j = 0; j < width; j += OTSU_COL_STEP) {
                            pix = *(img_ptr + j);
                            if (pix >= OTSU_REFLECT_POINT) {
-C251 COMPILER V5.60.0,  image2                                                             19/07/26  22:17:07  PAGE 2   
+C251 COMPILER V5.60.0,  image2                                                             23/07/26  00:12:32  PAGE 2   
 
                                continue;
                            }
@@ -134,7 +134,7 @@ stmt  level    source
                                    continue;
                                }
                
-C251 COMPILER V5.60.0,  image2                                                             19/07/26  22:17:07  PAGE 3   
+C251 COMPILER V5.60.0,  image2                                                             23/07/26  00:12:32  PAGE 3   
 
                                weight_bg += s_otsu_hist[i];
                                sum_bg += (uint32)i * (uint32)s_otsu_hist[i];
@@ -203,7 +203,7 @@ Module Information          Static   Overlayable
   ebit size            =    ------     ------
   bitaddressable size  =    ------     ------
   ebitaddressable size =    ------     ------
-C251 COMPILER V5.60.0,  image2                                                             19/07/26  22:17:07  PAGE 4   
+C251 COMPILER V5.60.0,  image2                                                             23/07/26  00:12:32  PAGE 4   
 
   far data size        =    ------     ------
   huge data size       =    ------     ------

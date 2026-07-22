@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  pid                                                                20/07/26  21:31:35  PAGE 1   
+C251 COMPILER V5.60.0,  pid                                                                23/07/26  00:12:33  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE pid
@@ -66,7 +66,7 @@ stmt  level    source
    54          
    55          /* 增量式 PID，用于左右电机速度闭环。 */
    56          void Increment_PID(volatile PID_t *pid, int16 tar_val, int16 act_val)
-C251 COMPILER V5.60.0,  pid                                                                20/07/26  21:31:35  PAGE 2   
+C251 COMPILER V5.60.0,  pid                                                                23/07/26  00:12:33  PAGE 2   
 
    57          {
    58   1          int16 error;
@@ -134,7 +134,7 @@ stmt  level    source
   120   1              -GYRO_SERVO_CORRECTION_LIMIT,
   121   1              GYRO_SERVO_CORRECTION_LIMIT);
   122   1          Gyro_Set_Servo_Correction(gyro_correction);
-C251 COMPILER V5.60.0,  pid                                                                20/07/26  21:31:35  PAGE 3   
+C251 COMPILER V5.60.0,  pid                                                                23/07/26  00:12:33  PAGE 3   
 
   123   1          out -= gyro_correction;
   124   1      
@@ -203,7 +203,7 @@ Module Information          Static   Overlayable
   ecode size           =      1878     ------
   data size            =    ------     ------
   idata size           =    ------     ------
-C251 COMPILER V5.60.0,  pid                                                                20/07/26  21:31:35  PAGE 4   
+C251 COMPILER V5.60.0,  pid                                                                23/07/26  00:12:33  PAGE 4   
 
   pdata size           =    ------     ------
   xdata size           =       194     ------

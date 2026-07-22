@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  laser                                                              19/07/26  22:17:08  PAGE 1   
+C251 COMPILER V5.60.0,  laser                                                              23/07/26  00:12:33  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE laser
@@ -25,259 +25,308 @@ stmt  level    source
    13          uint8 under_d = 0;
    14          uint8 l_d = 0;
    15          uint8 r_d = 0;
-   16          uint8 debug_stage = 0;
+   16          uint8 debug_stage = TARGET_LASER_NONE;
    17          uint8 pre_find_flag = 0;
    18          int8 pre_find_offset = 0;
    19          
-   20          #define LASER_PIN      IO_P67
-   21          #define Pre_Line       100
-   22          #define TopFind        25
-   23          #define BottomFind     110
-   24          #define MinTargetH     10
-   25          #define MinTargetW     10
-   26          #define MaxTargetH     44
-   27          #define MaxTargetW     44
-   28          #define FindOffset     4
-   29          #define AimTolerance   5
-   30          #define ShootTicks     2
-   31          #define CooldownTicks  34
-   32          
-   33          static uint8 laser_inhibit = 0;
-   34          static uint8 laser_shoot_cnt = 0;
-   35          static uint8 laser_cooldown_cnt = 0;
-   36          
-   37          static int16 abs_i16(int16 x)
-   38          {
-   39   1          return (x < 0) ? (int16)(-x) : x;
-   40   1      }
-   41          
-   42          static int16 clamp_i16(int16 x, int16 min_v, int16 max_v)
-   43          {
-   44   1          if (x < min_v) return min_v;
-   45   1          if (x > max_v) return max_v;
-   46   1          return x;
-   47   1      }
+   20          #define LASER_PIN_LEFT              IO_P61
+   21          #define LASER_PIN_CENTER            IO_P63
+   22          #define LASER_PIN_RIGHT             IO_P66
+   23          #define BUZZER_PIN                  IO_P67
+   24          #define BUZZER_ACTIVE_LEVEL         0u
+   25          #define BUZZER_IDLE_LEVEL           1u
+   26          
+   27          #define LASER_MASK_NONE             0x00u
+   28          #define LASER_MASK_LEFT             0x01u
+   29          #define LASER_MASK_CENTER           0x02u
+   30          #define LASER_MASK_RIGHT            0x04u
+   31          
+   32          #define TARGET_SCAN_TOP_ROW         61u
+   33          #define TARGET_SCAN_BOTTOM_ROW      79u
+   34          #define TARGET_SCAN_STEP            2u
+   35          #define TARGET_NOTCH_MIN_PX         8
+   36          #define TARGET_CENTER_ROW_TOL       4
+   37          #define TARGET_LANE_WIDTH_MIN       20u
+   38          #define TARGET_REARM_CLEAR_FRAMES   2u
+   39          
+   40          #define LASER_SECOND_TICK_FLAG      0x80u
+   41          #define LASER_SHOOT_MASK            0x07u
+   42          #define CooldownTicks               34u
+   43          
+   44          static volatile uint8 laser_pending_mask = LASER_MASK_NONE;
+   45          static uint8 laser_shoot_state = LASER_MASK_NONE;
+   46          static uint8 laser_cooldown_cnt = 0;
+   47          static uint8 laser_output_mask = LASER_MASK_NONE;
    48          
-   49          void laser_init(void)
+   49          static int16 abs_i16(int16 x)
    50          {
-   51   1          laser_inhibit = 0;
-   52   1          laser_shoot_cnt = 0;
-   53   1          laser_cooldown_cnt = 0;
-   54   1          gpio_init(LASER_PIN, GPO, 0, GPO_PUSH_PULL);
-   55   1      }
-   56          
-C251 COMPILER V5.60.0,  laser                                                              19/07/26  22:17:08  PAGE 2   
+   51   1          return (x < 0) ? (int16)(-x) : x;
+   52   1      }
+   53          
+   54          static uint8 target_edge_valid(uint8 row, uint8 left, uint8 right)
+   55          {
+   56   1          if (row <= lost_left || row <= lost_right) return 0u;
+C251 COMPILER V5.60.0,  laser                                                              23/07/26  00:12:33  PAGE 2   
 
-   57          void laser_on(void)
-   58          {
-   59   1          gpio_set_level(LASER_PIN, 1);
-   60   1      }
-   61          
-   62          void laser_off(void)
-   63          {
-   64   1          gpio_set_level(LASER_PIN, 0);
-   65   1      }
-   66          
-   67          void Laser_Set_Inhibit(uint8 inhibit)
-   68          {
-   69   1          laser_inhibit = inhibit ? 1u : 0u;
-   70   1          if (laser_inhibit) {
-   71   2              aim_ready_flag = 0;
-   72   2              tar_flag = 0;
-   73   2              laser_shoot_cnt = 0;
-   74   2              laser_cooldown_cnt = 0;
-   75   2              laser_off();
-   76   2          }
+   57   1          if (left <= 1u || right >= SEARCH_IMAGE_W - 2u) return 0u;
+   58   1          if (left >= right) return 0u;
+   59   1          if ((uint8)(right - left) < TARGET_LANE_WIDTH_MIN) return 0u;
+   60   1          return 1u;
+   61   1      }
+   62          
+   63          static void target_clear_debug(void)
+   64          {
+   65   1          tar_i = 0;
+   66   1          tar_flag = 0;
+   67   1          tar_x = 0;
+   68   1          tar_y = 0;
+   69   1          center_offset = 0;
+   70   1          aim_ready_flag = 0;
+   71   1          top_d = 0;
+   72   1          under_d = 0;
+   73   1          l_d = 0;
+   74   1          r_d = 0;
+   75   1          debug_stage = TARGET_LASER_NONE;
+   76   1          pre_find_offset = 0;
    77   1      }
    78          
-   79          void Laser_Task(void)
-   80          {
-   81   1          if (laser_inhibit) {
-   82   2              laser_shoot_cnt = 0;
-   83   2              laser_cooldown_cnt = 0;
-   84   2              laser_off();
-   85   2              return;
-   86   2          }
-   87   1      
-   88   1          if (laser_cooldown_cnt) {
-   89   2              laser_cooldown_cnt--;
-   90   2              laser_shoot_cnt = 0;
-   91   2              laser_off();
-   92   2              return;
-   93   2          }
-   94   1      
-   95   1          if (!laser_shoot_cnt && aim_ready_flag) {
-   96   2              laser_shoot_cnt = ShootTicks;
-   97   2          }
-   98   1      
-   99   1          if (laser_shoot_cnt && aim_ready_flag) {
-  100   2              laser_on();
-  101   2              laser_shoot_cnt--;
-  102   2              if (!laser_shoot_cnt) {
-  103   3                  laser_cooldown_cnt = CooldownTicks;
-  104   3              }
-  105   2          } else {
-  106   2              laser_off();
-  107   2              if (laser_shoot_cnt) {
-  108   3                  laser_shoot_cnt = 0;
-  109   3                  laser_cooldown_cnt = CooldownTicks;
-  110   3              }
-  111   2          }
-  112   1      }
-  113          
-  114          /* Git 初版的轻量预扫描：只在一行内估算目标横向偏移。 */
-  115          void Pre_Scan(void)
-  116          {
-  117   1          int16 i;
-  118   1          uint8 x;
-  119   1          uint8 pre_l = 0;
-  120   1          uint8 pre_r = 0;
-  121   1          int16 l_edge;
-  122   1          int16 r_edge;
-C251 COMPILER V5.60.0,  laser                                                              19/07/26  22:17:08  PAGE 3   
+   79          /* Main-loop producer and 15 ms ISR consumer share one atomic byte. */
+   80          static void laser_publish_request(uint8 mask)
+   81          {
+   82   1          laser_pending_mask = mask;
+   83   1      }
+   84          
+   85          static void laser_apply_mask(uint8 mask)
+   86          {
+   87   1          if (mask == laser_output_mask) return;
+   88   1      
+   89   1          gpio_set_level(LASER_PIN_LEFT, (mask == LASER_MASK_LEFT) ? 1u : 0u);
+   90   1          gpio_set_level(LASER_PIN_CENTER, (mask == LASER_MASK_CENTER) ? 1u : 0u);
+   91   1          gpio_set_level(LASER_PIN_RIGHT, (mask == LASER_MASK_RIGHT) ? 1u : 0u);
+   92   1          gpio_set_level(BUZZER_PIN,
+   93   1                         (mask == LASER_MASK_NONE) ? BUZZER_IDLE_LEVEL :
+   94   1                                                     BUZZER_ACTIVE_LEVEL);
+   95   1          laser_output_mask = mask;
+   96   1      }
+   97          
+   98          static void laser_off(void)
+   99          {
+  100   1          laser_apply_mask(LASER_MASK_NONE);
+  101   1      }
+  102          
+  103          void laser_init(void)
+  104          {
+  105   1          laser_pending_mask = LASER_MASK_NONE;
+  106   1          laser_shoot_state = LASER_MASK_NONE;
+  107   1          laser_cooldown_cnt = 0;
+  108   1          laser_output_mask = LASER_MASK_NONE;
+  109   1          pre_find_flag = 0;
+  110   1          target_clear_debug();
+  111   1      
+  112   1          gpio_init(LASER_PIN_LEFT, GPO, 0, GPO_PUSH_PULL);
+  113   1          gpio_init(LASER_PIN_CENTER, GPO, 0, GPO_PUSH_PULL);
+  114   1          gpio_init(LASER_PIN_RIGHT, GPO, 0, GPO_PUSH_PULL);
+  115   1          gpio_init(BUZZER_PIN, GPO, BUZZER_IDLE_LEVEL, GPO_PUSH_PULL);
+  116   1      }
+  117          
+  118          void Laser_Set_Inhibit(uint8 inhibit)
+  119          {
+  120   1          if (inhibit) {
+  121   2              laser_pending_mask = LASER_MASK_NONE;
+  122   2              laser_shoot_state = LASER_MASK_NONE;
+C251 COMPILER V5.60.0,  laser                                                              23/07/26  00:12:33  PAGE 3   
 
-  123   1      
-  124   1          pre_find_flag = 0;
-  125   1          l_edge = (int16)left_edge_line[Pre_Line] + 4;
-  126   1          r_edge = (int16)right_edge_line[Pre_Line] - 4;
-  127   1          l_edge = clamp_i16(l_edge, 0, SEARCH_IMAGE_W - 1);
-  128   1          r_edge = clamp_i16(r_edge, 0, SEARCH_IMAGE_W - 1);
-  129   1      
-  130   1          if (r_edge <= l_edge + 8) {
-  131   2              pre_find_offset = 0;
-  132   2              return;
-  133   2          }
-  134   1      
-  135   1          for (i = l_edge; i < r_edge; i += 2) {
-  136   2              x = mt9v03x_image[Pre_Line][i];
-  137   2              if (x < tar_th) {
-  138   3                  pre_l = (uint8)i;
-  139   3                  break;
-  140   3              }
-  141   2          }
-  142   1      
-  143   1          for (i = r_edge; i > l_edge; i -= 2) {
-  144   2              x = mt9v03x_image[Pre_Line][i];
-  145   2              if (x < tar_th) {
-  146   3                  pre_r = (uint8)i;
-  147   3                  break;
-  148   3              }
-  149   2          }
-  150   1      
-  151   1          if (pre_r <= pre_l || !pre_l || !pre_r || pre_r - pre_l < 8) {
-  152   2              pre_find_offset = 0;
-  153   2              return;
-  154   2          }
-  155   1      
-  156   1          pre_find_offset = (int8)(((int16)pre_l + (int16)pre_r) / 2 -
-  157   1                                   (SEARCH_IMAGE_W / 2));
-  158   1          pre_find_flag = 1;
-  159   1      }
-  160          
-  161          /* Git 初版的轻量靶点搜索：纵横各扫描一条线，不建立整幅 ROI 映射。 */
-  162          void Target_find(int8 mid_offset)
-  163          {
-  164   1          int16 i;
-  165   1          int16 j;
-  166   1          int16 center_x;
-  167   1          uint8 target_w;
-  168   1          uint8 target_h;
-  169   1          uint8 tar_y_local;
-  170   1          uint8 far *row_ptr;
-  171   1      
-  172   1          tar_flag = 0;
-  173   1          center_offset = 0;
-  174   1          aim_ready_flag = 0;
-  175   1          debug_stage = 0;
-  176   1          top_d = 0;
-  177   1          under_d = 0;
-  178   1          l_d = 0;
-  179   1          r_d = 0;
-  180   1      
-  181   1          center_x = (SEARCH_IMAGE_W >> 1) + mid_offset;
-  182   1          center_x = clamp_i16(center_x, 2, SEARCH_IMAGE_W - 3);
-  183   1      
-  184   1          for (i = TopFind; i < BottomFind; i += FindOffset) {
-  185   2              if (mt9v03x_image[i][center_x] < tar_th) {
-  186   3                  top_d = (uint8)i;
-  187   3                  debug_stage = 1;
-  188   3                  break;
-C251 COMPILER V5.60.0,  laser                                                              19/07/26  22:17:08  PAGE 4   
+  123   2              laser_cooldown_cnt = 0;
+  124   2              laser_off();
+  125   2          }
+  126   1      }
+  127          
+  128          void Laser_Task(void)
+  129          {
+  130   1          uint8 request;
+  131   1      
+  132   1          /* A request that arrives during cooldown is deliberately discarded. */
+  133   1          if (laser_cooldown_cnt) {
+  134   2              laser_cooldown_cnt--;
+  135   2              laser_pending_mask = LASER_MASK_NONE;
+  136   2              laser_shoot_state = LASER_MASK_NONE;
+  137   2              laser_off();
+  138   2              return;
+  139   2          }
+  140   1      
+  141   1          if (laser_shoot_state & LASER_SECOND_TICK_FLAG) {
+  142   2              laser_pending_mask = LASER_MASK_NONE;
+  143   2              laser_apply_mask((uint8)(laser_shoot_state & LASER_SHOOT_MASK));
+  144   2              laser_shoot_state = LASER_MASK_NONE;
+  145   2              laser_cooldown_cnt = CooldownTicks;
+  146   2              return;
+  147   2          }
+  148   1      
+  149   1          request = laser_pending_mask;
+  150   1          laser_pending_mask = LASER_MASK_NONE;
+  151   1          if (request != LASER_MASK_LEFT &&
+  152   1              request != LASER_MASK_CENTER &&
+  153   1              request != LASER_MASK_RIGHT) {
+  154   2              laser_shoot_state = LASER_MASK_NONE;
+  155   2              laser_off();
+  156   2              return;
+  157   2          }
+  158   1      
+  159   1          laser_shoot_state = (uint8)(request | LASER_SECOND_TICK_FLAG);
+  160   1          laser_apply_mask(request);
+  161   1      }
+  162          
+  163          void Target_Notch_Reset(void)
+  164          {
+  165   1          pre_find_flag = 0;
+  166   1          target_clear_debug();
+  167   1          laser_publish_request(LASER_MASK_NONE);
+  168   1      }
+  169          
+  170          /*
+  171           * Reuse the ten raw Search_line points at rows 61, 63, ... 79.
+  172           * The endpoints form a conservative perspective baseline; the eight interior
+  173           * rows are each loaded exactly once, for at most twenty edge-array reads.
+  174           */
+  175          void Target_Notch_ProcessFrame(void)
+  176          {
+  177   1          uint8 row;
+  178   1          uint8 left;
+  179   1          uint8 right;
+  180   1          uint8 left_top;
+  181   1          uint8 right_top;
+  182   1          uint8 left_bottom;
+  183   1          uint8 right_bottom;
+  184   1          uint8 left_baseline;
+  185   1          uint8 right_baseline;
+  186   1          uint8 left_peak;
+  187   1          uint8 right_valley;
+  188   1          uint8 left_peak_row;
+C251 COMPILER V5.60.0,  laser                                                              23/07/26  00:12:33  PAGE 4   
 
-  189   3              }
-  190   2          }
-  191   1          if (!top_d) return;
-  192   1      
-  193   1          for (i = BottomFind; i > TopFind; i -= FindOffset) {
-  194   2              if (mt9v03x_image[i][center_x] < tar_th) {
-  195   3                  under_d = (uint8)i;
-  196   3                  debug_stage = 2;
-  197   3                  break;
-  198   3              }
-  199   2          }
-  200   1          if (!under_d || under_d <= top_d || under_d - top_d < MinTargetH) return;
-  201   1      
-  202   1          tar_y_local = (top_d + under_d) >> 1;
-  203   1          debug_stage = 3;
-  204   1          row_ptr = mt9v03x_image[tar_y_local];
-  205   1      
-  206   1          /* 从目标内部向外寻找由黑到白的边界，修正初版在中心黑点立即停下的问�
-             -�。 */
-  207   1          for (j = center_x; j > 1; j--) {
-  208   2              if (row_ptr[j] >= tar_th) {
-  209   3                  l_d = (uint8)(j + 1);
-  210   3                  debug_stage = 4;
-  211   3                  break;
-  212   3              }
-  213   2          }
-  214   1          if (!l_d) return;
+  189   1          uint8 right_valley_row;
+  190   1          uint8 request;
+  191   1          uint8 laser_id;
+  192   1          int16 left_depth;
+  193   1          int16 right_depth;
+  194   1      
+  195   1          left_top = left_edge_line[TARGET_SCAN_TOP_ROW];
+  196   1          right_top = right_edge_line[TARGET_SCAN_TOP_ROW];
+  197   1          left_bottom = left_edge_line[TARGET_SCAN_BOTTOM_ROW];
+  198   1          right_bottom = right_edge_line[TARGET_SCAN_BOTTOM_ROW];
+  199   1      
+  200   1          if (!target_edge_valid(TARGET_SCAN_TOP_ROW, left_top, right_top) ||
+  201   1              !target_edge_valid(TARGET_SCAN_BOTTOM_ROW, left_bottom, right_bottom)) {
+  202   2              target_clear_debug();
+  203   2              if (pre_find_flag) pre_find_flag = 1u;
+  204   2              laser_publish_request(LASER_MASK_NONE);
+  205   2              return;
+  206   2          }
+  207   1      
+  208   1          left_baseline = (left_top > left_bottom) ? left_top : left_bottom;
+  209   1          right_baseline = (right_top < right_bottom) ? right_top : right_bottom;
+  210   1      
+  211   1          left_peak = 0;
+  212   1          right_valley = SEARCH_IMAGE_W - 1u;
+  213   1          left_peak_row = 0;
+  214   1          right_valley_row = 0;
   215   1      
-  216   1          for (j = center_x; j < SEARCH_IMAGE_W - 2; j++) {
-  217   2              if (row_ptr[j] >= tar_th) {
-  218   3                  r_d = (uint8)(j - 1);
-  219   3                  debug_stage = 5;
-  220   3                  break;
-  221   3              }
-  222   2          }
-  223   1          if (!r_d || r_d <= l_d) return;
-  224   1      
-  225   1          target_w = r_d - l_d;
-  226   1          target_h = under_d - top_d;
-  227   1          if (target_w < MinTargetW || target_w > MaxTargetW) return;
-  228   1          if (target_h < MinTargetH || target_h > MaxTargetH) return;
-  229   1          if (target_w > (uint8)(target_h * 3u)) return;
-  230   1          if (target_h > (uint8)(target_w * 3u)) return;
-  231   1          if (l_d <= 1 || r_d >= SEARCH_IMAGE_W - 2) return;
-  232   1      
-  233   1          tar_x = (l_d + r_d) >> 1;
-  234   1          tar_y = tar_y_local;
-  235   1          center_offset = (int16)tar_x - (int16)Mid_Col;
-  236   1          aim_ready_flag = (abs_i16(center_offset) < AimTolerance) ? 1u : 0u;
-  237   1          tar_flag = 1;
-  238   1          debug_stage = 6;
-  239   1      }
+  216   1          for (row = TARGET_SCAN_TOP_ROW + TARGET_SCAN_STEP;
+  217   1               row < TARGET_SCAN_BOTTOM_ROW;
+  218   1               row += TARGET_SCAN_STEP) {
+  219   2              left = left_edge_line[row];
+  220   2              right = right_edge_line[row];
+  221   2      
+  222   2              if (!target_edge_valid(row, left, right)) {
+  223   3                  target_clear_debug();
+  224   3                  if (pre_find_flag) pre_find_flag = 1u;
+  225   3                  laser_publish_request(LASER_MASK_NONE);
+  226   3                  return;
+  227   3              }
+  228   2      
+  229   2              if (left > left_peak) {
+  230   3                  left_peak = left;
+  231   3                  left_peak_row = row;
+  232   3              }
+  233   2              if (right < right_valley) {
+  234   3                  right_valley = right;
+  235   3                  right_valley_row = row;
+  236   3              }
+  237   2          }
+  238   1      
+  239   1          left_depth = (int16)left_peak - (int16)left_baseline;
+  240   1          right_depth = (int16)right_baseline - (int16)right_valley;
+  241   1          request = LASER_MASK_NONE;
+  242   1          laser_id = TARGET_LASER_NONE;
+  243   1      
+  244   1          if (left_depth >= TARGET_NOTCH_MIN_PX &&
+  245   1              right_depth >= TARGET_NOTCH_MIN_PX) {
+  246   2              if (abs_i16((int16)left_peak_row - (int16)right_valley_row) <=
+  247   2                  TARGET_CENTER_ROW_TOL) {
+  248   3                  request = LASER_MASK_CENTER;
+  249   3                  laser_id = TARGET_LASER_CENTER;
+  250   3              }
+  251   2          } else if (left_depth >= TARGET_NOTCH_MIN_PX) {
+  252   2              request = LASER_MASK_LEFT;
+  253   2              laser_id = TARGET_LASER_LEFT;
+  254   2          } else if (right_depth >= TARGET_NOTCH_MIN_PX) {
+C251 COMPILER V5.60.0,  laser                                                              23/07/26  00:12:33  PAGE 5   
+
+  255   2              request = LASER_MASK_RIGHT;
+  256   2              laser_id = TARGET_LASER_RIGHT;
+  257   2          }
+  258   1      
+  259   1          if (request == LASER_MASK_NONE) {
+  260   2              target_clear_debug();
+  261   2              laser_publish_request(LASER_MASK_NONE);
+  262   2      
+  263   2              if (pre_find_flag == 1u) pre_find_flag = TARGET_REARM_CLEAR_FRAMES;
+  264   2              else if (pre_find_flag >= TARGET_REARM_CLEAR_FRAMES) pre_find_flag = 0;
+  265   2              return;
+  266   2          }
+  267   1      
+  268   1          tar_i = laser_id;
+  269   1          tar_flag = 1u;
+  270   1          tar_y = (laser_id == TARGET_LASER_LEFT) ? left_peak_row :
+  271   1                  ((laser_id == TARGET_LASER_RIGHT) ? right_valley_row :
+  272   1                   (uint8)(((uint16)left_peak_row + (uint16)right_valley_row) >> 1));
+  273   1          tar_x = (laser_id == TARGET_LASER_LEFT) ? left_peak :
+  274   1                  ((laser_id == TARGET_LASER_RIGHT) ? right_valley :
+  275   1                   (uint8)(((uint16)left_peak + (uint16)right_valley) >> 1));
+  276   1          center_offset = (int16)tar_x - (int16)Mid_Col;
+  277   1          aim_ready_flag = 1u;
+  278   1          top_d = TARGET_SCAN_TOP_ROW;
+  279   1          under_d = TARGET_SCAN_BOTTOM_ROW;
+  280   1          l_d = left_peak;
+  281   1          r_d = right_valley;
+  282   1          debug_stage = laser_id;
+  283   1          pre_find_offset = 0;
+  284   1      
+  285   1          if (!pre_find_flag) {
+  286   2              laser_publish_request(request);
+  287   2          }
+  288   1          pre_find_flag = 1u;
+  289   1      }
 
 
 Module Information          Static   Overlayable
 ------------------------------------------------
   code size            =    ------     ------
-  ecode size           =      1690     ------
+  ecode size           =      1446     ------
   data size            =    ------     ------
   idata size           =    ------     ------
   pdata size           =    ------     ------
-  xdata size           =        51     ------
+  xdata size           =        48     ------
   xdata-const size     =    ------     ------
   edata size           =    ------     ------
   bit size             =    ------     ------
   ebit size            =    ------     ------
   bitaddressable size  =    ------     ------
-C251 COMPILER V5.60.0,  laser                                                              19/07/26  22:17:08  PAGE 5   
-
   ebitaddressable size =    ------     ------
   far data size        =    ------     ------
   huge data size       =    ------     ------
   const size           =    ------     ------
-  hconst size          =       104     ------
+  hconst size          =       110     ------
 End of Module Information.
 
 

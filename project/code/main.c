@@ -1,8 +1,15 @@
 #include "zf_common_headfile.h"
 #include "zf_device_mt9v03x.h"
 /* #include "zf_device_ips200.h" */
+#define WIFI_RUNTIME_ENABLE 0
+#define SERIAL_ASSISTANT_RUNTIME_ENABLE 1
+
+#if WIFI_RUNTIME_ENABLE
 #include "wifi_assistant.h"
+#endif
+#if WIFI_RUNTIME_ENABLE || SERIAL_ASSISTANT_RUNTIME_ENABLE
 #include "assistant_debug.h"
+#endif
 #include "image.h"
 #include "image2.h"
 #include "ring.h"
@@ -39,17 +46,19 @@ static void Timer0_Callback(void)
     Servo_Loop();
     Motor_Loop();
 
-    /* Visual avoidance never suppresses target detection or laser firing. */
-    Laser_Set_Inhibit(0u);
+    /* PB3 未锁存或进入环岛特殊阶段时，硬性关闭并清空激光时序。 */
+    Laser_Set_Inhibit((!target_detect_enabled || current_step >= 2u) ? 1u : 0u);
     Laser_Task();
 }
 
 /* 程序入口：完成硬件初始化，之后在主循环中等待并处理摄像头图像。 */
 void main(void)
 {
+#if WIFI_RUNTIME_ENABLE
     uint8 wifi_ready;
     uint8 assistant_debug_ready;
     uint8 wifi_assistant_started;
+#endif
     uint8 car_started;
     uint8 key1_last;
     uint8 key1_now;
@@ -68,8 +77,13 @@ void main(void)
     mt9v03x_init();
     mt9v03x_set_exposure_time(camera_exposure_time);
     /* ips200_init(); */
+#if SERIAL_ASSISTANT_RUNTIME_ENABLE
+    Assistant_Debug_Init();
+#endif
+#if WIFI_RUNTIME_ENABLE
     assistant_debug_ready = 0;
     wifi_assistant_started = 0;
+#endif
     car_started = 0;
     key1_last = 1;
 
@@ -95,6 +109,7 @@ void main(void)
         }
         key1_last = gpio_get_level(KEY1_PIN);
 
+#if WIFI_RUNTIME_ENABLE
         wifi_ready = 0;
         if (!gpio_get_level(SWITCH2_PIN)) {
             if (!wifi_assistant_started) {
@@ -121,6 +136,16 @@ void main(void)
                 car_started = 1;
             }
         }
+#endif
+
+#if SERIAL_ASSISTANT_RUNTIME_ENABLE
+        if (Assistant_Debug_Take_Launch_Request()) {
+            if (!car_started) {
+                pit_ms_init(TIM0_PIT, CONTROL_PERIOD_MS, Timer0_Callback);
+                car_started = 1;
+            }
+        }
+#endif
 
         /* 摄像头完成一帧后再处理图像，处理完再等下一帧。 */
         if (mt9v03x_finish_flag) {
@@ -131,12 +156,16 @@ void main(void)
                 Gyro_Update();
             }
 
-            Image_OldStyle_Process(target_detect_enabled,
+            Image_OldStyle_Process((target_detect_enabled && car_started) ? 1u : 0u,
                                    1u);
 
+#if SERIAL_ASSISTANT_RUNTIME_ENABLE
+            Assistant_Debug_On_Frame(1u);
+#elif WIFI_RUNTIME_ENABLE
             if (wifi_ready) {
                 Assistant_Debug_On_Frame(1u);
             }
+#endif
 
             /* 按下 SWITCH2 时显示调试画面。 */
             /*

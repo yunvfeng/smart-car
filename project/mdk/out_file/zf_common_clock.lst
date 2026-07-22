@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  zf_common_clock                                                    19/07/26  22:17:03  PAGE 1   
+C251 COMPILER V5.60.0,  zf_common_clock                                                    23/07/26  00:12:28  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_common_clock
@@ -66,7 +66,7 @@ stmt  level    source
    52   1          interrupt_global_disable();
    53   1          EAXFR = 1;            //  πƒ‹∑√Œ XFR
    54   1        // CKCON = 0;
-C251 COMPILER V5.60.0,  zf_common_clock                                                    19/07/26  22:17:03  PAGE 2   
+C251 COMPILER V5.60.0,  zf_common_clock                                                    23/07/26  00:12:28  PAGE 2   
 
    55   1          if((120*1000*1000UL) <= clock)
    56   1          {
@@ -134,7 +134,7 @@ stmt  level    source
   118   1          S2CON = 0;
   119   1          S3CON = 0;
   120   1          S4CON = 0;
-C251 COMPILER V5.60.0,  zf_common_clock                                                    19/07/26  22:17:03  PAGE 3   
+C251 COMPILER V5.60.0,  zf_common_clock                                                    23/07/26  00:12:28  PAGE 3   
 
   121   1          P_SW1 = 0;
   122   1          IE2 = 0;

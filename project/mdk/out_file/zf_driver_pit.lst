@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  zf_driver_pit                                                      19/07/26  22:17:04  PAGE 1   
+C251 COMPILER V5.60.0,  zf_driver_pit                                                      23/07/26  00:12:29  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_driver_pit
@@ -66,7 +66,7 @@ stmt  level    source
    51          //  Sample usage:          pit_init(TIM_0, 10, pit_handler)
    52          //                         禁止使用该函数，请使用pit_ms_init或者pit_us_init
    53          //-------------------------------------------------------------------------------------------------------
-C251 COMPILER V5.60.0,  zf_driver_pit                                                      19/07/26  22:17:04  PAGE 2   
+C251 COMPILER V5.60.0,  zf_driver_pit                                                      23/07/26  00:12:29  PAGE 2   
 
              -------------
    54          void pit_init(pit_index_enum pit_n, uint32 period, callback_function pit_handler)
@@ -134,7 +134,7 @@ stmt  level    source
   116   4                      T8T7M &= ~0x20;
   117   4                      break;
   118   4                  }
-C251 COMPILER V5.60.0,  zf_driver_pit                                                      19/07/26  22:17:04  PAGE 3   
+C251 COMPILER V5.60.0,  zf_driver_pit                                                      23/07/26  00:12:29  PAGE 3   
 
   119   3                  case TIM9_PIT:
   120   3                  {
@@ -202,7 +202,7 @@ stmt  level    source
   182   4                  }
   183   3                  case TIM5_PIT:
   184   3                  {
-C251 COMPILER V5.60.0,  zf_driver_pit                                                      19/07/26  22:17:04  PAGE 4   
+C251 COMPILER V5.60.0,  zf_driver_pit                                                      23/07/26  00:12:29  PAGE 4   
 
   185   4                      T6T5M |= 0x02;
   186   4                      break;
@@ -270,7 +270,7 @@ stmt  level    source
   248   2              {
   249   3                  TM0PS = freq_div; // 设置分频值
   250   3                  TMOD &= 0xF0;     // 模式 0
-C251 COMPILER V5.60.0,  zf_driver_pit                                                      19/07/26  22:17:04  PAGE 5   
+C251 COMPILER V5.60.0,  zf_driver_pit                                                      23/07/26  00:12:29  PAGE 5   
 
   251   3                  TL0 = temp;
   252   3                  TH0 = temp >> 8;
@@ -338,7 +338,7 @@ stmt  level    source
   314   2              {
   315   3                  TM7PS = freq_div; // 设置分频值
   316   3                  T7L = temp;
-C251 COMPILER V5.60.0,  zf_driver_pit                                                      19/07/26  22:17:04  PAGE 6   
+C251 COMPILER V5.60.0,  zf_driver_pit                                                      23/07/26  00:12:29  PAGE 6   
 
   317   3                  T7H = temp >> 8;
   318   3                  T8T7M |= 0x08;    // 启动定时器
@@ -406,7 +406,7 @@ stmt  level    source
   380   3              }
   381   2          }
   382   1          
-C251 COMPILER V5.60.0,  zf_driver_pit                                                      19/07/26  22:17:04  PAGE 7   
+C251 COMPILER V5.60.0,  zf_driver_pit                                                      23/07/26  00:12:29  PAGE 7   
 
   383   1         tim_irq_handlers[pit_n] = pit_handler;
   384   1      }
