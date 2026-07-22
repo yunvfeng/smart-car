@@ -12,7 +12,6 @@
 #define FIRST_TO_ENTER_WIDTH_TOP_ROW   25u
 #define FIRST_TO_ENTER_WIDTH_END_ROW   65u
 #define FIRST_TO_ENTER_WIDTH_ROW_STEP  5u
-#define FIRST_ANCHOR_MIN_LANE_WIDTH    20u
 #define IN_TO_OUT_MIN_FRAMES           20u
 #define IN_TO_OUT_CONFIRM_FRAMES       3u
 #define LEFT_IN_AUTO_OUT_FRAMES        35u
@@ -41,7 +40,7 @@
 uint8 left_control_line[SEARCH_IMAGE_H];
 uint8 right_control_line[SEARCH_IMAGE_H];
 
-volatile uint8 current_step = 0;
+uint8 current_step = 0;
 uint8 key_anlysis1 = 0;
 uint8 key_anlysis2 = 0;
 uint8 key_anlysis3 = 0;
@@ -566,19 +565,8 @@ void Ring_First_meeting(void)
         mid = left_edge_line[i];
         top = left_edge_line[i - 4];
 
-        /*
-         * The right edge is continuous in a left-ring FIRST frame.  Reject a
-         * false left point that crossed the image center or approached the
-         * right edge.  Keep the first valid maximum nearest the lower turn
-         * instead of letting upper-image
-         * noise overwrite the anchor and pull the fill toward the top-right.
-         */
-        if (mid >= under && mid >= top && mid > 30u && mid < Mid_Col &&
-            right_edge_line[i] > mid &&
-            (uint8)(right_edge_line[i] - mid) >=
-                FIRST_ANCHOR_MIN_LANE_WIDTH) {
+        if (mid >= under && mid >= top && mid > 30) {
             midPoint = i;
-            break;
         }
     }
 

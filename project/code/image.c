@@ -35,6 +35,7 @@
 #define ZEBRA_COL_TRANSITIONS          4u
 #define ZEBRA_COL_HITS                 3u
 #define ZEBRA_DETECT_ENABLE            0u
+#define TARGET_FIND_FRAME_DIV          2u
 
 uint8 reference_point;
 uint8 white_max_point;
@@ -54,7 +55,7 @@ uint8 cross_flag = 0;
 uint8 zebra_flag = 0;
 uint16 encoder_enter = 0;
 uint8 th = 0;
-uint16 camera_exposure_time = 80;
+uint16 camera_exposure_time = 512;
 uint8 camera_init_brightness = 0;
 static uint8 reflect_point = REFLECT_BASE_POINT;
 
@@ -738,6 +739,7 @@ void Image_OldStyle_Process(uint8 target_detect_enable,
 #if IMAGE_OTSU_ENABLE
     static uint8 otsu_frame_count = 0;
 #endif
+    static uint8 target_find_frame_count = 0;
 
     img = &mt9v03x_image[0][0];
 
@@ -762,13 +764,30 @@ void Image_OldStyle_Process(uint8 target_detect_enable,
 
     Fitted_Midline();
 
-    /* 关闭检测或进入特殊路段时立即清掉锁存和待发请求。 */
+    /* 关闭检测或进入特殊路段时立即清掉旧目标，不能留到下一检测帧。 */
     tar_th = white_min_point;
     if (!target_detect_enable || current_step >= 2) {
-        Target_Notch_Reset();
+        target_find_frame_count = 0;
+        pre_find_flag = 0;
+        pre_find_offset = 0;
+        tar_flag = 0;
+        aim_ready_flag = 0;
+        center_offset = 0;
+        top_d = 0;
+        under_d = 0;
+        l_d = 0;
+        r_d = 0;
+        debug_stage = 0;
         return;
     }
 
-    /* 只读取 61～79 奇数行的十组边线，不访问原图。 */
-    Target_Notch_ProcessFrame();
+    /* 靶点结果在跳过帧保留，避免 15 ms 激光任务看到隔帧闪烁。 */
+    if (!target_find_frame_count) {
+        Pre_Scan();
+        Target_find(pre_find_offset);
+    }
+    target_find_frame_count++;
+    if (target_find_frame_count >= TARGET_FIND_FRAME_DIV) {
+        target_find_frame_count = 0;
+    }
 }

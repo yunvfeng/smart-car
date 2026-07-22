@@ -3,8 +3,8 @@
 
 #include "zf_common_headfile.h"
 
-extern volatile int16 encoder_data_r;
-extern volatile int16 encoder_data_l;
+extern int16 encoder_data_r;
+extern int16 encoder_data_l;
 extern int16 tar_speed;
 extern volatile int16 target_speed_l;
 extern volatile int16 target_speed_r;
@@ -31,10 +31,6 @@ typedef enum
 #define MOTOR_PWM_RISE_STEP      250
 #define MOTOR_PWM_FALL_STEP      400
 
-/* Temporary open-loop mode: both wheels use the same forward duty. */
-#define MOTOR_FIXED_DUTY_ENABLE  1
-#define MOTOR_FIXED_DUTY         1500
-
 #define ENCODER_DIR_1          PWMA_ENCODER
 #define ENCODER_DIR_PULSE_1    PWMA_ENCODER_CH1P_P60
 #define ENCODER_DIR_DIR_1      PWMA_ENCODER_CH2P_P62
@@ -44,19 +40,19 @@ typedef enum
 #define ENCODER_DIR_DIR_2      PWMC_ENCODER_CH2P_P42
 
 /* 这里的速度单位是 15 ms 内读到的编码器脉冲数。 */
-#define MAX_SPEED          300
+#define MAX_SPEED          250
 #define MAX_SPEED_TUNE_MAX 700
-#define MIN_SPEED         200
+#define MIN_SPEED          150
 #define BASE_TARGET_SPEED  175
-#define WHEEL_TARGET_MIN   165
+#define WHEEL_TARGET_MIN   150
 #define TURN_DIFF_MAX      8
 #define MOTOR_SPEED_GATE_MARGIN  50
 
-/* 运行时最低目标速度，可通过 WiFi 调参修改。 */
+/* 运行时最低/最高目标速度；WiFi 调试路径关闭时保持默认值。 */
 extern volatile int16 min_speed;
 extern volatile int16 max_speed;
 
-/* 原子更新或读取 WiFi 使用的最低/最高目标速度。 */
+/* 原子更新或读取最低/最高目标速度。 */
 void Motor_Set_Speed_Range(int16 speed_min, int16 speed_max);
 void Motor_Get_Speed_Range(int16 *speed_min, int16 *speed_max);
 /* Atomically select normal, speed-capped, or hard-stop operation. */
@@ -74,7 +70,7 @@ void Encoder_Init(void);
 void motor_test(void);
 /* 读取编码器脉冲并清零。 */
 void Encoder_GetValue(void);
-/* 电机周期任务；按 MOTOR_FIXED_DUTY_ENABLE 选择固定输出或速度闭环。 */
+/* 电机速度闭环主函数。 */
 void Motor_Loop(void);
 /* 控制指定电机的方向和 PWM 输出。 */
 void Motor_control(pwm_channel_enum wheel, int16 speed);

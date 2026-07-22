@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  usb_req_class                                                      23/07/26  00:12:31  PAGE 1   
+C251 COMPILER V5.60.0,  usb_req_class                                                      23/07/26  02:13:07  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE usb_req_class
@@ -66,7 +66,7 @@ stmt  level    source
    54          
    55          void usb_get_line_coding()
    56          {
-C251 COMPILER V5.60.0,  usb_req_class                                                      23/07/26  00:12:31  PAGE 2   
+C251 COMPILER V5.60.0,  usb_req_class                                                      23/07/26  02:13:07  PAGE 2   
 
    57   1          if ((DeviceState != DEVSTATE_CONFIGURED) ||
    58   1              (Setup.bmRequestType != (IN_DIRECT | CLASS_REQUEST | INTERFACE_RECIPIENT)))

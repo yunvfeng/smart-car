@@ -1,13 +1,10 @@
 #include "zf_common_headfile.h"
 #include "zf_device_mt9v03x.h"
 /* #include "zf_device_ips200.h" */
-#define WIFI_RUNTIME_ENABLE 0
-#define SERIAL_ASSISTANT_RUNTIME_ENABLE 1
+#define WIFI_RUNTIME_ENABLE  0u
 
 #if WIFI_RUNTIME_ENABLE
 #include "wifi_assistant.h"
-#endif
-#if WIFI_RUNTIME_ENABLE || SERIAL_ASSISTANT_RUNTIME_ENABLE
 #include "assistant_debug.h"
 #endif
 #include "image.h"
@@ -46,8 +43,8 @@ static void Timer0_Callback(void)
     Servo_Loop();
     Motor_Loop();
 
-    /* PB3 未锁存或进入环岛特殊阶段时，硬性关闭并清空激光时序。 */
-    Laser_Set_Inhibit((!target_detect_enabled || current_step >= 2u) ? 1u : 0u);
+    /* Visual avoidance never suppresses target detection or laser firing. */
+    Laser_Set_Inhibit(0u);
     Laser_Task();
 }
 
@@ -77,9 +74,6 @@ void main(void)
     mt9v03x_init();
     mt9v03x_set_exposure_time(camera_exposure_time);
     /* ips200_init(); */
-#if SERIAL_ASSISTANT_RUNTIME_ENABLE
-    Assistant_Debug_Init();
-#endif
 #if WIFI_RUNTIME_ENABLE
     assistant_debug_ready = 0;
     wifi_assistant_started = 0;
@@ -138,15 +132,6 @@ void main(void)
         }
 #endif
 
-#if SERIAL_ASSISTANT_RUNTIME_ENABLE
-        if (Assistant_Debug_Take_Launch_Request()) {
-            if (!car_started) {
-                pit_ms_init(TIM0_PIT, CONTROL_PERIOD_MS, Timer0_Callback);
-                car_started = 1;
-            }
-        }
-#endif
-
         /* 摄像头完成一帧后再处理图像，处理完再等下一帧。 */
         if (mt9v03x_finish_flag) {
             mt9v03x_finish_flag = 0;
@@ -156,12 +141,10 @@ void main(void)
                 Gyro_Update();
             }
 
-            Image_OldStyle_Process((target_detect_enabled && car_started) ? 1u : 0u,
+            Image_OldStyle_Process(target_detect_enabled,
                                    1u);
 
-#if SERIAL_ASSISTANT_RUNTIME_ENABLE
-            Assistant_Debug_On_Frame(1u);
-#elif WIFI_RUNTIME_ENABLE
+#if WIFI_RUNTIME_ENABLE
             if (wifi_ready) {
                 Assistant_Debug_On_Frame(1u);
             }

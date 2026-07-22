@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  seekfree_assistant                                                 23/07/26  00:12:32  PAGE 1   
+C251 COMPILER V5.60.0,  seekfree_assistant                                                 23/07/26  02:13:08  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE seekfree_assistant
@@ -66,7 +66,7 @@ stmt  level    source
    47          float                   seekfree_assistant_parameter[SEEKFREE_ASSISTANT_SET_PARAMETR_COUNT] = {0};      //
              - 保存接收到的参数
    48          vuint8          seekfree_assistant_parameter_update_flag[SEEKFREE_ASSISTANT_SET_PARAMETR_COUNT] = {0};
-C251 COMPILER V5.60.0,  seekfree_assistant                                                 23/07/26  00:12:32  PAGE 2   
+C251 COMPILER V5.60.0,  seekfree_assistant                                                 23/07/26  02:13:08  PAGE 2   
 
    49          //-------------------------------------------------------------------------------------------------------
              -------------
@@ -134,7 +134,7 @@ stmt  level    source
   103   3                  image_size = width * height;
   104   3              }break;
   105   2      
-C251 COMPILER V5.60.0,  seekfree_assistant                                                 23/07/26  00:12:32  PAGE 3   
+C251 COMPILER V5.60.0,  seekfree_assistant                                                 23/07/26  02:13:08  PAGE 3   
 
   106   2              case SEEKFREE_ASSISTANT_SCC8660:
   107   2              {
@@ -202,7 +202,7 @@ stmt  level    source
   162   2          ((uint8 *)&temp_oscilloscope.dat[i])[3] = ((uint8 *)&seekfree_assistant_oscilloscope->dat[i])[0];
   163   2        }
   164   1      
-C251 COMPILER V5.60.0,  seekfree_assistant                                                 23/07/26  00:12:32  PAGE 4   
+C251 COMPILER V5.60.0,  seekfree_assistant                                                 23/07/26  02:13:08  PAGE 4   
 
   165   1          // 帧头
   166   1          temp_oscilloscope.head         = SEEKFREE_ASSISTANT_SEND_HEAD;
@@ -270,7 +270,7 @@ stmt  level    source
   225          // 参数说明     dot_y2          存放边线2纵坐标的地址  如果传递NULL参数则表示不发送边线2
   226          // 参数说明     dot_y3          存放边线3纵坐标的地址  如果传递NULL参数则表示不发送边线3
   227          // 返回参数     void
-C251 COMPILER V5.60.0,  seekfree_assistant                                                 23/07/26  00:12:32  PAGE 5   
+C251 COMPILER V5.60.0,  seekfree_assistant                                                 23/07/26  02:13:08  PAGE 5   
 
   228          // 使用示例                     seekfree_assistant_camera_config(X_BOUNDARY, MT9V03X_H, x1_boundary, x2_b
              -oundary, x3_boundary, NULL, NULL, NULL);     // 图像发送时包含三条边线，边线只有横坐标
@@ -338,7 +338,7 @@ stmt  level    source
   285   3                  {
   286   4                      boundary_num++;
   287   4                      seekfree_assistant_camera_dot_data.valid_flag |= 1 << 1;
-C251 COMPILER V5.60.0,  seekfree_assistant                                                 23/07/26  00:12:32  PAGE 6   
+C251 COMPILER V5.60.0,  seekfree_assistant                                                 23/07/26  02:13:08  PAGE 6   
 
   288   4                      seekfree_assistant_camera_buffer.boundary_y[i++] = dot_y2;
   289   4                  }
@@ -406,7 +406,7 @@ stmt  level    source
   347   1          uint8  temp_sum = 0;
   348   1          uint32 read_length = 0;
   349   1        uint16 struct_len = sizeof(seekfree_assistant_parameter_struct);
-C251 COMPILER V5.60.0,  seekfree_assistant                                                 23/07/26  00:12:32  PAGE 7   
+C251 COMPILER V5.60.0,  seekfree_assistant                                                 23/07/26  02:13:08  PAGE 7   
 
   350   1          seekfree_assistant_parameter_struct *receive_packet;
   351   1        
@@ -474,7 +474,7 @@ stmt  level    source
   407   2              fifo_read_buffer(&seekfree_assistant_fifo, (uint8 *)temp_buffer, &read_length, FIFO_READ_AND_CLEA
              -N);
   408   2          }
-C251 COMPILER V5.60.0,  seekfree_assistant                                                 23/07/26  00:12:32  PAGE 8   
+C251 COMPILER V5.60.0,  seekfree_assistant                                                 23/07/26  02:13:08  PAGE 8   
 
   409   1        EA = flag;
   410   1      }

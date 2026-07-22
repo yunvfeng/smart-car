@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  00:12:31  PAGE 1   
+C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  02:13:06  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE zf_device_dl1a
@@ -66,7 +66,7 @@ stmt  level    source
    50          #include "zf_device_dl1a.h"
    51          #include "zf_device_type.h"
    52          
-C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  00:12:31  PAGE 2   
+C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  02:13:06  PAGE 2   
 
    53          #pragma warning disable = 183
    54          
@@ -134,7 +134,7 @@ stmt  level    source
   108   2              dl1a_write_register(0xFF, 0x06);
   109   2              dl1a_read_registers(0x83, &tmp, 1);
   110   2              dl1a_write_register(0x83, tmp | 0x04);
-C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  00:12:31  PAGE 3   
+C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  02:13:06  PAGE 3   
 
   111   2              dl1a_write_register(0xFF, 0x07);
   112   2              dl1a_write_register(0x81, 0x01);
@@ -202,7 +202,7 @@ stmt  level    source
   172   1          return ((timeout_period_mclks * macro_period_ns) + (macro_period_ns / 2)) / 1000;
   173   1      }
   174          
-C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  00:12:31  PAGE 4   
+C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  02:13:06  PAGE 4   
 
   175          //-------------------------------------------------------------------------------------------------------
              -------------
@@ -270,7 +270,7 @@ stmt  level    source
   232   1      }
   233          
   234          //-------------------------------------------------------------------------------------------------------
-C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  00:12:31  PAGE 5   
+C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  02:13:06  PAGE 5   
 
              -------------
   235          // 函数简介     获取序列步骤使能设置
@@ -338,7 +338,7 @@ stmt  level    source
   291          {
   292   1          uint8 reg_buffer[2];
   293   1          uint16 reg16_buffer = 0;
-C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  00:12:31  PAGE 6   
+C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  02:13:06  PAGE 6   
 
   294   1          
   295   1          timeouts->pre_range_vcsel_period_pclks = dl1a_get_vcsel_pulse_period(DL1A_VCSEL_PERIOD_PER_RANGE);
@@ -406,7 +406,7 @@ stmt  level    source
   351   2              {
   352   3                  break;
   353   3              }
-C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  00:12:31  PAGE 7   
+C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  02:13:06  PAGE 7   
 
   354   2              
   355   2              dl1a_write_register(DL1A_SYSTEM_INTERRUPT_CLEAR, 0x01);
@@ -474,7 +474,7 @@ stmt  level    source
   415   3                  used_budget_us += (timeouts.pre_range_us + DL1A_PRERANGE_OVERHEAD);
   416   3              }
   417   2              
-C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  00:12:31  PAGE 8   
+C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  02:13:06  PAGE 8   
 
   418   2              if(enables.final_range)
   419   2              {
@@ -542,7 +542,7 @@ stmt  level    source
   479   1          
   480   1          if(enables.dss)
   481   1          {
-C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  00:12:31  PAGE 9   
+C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  02:13:06  PAGE 9   
 
   482   2              budget_us += 2 * (timeouts.msrc_dss_tcc_us + DL1A_DSS_OVERHEAD);
   483   2          }
@@ -610,7 +610,7 @@ stmt  level    source
   541   2              
   542   2              if(0 != (reg_databuffer[0] & 0x07))
   543   2              {
-C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  00:12:31  PAGE 10  
+C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  02:13:06  PAGE 10  
 
   544   3                  // 假设线性度校正增益为默认值 1000 且未启用分数范围
   545   3                  dl1a_read_registers(DL1A_RESULT_RANGE_STATUS + 10, reg_databuffer, 2);
@@ -678,7 +678,7 @@ stmt  level    source
   604   1          
   605   1          const uint8 code temp_buff3[][2] =    // BUFF3
   606   1          {
-C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  00:12:31  PAGE 11  
+C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  02:13:06  PAGE 11  
 
   607   1              {0xFF, 0x01},
   608   1              {DL1A_DYNAMIC_SPAD_REF_EN_START_OFFSET, 0x00},
@@ -746,7 +746,7 @@ stmt  level    source
   670   1              {0xFF, 0x01},
   671   1              {0x31, 0x04},
   672   1              {0x4B, 0x09},
-C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  00:12:31  PAGE 12  
+C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  02:13:06  PAGE 12  
 
   673   1              {0x4C, 0x05},
   674   1              {0x4D, 0x04},
@@ -814,7 +814,7 @@ stmt  level    source
   734   2              //        dl1a_write_register(0x00, 0x00);
   735   2              
   736   2              dl1a_read_registers(0x91, &stop_variable, 1);
-C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  00:12:31  PAGE 13  
+C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  02:13:06  PAGE 13  
 
   737   2              
   738   2              for(i = 0; i < (sizeof(temp_buff2) / 2); i++)
@@ -882,7 +882,7 @@ stmt  level    source
   800   2              
   801   2              dl1a_write_array(data_buffer, 7);
   802   2              
-C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  00:12:31  PAGE 14  
+C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  02:13:06  PAGE 14  
 
   803   2              for(i = 0; i < (sizeof(temp_buff4) / 2); i++)
   804   2              {
@@ -950,7 +950,7 @@ stmt  level    source
   866   2              //        dl1a_write_register(0x4C, 0x05);
   867   2              //        dl1a_write_register(0x4D, 0x04);
   868   2              //        dl1a_write_register(0xFF, 0x00);
-C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  00:12:31  PAGE 15  
+C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  02:13:06  PAGE 15  
 
   869   2              //        dl1a_write_register(0x44, 0x00);
   870   2              //        dl1a_write_register(0x45, 0x20);
@@ -1018,7 +1018,7 @@ stmt  level    source
   932   2              dl1a_write_register(0xFF, 0x00);
   933   2              dl1a_write_register(0x80, 0x00);
   934   2              
-C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  00:12:31  PAGE 16  
+C251 COMPILER V5.60.0,  zf_device_dl1a                                                     23/07/26  02:13:06  PAGE 16  
 
   935   2              dl1a_write_register(DL1A_SYSRANGE_START, 0x02);
   936   2              dl1a_init_flag = 1;

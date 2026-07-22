@@ -13,7 +13,7 @@ extern uint8 ring_turn_flag;
 extern uint8 Out_flag;
 extern uint8 Straighten_flag;
 extern uint8 ring_over_flag;
-extern volatile uint8 current_step;
+extern uint8 current_step;
 
 extern uint8 key_anlysis1;
 extern uint8 key_anlysis2;
