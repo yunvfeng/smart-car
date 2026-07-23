@@ -55,7 +55,7 @@ uint8 cross_flag = 0;
 uint8 zebra_flag = 0;
 uint16 encoder_enter = 0;
 uint8 th = 0;
-uint16 camera_exposure_time = 512;
+uint16 camera_exposure_time = 120;
 uint8 camera_init_brightness = 0;
 static uint8 reflect_point = REFLECT_BASE_POINT;
 

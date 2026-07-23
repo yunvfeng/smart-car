@@ -287,7 +287,7 @@ void Dream_speed(void)
         speed_floor = schedule_ceiling;
     }
 
-    /* The curve uses entered maximum n; normal output is gated at n - 50. */
+    /* The curve uses entered maximum n; normal output is gated by the configured margin. */
     output_ceiling = (int16)(schedule_ceiling - MOTOR_SPEED_GATE_MARGIN);
     if (safety_mode == MOTOR_SAFETY_CAP && safety_cap < output_ceiling) {
         output_ceiling = safety_cap;

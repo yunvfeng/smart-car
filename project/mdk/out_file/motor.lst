@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  motor                                                              23/07/26  02:13:11  PAGE 1   
+C251 COMPILER V5.60.0,  motor                                                              23/07/26  03:28:05  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE motor
@@ -66,7 +66,7 @@ stmt  level    source
    54   2          }
    55   1          cap = clamp_speed_setting(cap);
    56   1      
-C251 COMPILER V5.60.0,  motor                                                              23/07/26  02:13:11  PAGE 2   
+C251 COMPILER V5.60.0,  motor                                                              23/07/26  03:28:05  PAGE 2   
 
    57   1          interrupt_state = EA;
    58   1          EA = 0;
@@ -134,7 +134,7 @@ stmt  level    source
   120   1          EA = 0;
   121   1          *speed_min = min_speed;
   122   1          *speed_max = max_speed;
-C251 COMPILER V5.60.0,  motor                                                              23/07/26  02:13:11  PAGE 3   
+C251 COMPILER V5.60.0,  motor                                                              23/07/26  03:28:05  PAGE 3   
 
   123   1          EA = interrupt_state;
   124   1      }
@@ -202,7 +202,7 @@ stmt  level    source
   186   1      
   187   1          gpio_init(DIR_L, GPO, 0, GPO_PUSH_PULL);
   188   1          gpio_init(DIR_R, GPO, 0, GPO_PUSH_PULL);
-C251 COMPILER V5.60.0,  motor                                                              23/07/26  02:13:11  PAGE 4   
+C251 COMPILER V5.60.0,  motor                                                              23/07/26  03:28:05  PAGE 4   
 
   189   1      }
   190          
@@ -270,7 +270,7 @@ stmt  level    source
   252   1          int16 scheduled_speed;
   253   1          int16 turn_diff;
   254   1          int16 left_target;
-C251 COMPILER V5.60.0,  motor                                                              23/07/26  02:13:11  PAGE 5   
+C251 COMPILER V5.60.0,  motor                                                              23/07/26  03:28:05  PAGE 5   
 
   255   1          int16 right_target;
   256   1          int16 safety_cap;
@@ -307,7 +307,7 @@ stmt  level    source
   287   2              speed_floor = schedule_ceiling;
   288   2          }
   289   1      
-  290   1          /* The curve uses entered maximum n; normal output is gated at n - 50. */
+  290   1          /* The curve uses entered maximum n; normal output is gated by the configured margin. */
   291   1          output_ceiling = (int16)(schedule_ceiling - MOTOR_SPEED_GATE_MARGIN);
   292   1          if (safety_mode == MOTOR_SAFETY_CAP && safety_cap < output_ceiling) {
   293   2              output_ceiling = safety_cap;
@@ -338,7 +338,7 @@ stmt  level    source
   318   2              right_target += turn_diff;
   319   2          }
   320   1      
-C251 COMPILER V5.60.0,  motor                                                              23/07/26  02:13:11  PAGE 6   
+C251 COMPILER V5.60.0,  motor                                                              23/07/26  03:28:05  PAGE 6   
 
   321   1          target_speed_l = clamp_wheel_target(left_target, output_ceiling);
   322   1          target_speed_r = clamp_wheel_target(right_target, output_ceiling);

@@ -14,7 +14,7 @@
 #define ASSISTANT_PARAM_MAX_CHANNEL     SEEKFREE_ASSISTANT_SET_PARAMETR_COUNT
 #define ASSISTANT_EXPOSURE_MIN          1.0f
 #define ASSISTANT_EXPOSURE_MAX          4095.0f
-#define ASSISTANT_SPEED_MIN              150.0f
+#define ASSISTANT_SPEED_MIN              200.0f
 #define ASSISTANT_GYRO_KG_MIN            (-3000.0f)
 #define ASSISTANT_GYRO_KG_MAX            3000.0f
 
@@ -422,44 +422,6 @@ uint16 Assistant_Debug_Timebase_Now(void)
 void Assistant_Debug_Set_Image_Process_Time(uint16 time_100us)
 {
     assistant_image_process_time_100us = time_100us;
-}
-
-#else
-
-void Assistant_Debug_Init(void)
-{
-}
-
-void Assistant_Debug_Task(void)
-{
-}
-
-void Assistant_Debug_On_Frame(uint8 visual_avoid_enabled)
-{
-    (void)visual_avoid_enabled;
-}
-
-uint8 Assistant_Debug_Take_Launch_Request(void)
-{
-    return 0u;
-}
-
-void Assistant_Debug_Send_Now(void)
-{
-}
-
-void Assistant_Debug_Timebase_Tick(void)
-{
-}
-
-uint16 Assistant_Debug_Timebase_Now(void)
-{
-    return 0;
-}
-
-void Assistant_Debug_Set_Image_Process_Time(uint16 time_100us)
-{
-    (void)time_100us;
 }
 
 #endif

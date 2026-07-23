@@ -27,7 +27,7 @@ typedef enum
 
 #define MOTOR_FREQ         17000
 #define MOTOR_MAX_LIMIT    7500
-#define MOTOR_MIN_EFFECTIVE_PWM  1500
+#define MOTOR_MIN_EFFECTIVE_PWM  2250
 #define MOTOR_PWM_RISE_STEP      250
 #define MOTOR_PWM_FALL_STEP      400
 
@@ -40,13 +40,13 @@ typedef enum
 #define ENCODER_DIR_DIR_2      PWMC_ENCODER_CH2P_P42
 
 /* 这里的速度单位是 15 ms 内读到的编码器脉冲数。 */
-#define MAX_SPEED          250
+#define MAX_SPEED          280
 #define MAX_SPEED_TUNE_MAX 700
-#define MIN_SPEED          150
-#define BASE_TARGET_SPEED  175
-#define WHEEL_TARGET_MIN   150
+#define MIN_SPEED          200
+#define BASE_TARGET_SPEED  200
+#define WHEEL_TARGET_MIN   200
 #define TURN_DIFF_MAX      8
-#define MOTOR_SPEED_GATE_MARGIN  50
+#define MOTOR_SPEED_GATE_MARGIN  30
 
 /* 运行时最低/最高目标速度；WiFi 调试路径关闭时保持默认值。 */
 extern volatile int16 min_speed;

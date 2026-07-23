@@ -1,6 +1,6 @@
 # STC32G144K 智能车固件
 
-本工程基于逐飞 STC32G144K 库和 Keil C251 工具链，实现摄像头循迹、左右环岛、双侧边线宽度突变视觉避障、编码器测速、电机与舵机闭环、IMU 横摆阻尼、靶点识别和激光时序；WiFi 调试代码保留但当前运行路径关闭。视觉避障默认开启，DL1B ToF 当前不初始化、不轮询。
+本工程基于逐飞 STC32G144K 库和 Keil C251 工具链，实现摄像头循迹、左右环岛、双侧边线宽度突变视觉避障、编码器测速、电机与舵机闭环、IMU 横摆阻尼、靶点识别和激光时序；WiFi 与串口调试代码保留，但当前运行路径均关闭。视觉避障默认开启，DL1B ToF 当前不初始化、不轮询。
 
 ## 快速开始
 
@@ -14,7 +14,8 @@
 | 图像尺寸 | 188 × 120 |
 | 控制周期 | 15 ms |
 | 发车按键 | `KEY1_PIN = IO_PB2` |
-| WiFi 调试开关 | `SWITCH2_PIN = IO_PB1`（当前无效，运行路径已关闭） |
+| 逐飞助手接口 | 当前关闭（`ASSISTANT_DEBUG_ENABLE=0`） |
+| WiFi 调试开关 | `SWITCH2_PIN = IO_PB1`（当前无效） |
 
 `project/user/main.c` 没有加入当前 Keil 目标，仅作历史参考。`project/user/` 不能整个当成废弃目录，因为其中的 `isr.c` 仍在编译。
 
@@ -30,7 +31,7 @@ project/mdk/out_file/      构建产物，不手工修改
 
 | 文件 | 职责 |
 | --- | --- |
-| `project/code/main.c` | 硬件初始化、按键发车、WiFi 运行宏和图像主循环 |
+| `project/code/main.c` | 硬件初始化、按键发车和图像主循环 |
 | `project/code/image.c` | 阈值、参考列、左右边线、控制中线和目标检测调度 |
 | `project/code/ring.c` | 左右环岛检测、状态转移和补线 |
 | `project/code/pid.c` | 舵机 PID 和电机 PI |
@@ -40,8 +41,8 @@ project/mdk/out_file/      构建产物，不手工修改
 | `project/code/laser.c` | 靶点检测和激光脉冲/冷却时序 |
 | `project/code/visual_avoidance.c` | 左右边线宽度双突变的低算力检测和 `PATH_BIAS` 持续避障 |
 | `project/code/tof_avoidance.c` | 保留的 ToF 历史实现，当前不加入活跃 Keil 目标 |
-| `project/code/assistant_debug.c` | 图像边界、状态叠加、示波器数据和在线调参 |
-| `project/code/wifi_assistant.c` | WiFi 连接与调试助手会话 |
+| `project/code/assistant_debug.c` | 串口逐飞助手、图像边界、状态叠加、示波器数据和在线调参 |
+| `project/code/wifi_assistant.c` | 保留的 WiFi 连接实现，当前没有运行时调用 |
 
 ## 运行链路
 
@@ -101,8 +102,8 @@ DL1B 不初始化、不轮询，ToF 驱动和旧避障文件只保留在磁盘�
 普通循迹先由环岛预判进入 `FIRST`。完整轮廓一经识别就立即开始一次完整动作：
 
 1. `SCAN → ACTIVE`：左侧障碍设定 `PATH_BIAS=-40 px` 向右绕，右侧障碍设定 `PATH_BIAS=+40 px` 向左绕；随后切换到 `SERVO_MODE_PATH_BIAS` 并清零避障里程。偏置每 15 ms 最多变化 6 px。
-2. `ACTIVE`：图像侧完全停止障碍扫描，环岛保持 `FIRST`。中断只累加 `(|encoder_l|+|encoder_r|)/2`；累计 4500 脉冲前不会退出避障。
-3. `ACTIVE → RECENTER`：达到 4500 后仅把偏置目标改为 0，仍保持 `PATH_BIAS` 模式。
+2. `ACTIVE`：图像侧完全停止障碍扫描，环岛保持 `FIRST`。中断只累加 `(|encoder_l|+|encoder_r|)/2`；累计 6000 脉冲前不会退出避障。
+3. `ACTIVE → RECENTER`：达到 6000 后仅把偏置目标改为 0，仍保持 `PATH_BIAS` 模式。
 4. `RECENTER → SCAN`：用 8 个控制周期平滑回正；中断只发布完成标志，下一图像帧切回 `SERVO_MODE_VISION`、执行 `Ring_Over()` 并恢复 `NORM`。
 
 手动停车时编码器增量为 0，里程自然暂停，再次发车后继续。避障不会关闭 PB3 靶点检测或激光，不改变 ToF 状态，也不改变电机速度调度和上限。
@@ -114,13 +115,13 @@ DL1B 不初始化、不轮询，ToF 驱动和旧避障文件只保留在磁盘�
 | `VISUAL_AVOID_RIGHT_BIAS_PX` | -40 px | 右绕的视觉目标列偏置 |
 | `VISUAL_AVOID_LEFT_BIAS_PX` | +40 px | 左绕的视觉目标列偏置 |
 | `SERVO_PATH_BIAS_STEP_PER_TICK` | 6 px/15 ms | 偏置加入和撤销的最大变化率 |
-| `VISUAL_AVOID_PASS_PULSES` | 4500 | 两轮绝对编码器脉冲均值的累计门限 |
+| `VISUAL_AVOID_PASS_PULSES` | 6000 | 两轮绝对编码器脉冲均值的累计门限 |
 | `VISUAL_AVOID_RECENTER_TICKS` | 8 | 里程到达后的平滑回正周期数 |
 | `VISUAL_AVOID_WIDTH_JUMP_PX` | 9 px | 障碍下端宽变窄的最小幅值 |
 | `VISUAL_AVOID_UPPER_JUMP_PX` | 6 px | 障碍上端窄变宽的最小幅值 |
 | `VISUAL_AVOID_LEFT_POINT_DIFF_PX` | 10 px | 两个左线突变点必须严格小于该列差 |
 
-如后续重新启用 WiFi，低速测试时可观察状态：轮廓成立后直接显示 `V:AVD`，并在 `ACTIVE/RECENTER` 全程保持。CH6 在整段动作中保留最初的检测行。
+如后续重新启用逐飞助手，低速测试时可观察状态：轮廓成立后直接显示 `V:AVD`，并在 `ACTIVE/RECENTER` 全程保持。CH6 在整段动作中保留最初的检测行。
 
 ## 环岛状态机
 
@@ -142,7 +143,7 @@ DL1B 不初始化、不轮询，ToF 驱动和旧避障文件只保留在磁盘�
 IN/OUT 阶段使用固定上锚点和按底部原始边线映射出的下锚点补线，避免断边直接进入舵机控制：
 
 - 几何判定中的右侧阈值使用 `RING_MIRROR_COL()` 从 188 像素宽度计算；固定补线上锚点直接填写列坐标。
-- `FIRST → ENTER` 保留拐点判定和稳定的第 94/85 行双贴边条件；上方宽度门控在第 25～65 行每隔 5 行检查一次，任一行赛道宽度超过 110 px 即通过，左右环使用相同的镜像条件。
+- `FIRST → ENTER` 保留拐点判定和稳定的第 94/85 行双贴边条件；上方宽度门控在第 25～65 行每隔 5 行检查一次，任一行赛道宽度超过 110 px 即通过。左环保持原贴边条件，右环允许边线落在距右边界不超过 4 px 的范围内，并使用 4 帧 FIRST 丢失确认窗口。
 - `ENTER → TURN` 必须先在近端观测到 `midPoint >= 60`，使 `mid_under_flag` 置位。
 - 在 `mid_under_flag` 已置位的前提下，`turn_flag` 成立或 `midPoint < 45` 连续满足 2 帧才进入 `TURN`。
 - 左/右环 `IN` 的第 0 行上锚点分别为 `15/175`；右环上锚点固定为第 175 列。
@@ -162,7 +163,7 @@ IN/OUT 阶段使用固定上锚点和按底部原始边线映射出的下锚点�
 1. 先确认 `ring_l` / `ring_r` 方向正确。
 2. 记录 `current_step` 的连续帧序列，不只看一张截图。
 3. 卡在 1：检查首次拐点、宽度和 85/94 行边线。
-4. 卡在 2：检查 `midPoint`、`turn_flag`、第 110 行右边线以及 167 阈值。
+4. 卡在 2：检查 `midPoint`、`turn_flag`、第 110 行右边线以及右环折中的 169 列阈值。
 5. 卡在 3：检查 `rightTopPoint` 和连续 3 帧确认。
 6. 卡在 4：检查 50/60 行出口边线。
 7. 一次只改一类检测条件、状态转移或补线策略。
@@ -187,7 +188,7 @@ PB3 按住或短按一次都能在发车前锁存靶点检测。视觉避障始�
 | `AimTolerance` | 5 px | `project/code/laser.c` |
 | `IMAGE_OTSU_ENABLE` | 0 | `project/code/image2.h` |
 | `RIGHT_RING_ENABLE` | 1 | `project/code/ring.c` |
-| `ASSISTANT_DEBUG_ENABLE` | 1 | `project/code/assistant_debug.h` |
+| `ASSISTANT_DEBUG_ENABLE` | 0 | `project/code/assistant_debug.h` |
 | `ASSISTANT_DEBUG_IMAGE_DIV` | 2 | `project/code/assistant_debug.h` |
 | `ASSISTANT_DEBUG_SCOPE_ENABLE` | 1 | `project/code/assistant_debug.h` |
 | `ASSISTANT_DEBUG_IMAGE_OVERLAY_ENABLE` | 1 | `project/code/assistant_debug.h` |
@@ -242,31 +243,32 @@ PB2 发车并启动 15 ms 控制定时器后，双轮使用速度调度、转向
 | --- | ---: | --- |
 | `MOTOR_FREQ` | 17000 | 电机 PWM 频率 |
 | `MOTOR_MAX_LIMIT` | 7500 | 最终 PWM 限幅 |
-| `MOTOR_MIN_EFFECTIVE_PWM` | 1500 | 闭环模式下的正向最低有效 PWM |
+| `MOTOR_MIN_EFFECTIVE_PWM` | 2250 | 闭环模式下的正向最低有效 PWM |
 | `MOTOR_PWM_RISE_STEP` | 250 | 每 15 ms 最大 PWM 上升量 |
 | `MOTOR_PWM_FALL_STEP` | 400 | 每 15 ms 最大 PWM 下降量 |
-| `MAX_SPEED` | 250 | 默认速度调度输入；当前普通运行实际上限为 200 |
+| `MAX_SPEED` | 280 | 默认速度调度输入；当前普通运行实际上限为 250 |
 | `MAX_SPEED_TUNE_MAX` | 700 | 最大速度的在线调参上限 |
-| `MOTOR_SPEED_GATE_MARGIN` | 50 | 普通运行最终上限相对调度输入减少的脉冲数 |
-| `MIN_SPEED` | 150 | 大转向默认最低目标速度 |
-| `BASE_TARGET_SPEED` | 175 | 闭环启动前的默认目标速度 |
-| `WHEEL_TARGET_MIN` | 150 | 差速后的单轮目标速度下限 |
+| `MOTOR_SPEED_GATE_MARGIN` | 30 | 普通运行最终上限相对调度输入减少的脉冲数 |
+| `MIN_SPEED` | 200 | 大转向默认最低目标速度 |
+| `BASE_TARGET_SPEED` | 200 | 闭环启动前的默认目标速度 |
+| `WHEEL_TARGET_MIN` | 200 | 差速后的单轮目标速度下限 |
 | `TURN_DIFF_MAX` | 8 | 满转角时的单轮差速偏置 |
 
-速度值的单位是 15 ms 窗口内的编码器脉冲数，不是 RPM。当前转角平方调度按 250 到 150 计算，基础目标和左右单轮目标再统一门控到 `250-50=200`，所以实际目标范围为 150～200。左右轮按舵机转向加入最大 8 脉冲的差速偏置后仍分别经过 150～200 门控。手动停机继续拥有最高优先级。
+速度值的单位是 15 ms 窗口内的编码器脉冲数，不是 RPM。当前转角平方调度按 280 到 200 计算，基础目标和左右单轮目标统一门控到 `280-30=250`，所以正常运行实际目标范围为 200～250。手动停机继续拥有最高优先级。
 
-闭环模式下，`MOTOR_MIN_EFFECTIVE_PWM=1500` 是运行中的硬下限：只要目标速度为正，实际 PWM 不会主动降到 0。`MOTOR_SAFETY_STOP` 会立即把两路 PWM 清零。
+闭环模式下，`MOTOR_MIN_EFFECTIVE_PWM=2250` 是运行中的硬下限：只要目标速度为正，实际 PWM 不会主动降到 0。`MOTOR_SAFETY_STOP` 会立即把两路 PWM 清零。
 
-## 靶点、激光与 WiFi
+## 靶点、激光与调试通信
 
 - `Pre_Scan()` 每 2 帧在原图第 100 行内以 2 列步长寻找黑色目标段，估算其相对图像中心的横向偏移；`Target_find()` 再沿该中心纵向、横向扫线，目标宽高在 10～44 px 且瞄准误差小于 5 px 时允许发射。
 - `Laser_Task()` 在 15 ms 任务中输出 2 tick（30 ms）脉冲，随后冷却 34 tick。P61、P63、P66 是同一发射输出，发射时三路同时为高；当前版本没有蜂鸣器联动。
-- `WIFI_RUNTIME_ENABLE=0`：当前不初始化、轮询或发送 WiFi，不启动逐飞助手，也不接受远程发车/停车和在线参数；PB1/SWITCH2 当前不产生 WiFi 行为。
-- 网络名、密码、上位机 IP 和端口位于 `project/code/wifi_assistant.c`，不在文档中复制其实际值。
-- 重新启用 WiFi 后，第 3 通道为带符号 `GYRO_KG`，第 6/7 通道为最低/最高调度速度，第 8 通道为相机曝光；速度在线调参下限已同步为 150。
-- 重新启用后，8 通道示波器每 5 个图像帧发送一次：CH1 中线误差、CH2 舵机误差、CH3/CH4 左右编码器、CH5 陀螺仪 Z 轴、CH6 障碍下突变点行数、CH7/CH8 左右电机 PWM。
-- 重新启用后，图像每处理 2 帧发送 1 帧，边线随该图像一起发送；发送图像左上角显示环岛和视觉避障状态。
-- 摄像头固定曝光初值为 512；`mt9v03x_init()` 后主程序立即写入该值。当前 WiFi 关闭，因此运行时不会从第 8 通道修改曝光。
+- `ASSISTANT_DEBUG_ENABLE=0`：当前不初始化、不接收也不发送逐飞助手数据，不接受串口远程发车或在线参数。
+- 保留的传输配置为 `ASSISTANT_DEBUG_DEVICE=SEEKFREE_ASSISTANT_DEBUG_UART`；后续重新启用时，当前逐飞库会映射到核心板 USB CDC 虚拟串口。
+- WiFi 不初始化、不轮询、不发送，也不参与远程控制；PB1/SWITCH2 当前不产生 WiFi 行为。
+- 串口逐飞助手通道 1～8 依次为舵机 KP、舵机 KD、陀螺仪 KG、电机 KP、发车/停车、最低速度、最高调度速度和相机曝光；速度在线调参下限为 200。
+- 8 通道示波器每 5 个图像帧发送一次：CH1 中线误差、CH2 舵机误差、CH3/CH4 左右编码器、CH5 陀螺仪 Z 轴、CH6 障碍下突变点行数、CH7/CH8 左右电机 PWM。
+- 图像每处理 2 帧发送 1 帧，边线随图像一起发送；发送图像左上角显示环岛和视觉避障状态。
+- 摄像头固定曝光为 120；当前串口调试关闭，运行时不会由逐飞助手修改。
 
 ## 硬件连接摘要
 
@@ -282,7 +284,8 @@ PB2 发车并启动 15 ms 控制定时器后，双轮使用速度调度、转向
 | DL1B ToF | 当前不初始化、不轮询；相关引脚未被视觉避障使用 |
 | 发车按键 | `IO_PB2` |
 | 靶点检测锁存键 | `IO_PB3`，发车前按下 |
-| WiFi 调试开关 | `IO_PB1`（当前运行路径关闭） |
+| 逐飞助手 | 当前关闭；保留核心板 USB CDC 配置 |
+| WiFi 调试开关 | `IO_PB1`（当前无效） |
 
 以上左右极性与当前代码一致。更换电机、编码器或接线后，必须在车轮离地和低输出条件下重新确认方向。
 
@@ -332,11 +335,18 @@ Program Size: data=10.6 edata+hdata=8204 xdata=32647 const=5864 code=129834
 0 Error(s), 0 Warning(s)
 ```
 
+保持上述速度参数，将逐飞助手传输层改为 USB CDC 虚拟串口后的完整 Rebuild 结果：
+
+```text
+Program Size: data=10.6 edata+hdata=8204 xdata=32647 const=5864 code=129922
+0 Error(s), 0 Warning(s)
+```
+
 相对本次重构前的视觉补线版，`code` 增加 1828 字节、`const` 增加 19 字节、`xdata` 增加 46 字节；`visual_avoidance` 模块 ECODE 由 1416 字节增加到 3218 字节。
 
 视觉检测只在 `FIRST && ring_l && SCAN` 时执行；普通无候选帧约读取边线数组 44 次，完整候选帧约 48～63 次。只使用整数加减和比较，不读取偶数插补点、不扫原图、不做浮点运算。进入 `ACTIVE` 后图像侧只做常数级状态检查。
 
-视觉避障已加入当前活跃 Keil 目标；ToF/DL1B 文件仍保留在磁盘但不参与编译。运行时 Otsu 和 WiFi 均关闭；PB3 开启时，旧版靶点识别每 2 帧扫描一次原图。
+视觉避障已加入当前活跃 Keil 目标；ToF/DL1B 文件仍保留在磁盘但不参与编译。运行时 Otsu、WiFi 和串口逐飞助手均关闭；PB3 开启时，旧版靶点识别每 2 帧扫描一次原图。
 
 构建成功只证明编译与链接通过，不代表环岛、舵机、电机或激光已完成实车验证。
 

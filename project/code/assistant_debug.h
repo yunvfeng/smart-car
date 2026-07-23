@@ -4,11 +4,11 @@
 #include "zf_common_headfile.h"
 
 #ifndef ASSISTANT_DEBUG_ENABLE
-#define ASSISTANT_DEBUG_ENABLE          1
+#define ASSISTANT_DEBUG_ENABLE          0
 #endif
 
 #ifndef ASSISTANT_DEBUG_DEVICE
-#define ASSISTANT_DEBUG_DEVICE          SEEKFREE_ASSISTANT_WIFI_SPI
+#define ASSISTANT_DEBUG_DEVICE          SEEKFREE_ASSISTANT_DEBUG_UART
 #endif
 
 #ifndef ASSISTANT_DEBUG_IMAGE_ENABLE
@@ -51,6 +51,7 @@ typedef enum
     ASSISTANT_PARAM_CAMERA_EXPOSURE
 } assistant_param_channel_enum;
 
+#if ASSISTANT_DEBUG_ENABLE
 void Assistant_Debug_Init(void);
 void Assistant_Debug_Task(void);
 void Assistant_Debug_On_Frame(uint8 visual_avoid_enabled);
@@ -59,5 +60,6 @@ void Assistant_Debug_Send_Now(void);
 void Assistant_Debug_Timebase_Tick(void);
 uint16 Assistant_Debug_Timebase_Now(void);
 void Assistant_Debug_Set_Image_Process_Time(uint16 time_100us);
+#endif
 
 #endif

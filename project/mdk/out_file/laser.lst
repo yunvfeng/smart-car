@@ -1,4 +1,4 @@
-C251 COMPILER V5.60.0,  laser                                                              23/07/26  02:13:11  PAGE 1   
+C251 COMPILER V5.60.0,  laser                                                              23/07/26  03:28:04  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE laser
@@ -66,7 +66,7 @@ stmt  level    source
    54   1          laser_shoot_cnt = 0;
    55   1          laser_cooldown_cnt = 0;
    56   1          gpio_init(LASER_PIN_LEFT, GPO, 0, GPO_PUSH_PULL);
-C251 COMPILER V5.60.0,  laser                                                              23/07/26  02:13:11  PAGE 2   
+C251 COMPILER V5.60.0,  laser                                                              23/07/26  03:28:04  PAGE 2   
 
    57   1          gpio_init(LASER_PIN_CENTER, GPO, 0, GPO_PUSH_PULL);
    58   1          gpio_init(LASER_PIN_RIGHT, GPO, 0, GPO_PUSH_PULL);
@@ -134,7 +134,7 @@ stmt  level    source
   120   1      }
   121          
   122          /* Git 初版的轻量预扫描：只在一行内估算目标横向偏移。 */
-C251 COMPILER V5.60.0,  laser                                                              23/07/26  02:13:11  PAGE 3   
+C251 COMPILER V5.60.0,  laser                                                              23/07/26  03:28:04  PAGE 3   
 
   123          void Pre_Scan(void)
   124          {
@@ -202,7 +202,7 @@ stmt  level    source
   186   1          l_d = 0;
   187   1          r_d = 0;
   188   1      
-C251 COMPILER V5.60.0,  laser                                                              23/07/26  02:13:11  PAGE 4   
+C251 COMPILER V5.60.0,  laser                                                              23/07/26  03:28:04  PAGE 4   
 
   189   1          center_x = (SEARCH_IMAGE_W >> 1) + mid_offset;
   190   1          center_x = clamp_i16(center_x, 2, SEARCH_IMAGE_W - 3);
@@ -271,7 +271,7 @@ Module Information          Static   Overlayable
   code size            =    ------     ------
   ecode size           =      1762     ------
   data size            =    ------     ------
-C251 COMPILER V5.60.0,  laser                                                              23/07/26  02:13:11  PAGE 5   
+C251 COMPILER V5.60.0,  laser                                                              23/07/26  03:28:04  PAGE 5   
 
   idata size           =    ------     ------
   pdata size           =    ------     ------

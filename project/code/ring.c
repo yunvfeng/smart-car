@@ -5,6 +5,7 @@
 #include <string.h>
 
 #define FIRST_TO_NORMAL_CONFIRM_FRAMES 3u
+#define RIGHT_FIRST_TO_NORMAL_CONFIRM_FRAMES 4u
 #define ENTER_TO_FIRST_CONFIRM_FRAMES  3u
 #define ENTER_TO_TURN_CONFIRM_FRAMES   2u
 #define TURN_TO_IN_CONFIRM_FRAMES      3u
@@ -12,6 +13,8 @@
 #define FIRST_TO_ENTER_WIDTH_TOP_ROW   25u
 #define FIRST_TO_ENTER_WIDTH_END_ROW   65u
 #define FIRST_TO_ENTER_WIDTH_ROW_STEP  5u
+#define RIGHT_FIRST_LOST_EDGE_MARGIN   4u
+#define RIGHT_ENTER_INNER_MARGIN       18u
 #define IN_TO_OUT_MIN_FRAMES           20u
 #define IN_TO_OUT_CONFIRM_FRAMES       3u
 #define LEFT_IN_AUTO_OUT_FRAMES        35u
@@ -524,8 +527,12 @@ uint8 Ring_Pre_Meet_use(void)
 
 static void Ring_First_To_Normal_Check(void)
 {
+    uint8 confirm_frames;
+
+    confirm_frames = ring_r ? RIGHT_FIRST_TO_NORMAL_CONFIRM_FRAMES :
+                              FIRST_TO_NORMAL_CONFIRM_FRAMES;
     if (!Ring_Pre_Meet_use()) {
-        if (++first_to_normal_cnt >= FIRST_TO_NORMAL_CONFIRM_FRAMES) {
+        if (++first_to_normal_cnt >= confirm_frames) {
             Ring_Change_Step(RING_STEP_PRE_MEET);
         }
     } else {
@@ -809,8 +816,8 @@ static void Ring_First_meeting_Right(void)
 
     if (midPoint &&
         Ring_Right_Side_Ready() &&
-        right_edge_line[94] >= RING_MIRROR_COL(2u) &&
-        right_edge_line[85] >= RING_MIRROR_COL(2u) &&
+        right_edge_line[94] >= RING_MIRROR_COL(RIGHT_FIRST_LOST_EDGE_MARGIN) &&
+        right_edge_line[85] >= RING_MIRROR_COL(RIGHT_FIRST_LOST_EDGE_MARGIN) &&
         Ring_First_Upper_Width_Ready()) {
         first_meeting_flag = 1;
         first_to_normal_cnt = 0;
@@ -846,7 +853,7 @@ static void Ring_Enter_Right(void)
             under <= uunder && (uunder - under) < 20 &&
             mid <= top && (top - mid) < 20 &&
             top <= ttop && (ttop - top) < 20 &&
-            mid < RING_MIRROR_COL(20u)) {
+            mid < RING_MIRROR_COL(RIGHT_ENTER_INNER_MARGIN)) {
             midPoint = i;
             break;
         }
@@ -872,8 +879,8 @@ static void Ring_Enter_Right(void)
 
         if ((int16)under - (int16)top >= 15 &&
             right_edge_line[110] <= RING_MIRROR_COL(10u) &&
-            right_edge_line[i - 4] < RING_MIRROR_COL(20u) &&
-            right_edge_line[i - 6] < RING_MIRROR_COL(20u)) {
+            right_edge_line[i - 4] < RING_MIRROR_COL(RIGHT_ENTER_INNER_MARGIN) &&
+            right_edge_line[i - 6] < RING_MIRROR_COL(RIGHT_ENTER_INNER_MARGIN)) {
             turn_flag = 1;
             break;
         }

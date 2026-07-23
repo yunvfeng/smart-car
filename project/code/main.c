@@ -1,12 +1,7 @@
 #include "zf_common_headfile.h"
 #include "zf_device_mt9v03x.h"
 /* #include "zf_device_ips200.h" */
-#define WIFI_RUNTIME_ENABLE  0u
-
-#if WIFI_RUNTIME_ENABLE
-#include "wifi_assistant.h"
 #include "assistant_debug.h"
-#endif
 #include "image.h"
 #include "image2.h"
 #include "ring.h"
@@ -51,11 +46,6 @@ static void Timer0_Callback(void)
 /* 程序入口：完成硬件初始化，之后在主循环中等待并处理摄像头图像。 */
 void main(void)
 {
-#if WIFI_RUNTIME_ENABLE
-    uint8 wifi_ready;
-    uint8 assistant_debug_ready;
-    uint8 wifi_assistant_started;
-#endif
     uint8 car_started;
     uint8 key1_last;
     uint8 key1_now;
@@ -73,11 +63,10 @@ void main(void)
 
     mt9v03x_init();
     mt9v03x_set_exposure_time(camera_exposure_time);
-    /* ips200_init(); */
-#if WIFI_RUNTIME_ENABLE
-    assistant_debug_ready = 0;
-    wifi_assistant_started = 0;
+#if ASSISTANT_DEBUG_ENABLE
+    Assistant_Debug_Init();
 #endif
+    /* ips200_init(); */
     car_started = 0;
     key1_last = 1;
 
@@ -103,29 +92,9 @@ void main(void)
         }
         key1_last = gpio_get_level(KEY1_PIN);
 
-#if WIFI_RUNTIME_ENABLE
-        wifi_ready = 0;
-        if (!gpio_get_level(SWITCH2_PIN)) {
-            if (!wifi_assistant_started) {
-                Wifi_Assistant_Init();
-                assistant_debug_ready = 0;
-                wifi_assistant_started = 1;
-            }
-
-            wifi_ready = Wifi_Assistant_Ready();
-            if (wifi_ready) {
-                if (!assistant_debug_ready) {
-                    Assistant_Debug_Init();
-                    assistant_debug_ready = 1;
-                }
-            }
-        } else {
-            assistant_debug_ready = 0;
-            wifi_assistant_started = 0;
-        }
-
+#if ASSISTANT_DEBUG_ENABLE
         if (Assistant_Debug_Take_Launch_Request()) {
-            if (wifi_ready && !car_started) {
+            if (!car_started) {
                 pit_ms_init(TIM0_PIT, CONTROL_PERIOD_MS, Timer0_Callback);
                 car_started = 1;
             }
@@ -144,10 +113,8 @@ void main(void)
             Image_OldStyle_Process(target_detect_enabled,
                                    1u);
 
-#if WIFI_RUNTIME_ENABLE
-            if (wifi_ready) {
-                Assistant_Debug_On_Frame(1u);
-            }
+#if ASSISTANT_DEBUG_ENABLE
+            Assistant_Debug_On_Frame(1u);
 #endif
 
             /* 按下 SWITCH2 时显示调试画面。 */
